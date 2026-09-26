@@ -7,7 +7,11 @@
 <title>АвтоХаб</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-html,body{margin:0;height:100%;background:#E7E3DB;font-family:Manrope,'Segoe UI',Roboto,sans-serif;color:#17191C;-webkit-tap-highlight-color:transparent}
+/* --sb — отступ под статус-бар. В браузере имитирует его (как в макетах) и учитывает вырез экрана,
+   в Android-приложении страница уже начинается ниже статус-бара, поэтому 0. */
+:root{--sb:max(40px,calc(env(safe-area-inset-top,0px) + 8px))}
+html.native{--sb:0px}
+html,body{overscroll-behavior:none;margin:0;height:100%;background:#E7E3DB;font-family:Manrope,'Segoe UI',Roboto,sans-serif;color:#17191C;-webkit-tap-highlight-color:transparent}
 button,input,select{font-family:inherit}
 a{color:#C2410C}
 .screen{display:none;height:100%;max-width:480px;margin:0 auto;background:#F3F1EC}
@@ -44,12 +48,80 @@ button:disabled{opacity:.45;cursor:default}
 .mapfull-sheet{position:absolute;left:12px;right:12px;bottom:24px}
 .mapfull-sheet>div{box-shadow:0 4px 16px rgba(0,0,0,.12)}
 
+/* Шторка и диалог (web/ui.js) */
+.sheet-wrap{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end;max-width:480px;margin:0 auto}
+.sheet-backdrop{position:absolute;inset:0;background:rgba(23,25,28,.45);opacity:0;transition:opacity .18s}
+.sheet{position:relative;background:#F3F1EC;border-radius:22px 22px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));max-height:80%;overflow-y:auto;transform:translateY(100%);transition:transform .18s ease-out;display:flex;flex-direction:column;gap:12px}
+.sheet-wrap.show .sheet{transform:none}.sheet-wrap.show .sheet-backdrop{opacity:1}
+.sheet-grip{width:40px;height:4px;border-radius:999px;background:#D8D2C6;align-self:center;margin-bottom:4px}
+.sheet-title{font-family:Unbounded,'Arial Black',sans-serif;font-weight:700;font-size:18px;padding:0 4px}
+.sheet-body{display:flex;flex-direction:column;gap:8px}
+.sheet-text{margin:0 4px 8px;font-size:15px;line-height:1.5;color:#17191C}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet-backdrop{transition:none}}
+.pick{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 14px;background:#fff;border:1px solid #E2DED6;border-radius:16px;text-align:left;color:#17191C;font-size:14px}
+.pick.on{border:1.5px solid #C2410C}
+.pick-ic{width:40px;height:40px;flex-shrink:0;border-radius:12px;background:#17191C;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.pick.add .pick-ic{background:#FCEBDF;color:#C2410C}
+.pick-txt{flex-grow:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pick-txt b{font-size:15px}.pick-txt span{font-size:13px;color:#5B5F66}
+.pick-plate{font-family:'JetBrains Mono',monospace;font-size:12px;padding:3px 6px;border:1.5px solid #17191C;border-radius:6px;white-space:nowrap}
+.pick-ok{color:#C2410C;font-weight:800;font-size:18px}
+/* Гараж: колода карточек (web/car.js) */
+.deck-wrap{display:flex;flex-direction:column;gap:10px}
+.deck{position:relative;height:214px;margin-right:28px;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
+.deck:focus-visible{outline:2px solid #1D4ED8;outline-offset:4px;border-radius:20px}
+.deck-card{position:absolute;inset:0;border-radius:20px;background:#17191C;color:#fff;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;gap:10px;transform-origin:right center;transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .28s,background-color .28s;will-change:transform}
+.deck-card.behind{background:#3A3D42}.deck-card.behind>*{opacity:0}
+.deck-card.behind2{background:#5B5F66}
+.deck-card>*{transition:opacity .2s}
+.deck-card.add{background:#fff;border:1.5px dashed #C2410C;color:#17191C;padding:0}
+.deck-card.add.behind{background:#E7E3DB;border-style:solid;border-color:#D8D2C6}
+.dc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.dc-head{min-width:0;display:flex;flex-direction:column;gap:4px}
+.dc-name{font-family:Unbounded,'Arial Black',sans-serif;font-weight:700;font-size:19px;line-height:1.2}
+.dc-demo{margin-left:8px;font-family:Manrope,sans-serif;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;background:#3A3D42;color:#C9CCD1;vertical-align:middle}
+.dc-spec{font-size:13px;color:#C9CCD1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dc-plate{flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:13px;padding:4px 8px;border-radius:6px;background:#fff;color:#17191C;border:1.5px solid #17191C;white-space:nowrap}
+.dc-plate.none{background:transparent;color:#C9CCD1;border:1px dashed #5B5F66;font-family:Manrope,sans-serif;font-size:12px}
+.dc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dc-tile{background:#25282D;border:none;border-radius:12px;padding:9px 12px;color:#fff;text-align:left;display:flex;flex-direction:column;gap:2px;font-family:inherit;min-width:0}
+.dc-tile small{font-size:12px;color:#C9CCD1}.dc-tile b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-tile b.mono{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:14px}
+button.dc-tile{cursor:pointer}
+.dc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.dc-to{font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;background:#25282D;color:#fff}
+.dc-to.soon{background:#C2410C}
+.dc-more{width:44px;height:36px;border-radius:10px;border:none;background:#25282D;color:#fff;display:flex;align-items:center;justify-content:center;padding:0}
+.dc-add{-webkit-user-drag:none;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:#17191C;text-align:center}
+.dc-add b{font-size:16px}.dc-add span:last-child{font-size:13px;color:#5B5F66}
+.dc-add-ic{width:48px;height:48px;border-radius:14px;background:#FCEBDF;color:#C2410C;font-size:28px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.deck-nav{display:flex;align-items:center;justify-content:space-between;padding:0 4px;min-height:24px}
+.deck-count,.deck-hint{font-size:12px;font-weight:600;color:#5B5F66;min-width:76px}
+.deck-hint{text-align:right}
+.deck-dots{display:flex;align-items:center;gap:2px}
+.deck-dots button{width:22px;height:24px;border:none;background:none;padding:0;display:flex;align-items:center;justify-content:center;position:relative}
+.deck-dots button::before{content:"";width:7px;height:7px;border-radius:9px;background:#C9C3B6;transition:width .2s,background-color .2s}
+.deck-dots button.on::before{width:18px;background:#17191C}
+.deck-dots button.plus::before{display:none}
+.deck-dots button.plus{color:#C2410C;font-weight:800;font-size:16px}
+.deck-dots button.plus.on{color:#17191C}
+@media (prefers-reduced-motion:reduce){.deck-card,.deck-card>*,.deck-dots button::before{transition:none}}
+/* Корзина */
+.qty{display:flex;align-items:center;border:1px solid #E2DED6;border-radius:10px;flex-shrink:0}
+.qty button{width:36px;height:40px;background:none;border:none;font-size:20px;color:#17191C;padding:0}
+.qty span{min-width:22px;text-align:center;font-weight:700}
+.cartrow.zero{background:#FAF9F6}
+.cartsum{flex-shrink:0;padding:12px 20px 14px;background:#fff;border-top:1px solid #E2DED6;display:flex;flex-direction:column;gap:8px}
+.cartsum .btn-accent{height:52px}
+.linkbtn{background:none;border:none;color:#C2410C;font-weight:700;font-size:14px;min-height:44px;padding:0 8px}
+.navbadge{position:absolute;top:8px;left:calc(50% + 4px);min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#C2410C;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
 </style>
 </head>
 <body>
 <section class="screen" id="s-Garage" data-name="Garage">
 <div style="width: 390px; height: 1340px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="flex-grow: 1; padding: 56px 16px 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="flex-grow: 1; padding: calc(var(--sb) + 16px) 16px 16px 16px; display: flex; flex-direction: column; gap: 16px">
 <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px">
 <h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 26px">Мой гараж</h1>
 <a href="#AddCar" aria-label="Добавить автомобиль" style="width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></a>
@@ -111,7 +183,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-AddCar" data-name="AddCar">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="flex-grow: 1; padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="flex-grow: 1; padding: calc(var(--sb) + 12px) 20px 20px 20px; display: flex; flex-direction: column; gap: 16px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: #17191C; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="display: flex; flex-direction: column; gap: 6px">
 <h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.15">Добавьте<br>автомобиль</h1>
@@ -176,7 +248,7 @@ button:disabled{opacity:.45;cursor:default}
 
 <section class="screen" id="s-Reminders" data-name="Reminders">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Регламент ТО</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> 1.6 · по регламенту производителя</div></div>
 </div>
@@ -213,7 +285,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-History" data-name="History">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <h1 style="margin: 0; flex-grow: 1; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">История</h1>
 <button aria-label="Добавить запись" style="height: 44px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; font-size: 13px; font-weight: 700; color: #17191C">+ Запись</button>
@@ -264,7 +336,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-OneTapTO" data-name="OneTapTO">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">ТО-60 000 км</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> · работы, запчасти и сервис одним заказом</div></div>
 </div>
@@ -296,7 +368,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Main" data-name="Main">
 <div style="width: 390px; height: 900px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="flex-grow: 1; padding: 56px 20px 20px; display: flex; flex-direction: column; gap: 22px">
+<div style="flex-grow: 1; padding: calc(var(--sb) + 16px) 20px 20px 20px; display: flex; flex-direction: column; gap: 22px">
 <a href="#Garage" style="text-decoration: none; align-self: flex-start; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px 6px 8px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 999px; font-size: 14px; font-weight: 600; color: #17191C; cursor: pointer">
 <span style="width: 32px; height: 32px; border-radius: 999px; background: #17191C; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-3l2-5h12l2 5v3z"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg></span>
 <span data-car="chip">Kia Rio IV · 1.6 AT · 2019</span>
@@ -342,7 +414,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Results" data-name="Results">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 12px; display: flex; flex-direction: column; gap: 14px; background: #F3F1EC">
+<div style="padding: calc(var(--sb) + 12px) 16px 12px 16px; display: flex; flex-direction: column; gap: 14px; background: #F3F1EC">
 <div style="display: flex; align-items: center; gap: 8px">
 <a href="#Main" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1; height: 44px; display: flex; align-items: center; padding: 0 14px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 12px; font-size: 15px; font-weight: 600">масляный фильтр</div>
@@ -402,7 +474,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Offers" data-name="Offers">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; justify-content: space-between">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; justify-content: space-between">
 <a href="#Results" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <button aria-label="Следить за ценой" style="height: 44px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #17191C"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>Следить за ценой</button>
 </div>
@@ -455,7 +527,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Compare" data-name="Compare">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 12px; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 12px 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Results" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <h1 style="margin: 0; flex-grow: 1; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Сравнение</h1>
 <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #5B5F66"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #C2410C">Только различия</label>
@@ -499,49 +571,24 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Cart" data-name="Cart">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 60px 20px 14px; display: flex; flex-direction: column; gap: 4px">
+<div style="padding: calc(var(--sb) + 20px) 20px 12px 20px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0">
 <h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 26px">Корзина</h1>
-<span style="font-size: 14px; color: #5B5F66">3 детали · 2 продавца</span>
+<span id="cartSub" style="font-size: 14px; color: #5B5F66"></span>
 </div>
-<div style="flex-grow: 1; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px">
-<div style="background: #FCEBDF; border-radius: 16px; padding: 14px; display: flex; gap: 12px; align-items: center">
-<div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: #C2410C; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6 4 4 6-8"/><path d="M15 7h5v5"/></svg></div>
-<div style="flex-grow: 1; font-size: 13px; line-height: 1.4"><b style="font-size: 14px">Соберите заказ у одного продавца</b><br>Магазин А — дешевле на 140 ₽ с учётом доставки</div>
-<button style="height: 44px; padding: 0 12px; border-radius: 10px; background: #FFFFFF; border: none; font-size: 13px; font-weight: 700; color: #9A3412">Применить</button>
-</div>
-<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
-<div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; background: #FAF9F6; border-bottom: 1px solid #EFECE6"><span style="font-weight: 700; font-size: 15px">Магазин А</span><span style="font-size: 12px; color: #5B5F66">доставка завтра · 199 ₽</span></div>
-<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid #EFECE6">
-<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Фильтр масляный MANN</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">W 811/80</span></div>
-<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
-<span style="width: 64px; text-align: right; font-weight: 700">412 ₽</span>
-</div>
-<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center">
-<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Фильтр воздушный</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">[АРТИКУЛ]</span></div>
-<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
-<span style="width: 64px; text-align: right; font-weight: 700">590 ₽</span>
-</div>
-</div>
-<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
-<div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; background: #FAF9F6; border-bottom: 1px solid #EFECE6"><span style="font-weight: 700; font-size: 15px">Магазин Б</span><span style="font-size: 12px; color: #5B5F66">доставка сегодня · 249 ₽</span></div>
-<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center">
-<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Масло моторное 5W-30, 4 л</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">[АРТИКУЛ]</span></div>
-<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
-<span style="width: 64px; text-align: right; font-weight: 700">3 150 ₽</span>
-</div>
-</div>
-</div>
-<div style="padding: 16px 20px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 12px">
-<div style="display: flex; justify-content: space-between; font-size: 14px; color: #5B5F66"><span>Товары</span><span>4 152 ₽</span></div>
-<div style="display: flex; justify-content: space-between; font-size: 14px; color: #5B5F66"><span>Доставка (2 продавца)</span><span>448 ₽</span></div>
-<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 700; font-size: 16px">Итого</span><span style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 24px">4 600 ₽</span></div>
-<button style="height: 54px; border-radius: 14px; background: #C2410C; border: none; color: #FFFFFF; font-weight: 700; font-size: 16px">Оформить у 2 продавцов</button>
-</div>
+<div id="cartList" style="flex-grow: 1; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
+<div id="cartSum" class="cartsum"></div>
+<nav style="height: 80px; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E2DED6; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0 8px 14px">
+<a href="#Garage" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6v10H3z"/><path d="M7 20v-6h10v6"/></svg>Гараж</a>
+<a href="#Main" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.3-.5-.5-2.3z"/></svg>Запчасти</a>
+<a href="#Services" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Сервисы</a>
+<a href="#Cart" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; text-decoration: none; color: #C2410C"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h2l2 11h11l2-8H6"/><circle cx="9" cy="19.5" r="1"/><circle cx="17" cy="19.5" r="1"/></svg>Корзина</a>
+</nav>
 </div>
 </section>
+
 <section class="screen" id="s-Services" data-name="Services">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 56px 16px 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="padding: calc(var(--sb) + 16px) 16px 12px 16px; display: flex; flex-direction: column; gap: 12px">
 <div style="display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4px">
 <div><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 24px">Автосервисы</h1><div style="font-size: 13px; color: #5B5F66">рядом · для <span data-car="name">Kia Rio IV</span></div></div>
 <div style="display: flex; padding: 3px; background: #E7E3DB; border-radius: 10px"><button style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: #FFFFFF; font-size: 12px; font-weight: 700; color: #17191C">Карта</button><button style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: transparent; font-size: 12px; font-weight: 600; color: #5B5F66">Список</button></div>
@@ -594,7 +641,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-ServiceBooking" data-name="ServiceBooking">
 <div style="width: 390px; height: 900px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Services" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><div style="font-weight: 700; font-size: 17px">Автосервис «[Название]»</div><div style="font-size: 12px; color: #5B5F66">★ 4.8 · 1,2 км · запись через 2ГИС</div></div>
 </div>
@@ -646,7 +693,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-BookingDone" data-name="BookingDone">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="flex-grow: 1; padding: 96px 20px 20px; display: flex; flex-direction: column; gap: 20px">
+<div style="flex-grow: 1; padding: calc(var(--sb) + 56px) 20px 20px 20px; display: flex; flex-direction: column; gap: 20px">
 <div style="width: 64px; height: 64px; border-radius: 20px; background: #0F6B3A; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></div>
 <div style="display: flex; flex-direction: column; gap: 6px">
 <h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 28px">Вы записаны</h1>
@@ -672,7 +719,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Fines" data-name="Fines">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Штрафы</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> · <span data-car="plate">А 123 ВС 177</span> · проверка каждый день</div></div>
 </div>
@@ -688,7 +735,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Tires" data-name="Tires">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Смена шин</h1><div style="font-size: 12px; color: #5B5F66">Сезонное напоминание по прогнозу погоды</div></div>
 </div>
@@ -701,7 +748,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Insurance" data-name="Insurance">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Страховка</h1><div style="font-size: 12px; color: #5B5F66">Данные авто и водителей уже заполнены</div></div>
 </div>
@@ -715,7 +762,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-SOS" data-name="SOS">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Помощь на дороге</h1><div style="font-size: 12px; color: #5B5F66">Вы здесь: [адрес по геолокации]</div></div>
 </div>
@@ -727,7 +774,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Subscription" data-name="Subscription">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">АвтоХаб Плюс</h1><div style="font-size: 12px; color: #5B5F66">ТО по фиксированной цене у сервисов-партнёров</div></div>
 </div>
@@ -739,7 +786,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Wallet" data-name="Wallet">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Баллы и копилка</h1><div style="font-size: 12px; color: #5B5F66">1 балл = 1 ₽ при оплате в приложении</div></div>
 </div>
@@ -751,7 +798,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Budget" data-name="Budget">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Бюджет владения</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> · последние 12 месяцев</div></div>
 </div>
@@ -763,7 +810,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-RepairLive" data-name="RepairLive">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Ремонт онлайн</h1><div style="font-size: 12px; color: #5B5F66">ТО-60 000 · Автосервис «[Название]» · бокс 3</div></div>
 </div>
@@ -780,7 +827,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Warranty" data-name="Warranty">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Гарантии</h1><div style="font-size: 12px; color: #5B5F66">Работы и запчасти, купленные через приложение</div></div>
 </div>
@@ -792,7 +839,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-CarPassport" data-name="CarPassport">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Паспорт автомобиля</h1><div style="font-size: 12px; color: #5B5F66">Подтверждённая история для продажи</div></div>
 </div>
@@ -807,7 +854,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Family" data-name="Family">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Семейный гараж</h1><div style="font-size: 12px; color: #5B5F66">Общие машины, штрафы и записи</div></div>
 </div>
@@ -822,7 +869,7 @@ button:disabled{opacity:.45;cursor:default}
 </section>
 <section class="screen" id="s-Community" data-name="Community">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
 <a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Владельцы <span data-car="name">Kia Rio IV</span></h1><div style="font-size: 12px; color: #5B5F66">1.6 бензин · данные по покупкам и визитам в АвтоХабе</div></div>
 </div>
@@ -932,9 +979,11 @@ button:disabled{opacity:.45;cursor:default}
 <g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
 </g>
 </svg></template>
+<script src="ui.js"></script>
 <script src="api.js"></script>
 <script src="car.js"></script>
 <script src="services.js"></script>
+<script src="cart.js"></script>
 <script>
 (function(){
   function show(){
@@ -943,8 +992,9 @@ button:disabled{opacity:.45;cursor:default}
     document.querySelectorAll(".screen").forEach(function(s){s.classList.toggle("active",s===el)});
     var sc=el.querySelector('div[style*="flex-grow: 1"]'); if(sc) sc.scrollTop=0;
   }
-  var toastT;
-  function toast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove("show")},1600)}
+  // В Android-приложении системные панели не перекрывают страницу — убираем имитацию статус-бара
+  if(window.NativeHttp) document.documentElement.classList.add("native");
+  function toast(msg){window.AutoHubUI.toast(msg)}
   document.addEventListener("click",function(e){
     var btn=e.target.closest("button");
     if(btn&&!btn.closest("a")&&!btn.dataset.action&&!btn.classList.contains("cartab")){toast("В прототипе это действие пока не подключено")}
@@ -952,6 +1002,7 @@ button:disabled{opacity:.45;cursor:default}
   window.addEventListener("hashchange",show);
   if(window.AutoHubCar) window.AutoHubCar.init();
   if(window.AutoHubServices) window.AutoHubServices.init();
+  if(window.AutoHubCart) window.AutoHubCart.init();
   show();
 })();
 

@@ -11,7 +11,8 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "design")
 if not os.path.isabs(SRC):
     SRC = os.path.join(ROOT, SRC) if not os.path.isdir(SRC) else SRC
 WEB = os.path.join(ROOT, "web")
-JS_FILES = ["api.js", "car.js", "services.js"]
+JS_FILES = ["ui.js", "api.js", "car.js", "services.js", "cart.js"]
+OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html"}  # экраны, свёрстанные вручную
 OUT = os.path.join(ROOT, "app/src/main/assets/www")
 NAMES = ["Garage", "AddCar", "Reminders", "History", "OneTapTO", "Main", "Results", "Offers",
          "Compare", "Cart", "Services", "ServiceBooking", "BookingDone",
@@ -27,9 +28,29 @@ BINDS = [  # текст макета -> поле авто
     ("58 400 км", "mileage"),
 ]
 
+def top_pad(body):
+    """Верхний отступ первого блока экрана -> calc(var(--sb) + …): в макете он имитирует статус-бар."""
+    i = body.index('<div style="')
+    j = body.index('<div style="', i + 1)
+    k = body.index('"', j + 12)
+    tag = body[j:k]
+    m = re.search(r"padding: (\d+)px", tag)
+    if not m:
+        return body
+    n = int(m.group(1))
+    tag2 = tag[:m.start()] + "padding: calc(var(--sb) + %dpx)" % (n - 40) + tag[m.end():]
+    # calc() занимает только верхнее значение; остальные стороны — отдельными свойствами
+    rest = tag[m.end():].split(";")[0].strip().split()
+    if rest:
+        sides = rest + [rest[0]] * (3 - len(rest)) if len(rest) < 3 else rest
+        r, b = sides[0], sides[1]
+        l = sides[2] if len(sides) > 2 else r
+        tag2 = tag[:m.start()] + "padding: calc(var(--sb) + %dpx) %s %s %s" % (n - 40, r, b, l) + tag[m.end() + len(tag[m.end():].split(";")[0]):]
+    return body[:j] + tag2 + body[k:]
+
 def screen(name):
-    if name == "AddCar":
-        return open(os.path.join(WEB, "addcar.html"), encoding="utf-8").read()
+    if name in OVERRIDES:
+        return top_pad(open(os.path.join(WEB, OVERRIDES[name]), encoding="utf-8").read())
     s = open(os.path.join(SRC, name + ".dc.html"), encoding="utf-8").read()
     body = s[s.index("</helmet>") + 9:s.index("</x-dc>")].strip()
     body = body.replace("{{accent}}", ACC)
@@ -43,6 +64,7 @@ def screen(name):
     body = body.replace('<button style="align-self: flex-start; min-height: 36px;',
                         '<button data-action="mileage" style="align-self: flex-start; min-height: 36px;')
     assert "{{" not in body and "sc-if" not in body, name
+    body = top_pad(body)
     return '<section class="screen" id="s-%s" data-name="%s">\n%s\n</section>' % (name, name, body)
 
 CSS = open(os.path.join(WEB, "app.css"), encoding="utf-8").read()
