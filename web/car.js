@@ -260,21 +260,38 @@
     for (var i = y; i >= 1985; i--) html += "<option>" + i + "</option>";
     sel.innerHTML = html;
   }
+  // Русские написания марок — чтобы «лада» или «хендай» тоже находили марку
+  var MAKE_ALIASES = {
+    "Lada": ["Лада", "ВАЗ", "Жигули"], "Kia": ["Киа", "Кия"], "Hyundai": ["Хендай", "Хендэ", "Хёндэ", "Хундай"],
+    "Toyota": ["Тойота"], "Volkswagen": ["Фольксваген", "VW"], "Škoda": ["Шкода", "Skoda"], "Renault": ["Рено"],
+    "Nissan": ["Ниссан"], "Haval": ["Хавал", "Хавейл"], "Chery": ["Чери"], "Geely": ["Джили"], "Mazda": ["Мазда"],
+    "Mitsubishi": ["Мицубиси", "Митсубиши"], "Chevrolet": ["Шевроле"], "Ford": ["Форд"], "BMW": ["БМВ"],
+    "Mercedes-Benz": ["Мерседес", "Mercedes"], "Audi": ["Ауди"], "УАЗ": ["UAZ"]
+  };
+  var modelOptions = [];
   function fillMakes() {
-    $("mkList").innerHTML = Object.keys(MODELS).sort().map(function (m) { return '<option value="' + esc(m) + '">'; }).join("");
+    var makes = Object.keys(MODELS).sort().map(function (m) { return { value: m, aliases: MAKE_ALIASES[m] || [] }; });
+    window.AutoHubUI.suggest($("mkInput"), function () { return makes; }, { min: 2 });
+    window.AutoHubUI.suggest($("mdInput"), function () { return modelOptions; }, { min: 2 });
   }
   var modelsReq = 0;
   function onMakeChange() {
-    var mk = $("mkInput").value.trim(), list = $("mdList"), hint = $("mdHint"), req = ++modelsReq;
-    var key = Object.keys(MODELS).filter(function (k) { return k.toLowerCase() === mk.toLowerCase(); })[0];
-    if (key) { list.innerHTML = MODELS[key].map(function (m) { return '<option value="' + esc(m) + '">'; }).join(""); hint.textContent = ""; return; }
-    list.innerHTML = "";
+    var mk = $("mkInput").value.trim(), hint = $("mdHint"), req = ++modelsReq;
+    var nmk = window.AutoHubUI.norm(mk);
+    var key = Object.keys(MODELS).filter(function (k) {
+      return window.AutoHubUI.norm(k) === nmk || (MAKE_ALIASES[k] || []).some(function (a) { return window.AutoHubUI.norm(a) === nmk; });
+    })[0];
+    if (key) {
+      if (key !== mk) $("mkInput").value = key;
+      modelOptions = MODELS[key].slice(); hint.textContent = "Начните вводить модель — например, «" + MODELS[key][0].slice(0, 2) + "»"; return;
+    }
+    modelOptions = [];
     if (mk.length < 2) { hint.textContent = ""; return; }
     hint.textContent = "Загружаем модели…";
     API().vehicle.modelsForMake(mk).then(function (d) {
       if (req !== modelsReq) return;
       var names = d.models || [];
-      list.innerHTML = names.slice(0, 200).map(function (m) { return '<option value="' + esc(m) + '">'; }).join("");
+      modelOptions = names.slice(0, 300);
       hint.textContent = names.length ? "Моделей найдено: " + names.length + " · " + d.source : "Моделей в базе нет — введите название вручную.";
     }, function () { if (req === modelsReq) hint.textContent = "Нет связи с базой — введите модель вручную."; });
   }
@@ -298,7 +315,7 @@
     draft.savedAt = new Date().toISOString();
     var car = Object.assign({}, draft); delete car.id;
     var updated = addCar(car);
-    location.hash = "#Garage";
+    location.hash = "#Profile";
     window.AutoHubUI.toast(updated ? "Данные автомобиля обновлены" : "Автомобиль добавлен в гараж");
   }
   function resetForm() {
@@ -318,7 +335,9 @@
     var next = (Math.floor(c.mileage / TO_EVERY) + 1) * TO_EVERY, left = next - c.mileage;
     return { text: (left <= 2000 ? "ТО скоро · " : "ТО через ") + (left <= 2000 ? "через " : "") + left.toLocaleString("ru-RU") + " км", soon: left <= 2000 };
   }
-  var deck = { el: null, cards: {}, index: 0, n: 0 };
+  function statusKind(c) { var st = toStatus(c); return !c.mileage ? "none" : st.soon ? "soon" : "ok"; }
+  function modelShort(c) { return c.model || c.make || "Авто"; }
+  var RIBBON_MAX = 5; // сколько машин в ленте; остальные — в «Все»
 
   function cardHtml(c) {
     var v = carView(c), st = toStatus(c);
@@ -330,80 +349,98 @@
       '<div class="dc-foot"><span class="dc-to' + (st.soon ? " soon" : "") + '">' + esc(st.text) + "</span>" +
       '<button class="dc-more" data-action="car-menu" aria-label="Действия с машиной"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>';
   }
-  var ADD_HTML = '<a href="#AddCar" class="dc-add" draggable="false"><span class="dc-add-ic">+</span><b>Добавить автомобиль</b><span>по госномеру, VIN или марке</span></a>';
 
-  function layoutDeck(animate) {
-    var ids = Object.keys(deck.cards);
-    ids.forEach(function (id) {
-      var el = deck.cards[id], d = +el.dataset.pos - deck.index;
-      el.style.transition = animate === false ? "none" : "";
-      el.classList.toggle("behind", d > 0);
-      el.classList.toggle("behind2", d > 1);
-      el.setAttribute("aria-hidden", d === 0 ? "false" : "true");
-      el.inert = d !== 0;
-      var t, z = 10 - Math.abs(d), op = 1;
-      if (d < 0) { t = "translateX(-115%) rotate(-6deg)"; op = 0; }
-      else if (d === 0) t = "none";
-      else if (d === 1) t = "translateX(14px) scale(.94)";
-      else { t = "translateX(28px) scale(.88)"; if (d > 2) op = 0; }
-      el.style.transform = t; el.style.opacity = op; el.style.zIndex = z;
-    });
-    var dots = document.getElementById("deckDots");
-    if (dots) dots.querySelectorAll("button").forEach(function (b, i) {
-      b.classList.toggle("on", i === deck.index); b.setAttribute("aria-current", i === deck.index ? "true" : "false");
-    });
-    var cnt = document.getElementById("deckCount");
-    if (cnt) cnt.textContent = deck.index < deck.n ? (deck.index + 1) + " из " + deck.n : "новая машина";
+  // Машины в ленте: первые по порядку, выбранная всегда видна
+  function ribbonCars(g, a) {
+    var list = g.cars.slice(0, RIBBON_MAX);
+    if (list.indexOf(a) < 0) list[RIBBON_MAX - 1] = a;
+    return list;
   }
-
-  function goTo(i) {
-    i = Math.max(0, Math.min(deck.n, i));
-    deck.index = i;
-    var g = loadGarage();
-    if (i < deck.n && g.cars[i].id !== g.activeId) { setActive(g.cars[i].id); return; } // refresh() перерисует
-    layoutDeck();
+  function miniHtml(c, on) {
+    var k = statusKind(c);
+    return '<button class="mini' + (on ? " on" : "") + '" data-car-id="' + esc(c.id) + '" data-action="car" aria-pressed="' + on + '" aria-label="' + esc(shortName(c)) + '">' +
+      '<span class="mini-top"><span class="mini-name">' + esc(modelShort(c)) + '</span><span class="sdot ' + k + '" aria-hidden="true"></span></span>' +
+      '<span class="mini-sub">' + esc(c.plate ? c.plate : (c.make || "")) + (c.demo ? " · демо" : "") + "</span></button>";
   }
+  var rib = { el: null, card: null };
 
-  function bindSwipe(box) {
-    var st = null;
-    box.addEventListener("pointerdown", function (e) {
-      if (e.button > 0 || e.target.closest("button,a.dc-add")) { st = null; if (!e.target.closest("a.dc-add")) return; }
-      var top = box.querySelector('.deck-card:not(.behind)[aria-hidden="false"]');
-      st = { x: e.clientX, y: e.clientY, dx: 0, mode: null, top: top, id: e.pointerId, t: Date.now() };
-    });
-    box.addEventListener("pointermove", function (e) {
-      if (!st || e.pointerId !== st.id) return;
-      var dx = e.clientX - st.x, dy = e.clientY - st.y;
-      if (!st.mode) {
-        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) { st.mode = "h"; box.setPointerCapture(e.pointerId); }
-        else if (Math.abs(dy) > 8) { st = null; return; }
-        else return;
-      }
-      st.dx = dx;
-      if (st.top) {
-        var edge = (deck.index === 0 && dx > 0) || (deck.index === deck.n && dx < 0);
-        var x = edge ? dx / 4 : dx;
-        st.top.style.transition = "none";
-        st.top.style.transform = "translateX(" + x + "px) rotate(" + (x / 40) + "deg)";
-      }
-    });
-    function end(e) {
-      if (!st || e.pointerId !== st.id) return;
-      var s = st; st = null;
-      if (s.mode !== "h") return;
-      var fast = Math.abs(s.dx) / Math.max(1, Date.now() - s.t) > 0.5;
-      if ((s.dx < -70 || (fast && s.dx < -20)) && deck.index < deck.n) goTo(deck.index + 1);
-      else if ((s.dx > 70 || (fast && s.dx > 20)) && deck.index > 0) goTo(deck.index - 1);
-      else layoutDeck();
-      // не даём тапу по карте «Добавить» сработать после свайпа
-      box.dataset.swiped = "1"; setTimeout(function () { box.dataset.swiped = ""; }, 50);
+  function renderGarage() {
+    var scr = document.getElementById("s-Garage"); if (!scr) return;
+    var spec = scr.querySelector('[data-car="specs"]'); if (!spec) return;
+    var orig = spec.closest('div[style*="background: #17191C"]');
+    if (!rib.el) {
+      orig.style.display = "none"; // карточка из макета заменена лентой и карточкой выбранной машины
+      var wrap = document.createElement("div");
+      wrap.className = "garage-top";
+      wrap.innerHTML = '<div class="ribbon" id="ribbon" role="group" aria-label="Машины в гараже"></div>' +
+        '<div class="carcard" id="carCard" aria-live="polite"></div>';
+      orig.parentNode.insertBefore(wrap, orig);
+      rib.el = wrap.querySelector("#ribbon"); rib.card = wrap.querySelector("#carCard");
+      rib.el.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-car-id]"); if (b) { setActive(b.getAttribute("data-car-id")); return; }
+        if (e.target.closest("[data-action=all]")) openAll();
+      });
+      rib.card.addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-action]"); if (!b) return;
+        if (b.dataset.action === "car-menu") carMenu();
+        if (b.dataset.action === "mileage-card") askMileage();
+      });
     }
-    box.addEventListener("pointerup", end);
-    box.addEventListener("pointercancel", end);
-    box.addEventListener("click", function (e) { if (box.dataset.swiped && e.target.closest("a")) e.preventDefault(); }, true);
-    box.addEventListener("keydown", function (e) {
-      if (e.key === "ArrowRight") goTo(deck.index + 1);
-      if (e.key === "ArrowLeft") goTo(deck.index - 1);
+    var g = loadGarage(), a = activeCar(g), list = ribbonCars(g, a), n = g.cars.length;
+    rib.el.innerHTML = list.map(function (c) { return miniHtml(c, c.id === a.id); }).join("") +
+      (n > RIBBON_MAX ? '<button class="mini all" data-action="all" aria-label="Все машины: ' + n + '"><span>Все</span><b>' + n + "</b></button>" : "");
+    var hint = document.getElementById("demoHint");
+    if (!hint) { hint = document.createElement("a"); hint.id = "demoHint"; hint.href = "#Profile"; hint.className = "demohint"; rib.card.parentNode.appendChild(hint); }
+    hint.innerHTML = "<span>Это демо-машина. Добавьте свою в личном кабинете</span><b>→</b>";
+    hint.hidden = !a.demo;
+    rib.card.innerHTML = cardHtml(a);
+    var on = rib.el.querySelector(".mini.on");
+    if (on) requestAnimationFrame(function () {
+      var r = rib.el.getBoundingClientRect(), o = on.getBoundingClientRect();
+      if (o.left < r.left || o.right > r.right) rib.el.scrollLeft += (o.left - r.left) - 16;
+    });
+  }
+
+  /* ---------- «Все машины»: поиск и фильтр ---------- */
+  function openAll() {
+    var filt = "all";
+    window.AutoHubUI.sheet({
+      title: "Все машины · " + loadGarage().cars.length,
+      html: '<div class="allsearch"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B5F66" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>' +
+        '<input id="allQ" type="search" autocomplete="off" spellcheck="false" placeholder="Марка, модель или госномер" aria-label="Найти машину"></div>' +
+        '<div class="allchips"><button class="chip2 on" data-f="all" data-action="f">Все</button><button class="chip2" data-f="soon" data-action="f">Нужно ТО</button><button class="chip2" data-f="none" data-action="f">Без пробега</button></div>' +
+        '<div id="allList" class="alllist"></div>',
+      onMount: function (body) {
+        var q = body.querySelector("#allQ"), listEl = body.querySelector("#allList");
+        function draw() {
+          var g = loadGarage(), a = activeCar(g), nq = window.AutoHubUI.norm(q.value), np = normPlate(q.value);
+          var cars = g.cars.filter(function (c) {
+            if (filt !== "all" && statusKind(c) !== filt) return false;
+            if (!nq) return true;
+            var hay = window.AutoHubUI.norm([c.make, c.model, c.year].concat(MAKE_ALIASES[c.make] || []).join(" "));
+            return hay.indexOf(nq) >= 0 || (np && (c.plate || "").indexOf(np) >= 0) || (c.vin || "").indexOf(q.value.toUpperCase().trim()) >= 0;
+          });
+          listEl.innerHTML = cars.length ? cars.map(function (c) {
+            var v = carView(c), on = c.id === a.id, st = toStatus(c);
+            return '<button class="pick' + (on ? " on" : "") + '" data-pick="' + esc(c.id) + '" data-action="pick">' +
+              '<span class="sdot ' + statusKind(c) + '" aria-hidden="true"></span>' +
+              '<span class="pick-txt"><b>' + esc(v.name) + (c.demo ? " · демо" : "") + "</b><span>" + esc(st.text) + "</span></span>" +
+              (c.plate ? '<span class="pick-plate">' + esc(fmtPlate(c.plate, c.region)) + "</span>" : "") +
+              (on ? '<span class="pick-ok">✓</span>' : "") + "</button>";
+          }).join("") : '<div class="allempty">Ничего не нашлось</div>';
+          listEl.innerHTML += '<button class="pick add" data-action="pick" data-pick="__add"><span class="pick-ic">⚙</span><span class="pick-txt"><b>Управлять машинами</b><span>добавить, удалить — в личном кабинете</span></span></button>';
+        }
+        q.addEventListener("input", draw);
+        body.addEventListener("click", function (e) {
+          var f = e.target.closest("[data-f]");
+          if (f) { filt = f.dataset.f; body.querySelectorAll("[data-f]").forEach(function (x) { x.classList.toggle("on", x === f); }); draw(); return; }
+          var b = e.target.closest("[data-pick]"); if (!b) return;
+          var id = b.getAttribute("data-pick");
+          if (id === "__add") { window.AutoHubUI.close(function () { location.hash = "#Profile"; }); return; }
+          setActive(id); window.AutoHubUI.close();
+        });
+        draw();
+      }
     });
   }
 
@@ -412,13 +449,14 @@
     window.AutoHubUI.sheet({
       title: shortName(c),
       html: '<button class="pick" data-act="mileage" data-action="m"><span class="pick-ic">км</span><span class="pick-txt"><b>Обновить пробег</b><span>сейчас: ' + esc(carView(c).mileage) + "</span></span></button>" +
-        (c.demo ? "" : '<button class="pick" data-act="delete" data-action="m"><span class="pick-ic" style="background:#FCEBDF;color:#9A3412">×</span><span class="pick-txt"><b>Убрать из гаража</b><span>история этой машины будет удалена</span></span></button>'),
+        '<button class="pick" data-act="profile" data-action="m"><span class="pick-ic" style="background:#FCEBDF;color:#C2410C">⚙</span><span class="pick-txt"><b>Управлять машинами</b><span>добавить, удалить — в личном кабинете</span></span></button>',
       onMount: function (body) {
         body.addEventListener("click", function (e) {
           var b = e.target.closest("[data-act]"); if (!b) return;
           var act = b.dataset.act;
           window.AutoHubUI.close(function () {
             if (act === "mileage") askMileage();
+            if (act === "profile") location.hash = "#Profile";
             if (act === "delete" && window.confirm("Убрать " + shortName(c) + " из гаража?")) {
               removeCar(c.id); window.AutoHubUI.toast("Автомобиль убран из гаража");
             }
@@ -432,52 +470,6 @@
     var val = window.prompt("Текущий пробег, км", c.mileage || "");
     var n = parseInt(String(val || "").replace(/\D/g, ""), 10);
     if (n) updateActive({ mileage: n });
-  }
-
-  function renderDeck() {
-    var scr = document.getElementById("s-Garage"); if (!scr) return;
-    var spec = scr.querySelector('[data-car="specs"]'); if (!spec) return;
-    var orig = spec.closest('div[style*="background: #17191C"]');
-    if (!deck.el) {
-      orig.style.display = "none"; // карточка из макета заменена колодой
-      var wrap = document.createElement("div");
-      wrap.className = "deck-wrap";
-      wrap.innerHTML = '<div class="deck" id="deck" tabindex="0" role="region" aria-roledescription="колода" aria-label="Машины в гараже"></div>' +
-        '<div class="deck-nav"><span id="deckCount" class="deck-count"></span><div id="deckDots" class="deck-dots"></div>' +
-        '<span class="deck-hint">листайте</span></div>';
-      orig.parentNode.insertBefore(wrap, orig);
-      deck.el = wrap.querySelector("#deck");
-      bindSwipe(deck.el);
-      deck.el.addEventListener("click", function (e) {
-        var b = e.target.closest("button[data-action]"); if (!b) return;
-        if (b.dataset.action === "car-menu") carMenu();
-        if (b.dataset.action === "mileage-card") askMileage();
-      });
-      wrap.querySelector("#deckDots").addEventListener("click", function (e) {
-        var b = e.target.closest("button[data-i]"); if (b) goTo(+b.dataset.i);
-      });
-    }
-    var g = loadGarage(), a = activeCar(g);
-    deck.n = g.cars.length;
-    var keep = {};
-    g.cars.forEach(function (c, i) {
-      var el = deck.cards[c.id];
-      var fresh = !el;
-      if (fresh) { el = document.createElement("div"); el.className = "deck-card"; deck.el.appendChild(el); deck.cards[c.id] = el; }
-      el.dataset.pos = i;
-      el.innerHTML = cardHtml(c);
-      if (fresh) { el.style.transition = "none"; el.style.transform = "translateX(28px) scale(.88)"; el.style.opacity = 0; }
-      keep[c.id] = 1;
-    });
-    if (!deck.cards.__add) { var ad = document.createElement("div"); ad.className = "deck-card add"; ad.innerHTML = ADD_HTML; deck.el.appendChild(ad); deck.cards.__add = ad; }
-    deck.cards.__add.dataset.pos = deck.n; keep.__add = 1;
-    Object.keys(deck.cards).forEach(function (id) { if (!keep[id]) { deck.el.removeChild(deck.cards[id]); delete deck.cards[id]; } });
-    deck.index = Math.max(0, g.cars.indexOf(a));
-    var dots = "";
-    for (var i = 0; i < deck.n; i++) dots += '<button data-i="' + i + '" data-action="dot" aria-label="' + esc(shortName(g.cars[i])) + '"></button>';
-    dots += '<button data-i="' + deck.n + '" data-action="dot" class="plus" aria-label="Добавить автомобиль">+</button>';
-    document.getElementById("deckDots").innerHTML = dots;
-    requestAnimationFrame(function () { layoutDeck(); });
   }
 
   /* ---------- Выбор машины (шторка) ---------- */
@@ -508,7 +500,7 @@
 
   function refresh() {
     applyCar(activeCar());
-    renderDeck();
+    renderGarage();
     try { window.dispatchEvent(new CustomEvent("autohub:car", { detail: activeCar() })); } catch (e) {}
   }
 
@@ -544,9 +536,24 @@
       e.preventDefault(); openPicker();
     });
     window.addEventListener("hashchange", function () { if (location.hash === "#AddCar") resetForm(); });
+    // ?demo=fleet — заполнить гараж 12 демо-машинами (проверка «Все»)
+    if (/[?&]demo=fleet\b/.test(location.search)) seedFleet();
     refresh();
   }
 
+  function seedFleet() {
+    var list = [["Kia", "Rio IV", "А123ВС", "177", 58400], ["Lada", "Granta", "В456ОР", "750", 97300], ["Hyundai", "Solaris", "Е789КХ", "50", 34100],
+      ["Volkswagen", "Polo", "М001ММ", "99", 0], ["Chery", "Tiggo 7 Pro", "К555КК", "77", 44200], ["Toyota", "Camry", "О777ОО", "197", 118900],
+      ["Škoda", "Octavia", "Т321ТТ", "190", 89500], ["Renault", "Logan", "Н222НН", "750", 150600], ["Haval", "Jolion", "Р808РР", "799", 15300],
+      ["Lada", "Vesta", "С404СС", "50", 61200], ["Kia", "Sportage", "У909УУ", "77", 29800], ["Geely", "Coolray", "Х111ХХ", "790", 0]];
+    var g = { cars: list.map(function (x, i) {
+      return { id: "f" + i, make: x[0], model: x[1], plate: x[2], region: x[3], mileage: x[4] || null, year: 2016 + (i % 8), demo: false };
+    }), activeId: "f0" };
+    saveGarage(g);
+  }
+
+  function updateCar(id, patch) { var g = loadGarage(); g.cars.forEach(function (c) { if (c.id === id) Object.assign(c, patch); }); saveGarage(g); refresh(); }
   window.AutoHubCar = { init: init, active: function () { return activeCar(); }, cars: function () { return loadGarage().cars; },
+    setActive: setActive, remove: removeCar, update: updateCar, status: toStatus, statusKind: statusKind, view: carView, plate: fmtPlate, name: shortName,
     openPicker: openPicker, decodeLocal: decodeLocal, vinError: vinError, normPlate: normPlate, validPlate: validPlate };
 })();

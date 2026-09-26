@@ -11,10 +11,10 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "design")
 if not os.path.isabs(SRC):
     SRC = os.path.join(ROOT, SRC) if not os.path.isdir(SRC) else SRC
 WEB = os.path.join(ROOT, "web")
-JS_FILES = ["ui.js", "api.js", "car.js", "services.js", "cart.js"]
-OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html"}  # экраны, свёрстанные вручную
+JS_FILES = ["ui.js", "api.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "auth.js"]
+OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html", "Welcome": "welcome.html", "Profile": "profile.html"}  # экраны, свёрстанные вручную
 OUT = os.path.join(ROOT, "app/src/main/assets/www")
-NAMES = ["Garage", "AddCar", "Reminders", "History", "OneTapTO", "Main", "Results", "Offers",
+NAMES = ["Welcome", "Profile", "Garage", "AddCar", "Reminders", "History", "OneTapTO", "Main", "Results", "Offers",
          "Compare", "Cart", "Services", "ServiceBooking", "BookingDone",
          "Fines", "Tires", "Insurance", "SOS", "Subscription", "Wallet", "Budget",
          "RepairLive", "Warranty", "CarPassport", "Family", "Community"]
@@ -67,6 +67,7 @@ def screen(name):
     body = top_pad(body)
     return '<section class="screen" id="s-%s" data-name="%s">\n%s\n</section>' % (name, name, body)
 
+BUILD = open(os.path.join(ROOT, "VERSION"), encoding="utf-8").read().strip()
 CSS = open(os.path.join(WEB, "app.css"), encoding="utf-8").read()
 APP = open(os.path.join(WEB, "app.js"), encoding="utf-8").read()
 MAP = open(os.path.join(WEB, "map", "podmoskovye.svg"), encoding="utf-8").read().strip()
@@ -77,6 +78,7 @@ html = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
+<meta name="autohub-build" content="%s">
 <title>АвтоХаб</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -87,13 +89,14 @@ html = """<!doctype html>
 %s
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <template id="map-podmoskovye">%s</template>
+<script>window.AUTOHUB_BUILD = "%s";</script>
 %s
 <script>
 %s
 </script>
 </body>
 </html>
-""" % (CSS, "\n".join(screen(n) for n in NAMES), MAP, SCRIPTS, APP)
+""" % (BUILD, CSS, "\n".join(screen(n) for n in NAMES), MAP, BUILD, SCRIPTS, APP)
 os.makedirs(OUT, exist_ok=True)
 open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 import shutil
@@ -101,4 +104,4 @@ for f in JS_FILES:
     shutil.copy(os.path.join(WEB, f), os.path.join(OUT, f))
 os.makedirs(os.path.join(OUT, "map"), exist_ok=True)
 shutil.copy(os.path.join(WEB, "map", "podmoskovye.svg"), os.path.join(OUT, "map", "podmoskovye.svg"))
-print("ok", OUT, len(html), "символов")
+print("ok, сборка", BUILD, "->", OUT)

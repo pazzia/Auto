@@ -1,7 +1,7 @@
 <section class="screen" id="s-AddCar" data-name="AddCar">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
 <div style="flex-grow: 1; padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 16px">
-<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: #17191C; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<a href="#Profile" aria-label="Назад" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: #17191C; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
 <div style="display: flex; flex-direction: column; gap: 6px">
 <h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.15">Добавьте<br>автомобиль</h1>
 <span id="addSub" style="font-size: 14px; color: #5B5F66">Расшифруем VIN по открытой базе NHTSA vPIC и справочнику кодов производителей</span>
@@ -16,7 +16,7 @@
 <label for="plateInput" style="font-size: 13px; font-weight: 600; color: #5B5F66">Государственный номер</label>
 <div style="display: flex; height: 64px; background: #FFFFFF; border: 2.5px solid #17191C; border-radius: 10px; overflow: hidden">
 <input id="plateInput" placeholder="А123ВС" maxlength="6" autocomplete="off" autocapitalize="characters" style="flex-grow: 1; min-width: 0; border: none; outline: none; padding: 0 16px; font-family: 'JetBrains Mono', monospace; font-size: 26px; letter-spacing: 2px; color: #17191C; background: transparent; text-transform: uppercase">
-<div style="width: 76px; border-left: 2.5px solid #17191C; display: flex; flex-direction: column; align-items: center; justify-content: center"><input id="regionInput" aria-label="Регион" placeholder="77" maxlength="3" inputmode="numeric" style="width: 60px; border: none; outline: none; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 20px; background: transparent; color: #17191C"><span style="font-size: 10px; font-weight: 700">RUS</span></div>
+<div style="width: 76px; border-left: 2.5px solid #17191C; display: flex; flex-direction: column; align-items: center; justify-content: center"><input id="regionInput" autocomplete="off" aria-label="Регион" placeholder="77" maxlength="3" inputmode="numeric" style="width: 60px; border: none; outline: none; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 20px; background: transparent; color: #17191C"><span style="font-size: 10px; font-weight: 700">RUS</span></div>
 </div>
 <span id="plateErr" class="err" hidden></span>
 <button id="plateFind" data-action="1" class="btn-dark">Найти</button>
@@ -37,8 +37,8 @@
 
 <div class="tabpane" data-pane="model" style="display: flex; flex-direction: column; gap: 10px">
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
-<label class="fld">Марка<input id="mkInput" list="mkList" autocomplete="off" placeholder="Kia"><datalist id="mkList"></datalist></label>
-<label class="fld">Модель<input id="mdInput" list="mdList" autocomplete="off" placeholder="Rio"><datalist id="mdList"></datalist></label>
+<label class="fld">Марка<input id="mkInput" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Kia"></label>
+<label class="fld">Модель<input id="mdInput" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Rio"></label>
 <label class="fld">Год<select id="yrSel"></select></label>
 <label class="fld">Двигатель<input id="engInput" autocomplete="off" placeholder="1.6 бензин"></label>
 </div>

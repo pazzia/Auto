@@ -7,17 +7,14 @@
 (function () {
   "use strict";
 
-  var KEY = "autohub.cart.v1";
-  var SELLERS = {
-    A: { name: "Магазин А", delivery: 199, when: "доставка завтра" },
-    B: { name: "Магазин Б", delivery: 249, when: "доставка сегодня" }
-  };
-  // prices: цена позиции у каждого продавца, где она есть
-  var DEMO = [
-    { key: "mann-w811", name: "Фильтр масляный MANN", article: "W 811/80", seller: "A", qty: 1, prices: { A: 412, B: 468 } },
-    { key: "air-kia", name: "Фильтр воздушный", article: "28113-H8100", seller: "A", qty: 1, prices: { A: 590, B: 640 } },
-    { key: "oil-5w30", name: "Масло моторное 5W-30, 4 л", article: "05100-00451", seller: "B", qty: 1, prices: { A: 3259, B: 3150 } }
-  ];
+  var KEY = "autohub.cart.v2";
+  var API = window.AutoHubApi;
+  var SELLERS = API.parts.sellers;
+  function itemFor(partId, seller, qty) {
+    var p = API.parts.find(partId); if (!p) return null;
+    return { key: p.id, name: p.name + " " + p.brand, article: p.article, seller: seller, qty: qty || 1, prices: API.parts.priceTable(p.id) };
+  }
+  function demoItems() { return [itemFor("p-mann-w811", "A"), itemFor("p-hk-28113", "A"), itemFor("p-hk-oil", "B")]; }
 
   var esc = function (s) { return window.AutoHubUI.esc(s); };
   function rub(n) { return Number(n).toLocaleString("ru-RU") + " ₽"; }
@@ -25,7 +22,7 @@
 
   function load() {
     try { var v = JSON.parse(localStorage.getItem(KEY) || "null"); if (v && v.items) return v; } catch (e) {}
-    return { items: JSON.parse(JSON.stringify(DEMO)) };
+    return { items: demoItems() };
   }
   var cart = load();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(cart)); } catch (e) {} }
@@ -159,21 +156,23 @@
       else if (a === "dec") change(b.dataset.line, -1);
       else if (a === "single") applySingle(b.dataset.seller);
       else if (a === "clean") removeZero();
-      else if (a === "demo") { cart = { items: JSON.parse(JSON.stringify(DEMO)) }; save(); render(); }
+      else if (a === "demo") { cart = { items: demoItems() }; save(); render(); }
       else if (a === "checkout") {
         window.AutoHubUI.dialog("Оформление появится после MVP",
           "Это MVP-прототип АвтоХаба: заказать запчасти пока нельзя, магазины ещё не подключены. " +
           "Состав корзины сохранится на телефоне — когда подключим магазины, заказ можно будет оформить здесь же.", "Понятно");
       }
     });
-    // «В корзину» на экране цен продавцов — лучший итог (Магазин Б)
-    var offersBtn = document.querySelector('#s-Offers a[href="#Cart"]');
-    if (offersBtn) offersBtn.addEventListener("click", function () {
-      add({ key: "mann-w811", name: "Фильтр масляный MANN", article: "W 811/80", seller: "B", prices: { A: 412, B: 468 } });
-      window.AutoHubUI.toast("Добавлено в корзину");
-    });
     render();
   }
 
-  window.AutoHubCart = { init: init, add: add, render: render };
+  /** Добавить деталь из каталога у выбранного продавца. */
+  function addPart(partId, seller) {
+    var it = itemFor(partId, seller); if (!it) return;
+    add(it);
+    window.AutoHubUI.toast("В корзине: " + it.name + " · " + SELLERS[seller].name);
+  }
+  function count() { return active().reduce(function (n, i) { return n + i.qty; }, 0); }
+
+  window.AutoHubCart = { init: init, add: add, addPart: addPart, render: render, count: count };
 })();

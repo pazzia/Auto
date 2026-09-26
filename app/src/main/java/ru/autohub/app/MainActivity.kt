@@ -1,6 +1,7 @@
 package ru.autohub.app
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.webkit.WebChromeClient
@@ -41,8 +42,15 @@ class MainActivity : ComponentActivity() {
             webChromeClient = WebChromeClient()
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                    // Всё, что не внутри прототипа, не открываем
-                    return !request.url.toString().startsWith("file:///android_asset/")
+                    val url = request.url
+                    // Звонок (например, 112 на экране «Помощь на дороге») и почта — системными приложениями
+                    if (url.scheme == "tel" || url.scheme == "mailto") {
+                        val action = if (url.scheme == "tel") Intent.ACTION_DIAL else Intent.ACTION_SENDTO
+                        runCatching { startActivity(Intent(action, url)) }
+                        return true
+                    }
+                    // Всё остальное, что не внутри прототипа, не открываем
+                    return !url.toString().startsWith("file:///android_asset/")
                 }
             }
         }

@@ -195,6 +195,12 @@
       "</div></div>";
   }
 
+  // Выбранный сервис передаём экрану записи
+  function remember(id) {
+    var s = state.items.filter(function (x) { return x.id === id; })[0];
+    try { sessionStorage.setItem("autohub.service", id); if (s) sessionStorage.setItem("autohub.serviceObj", JSON.stringify(s)); } catch (x) {}
+  }
+
   /* ================= Экран ================= */
   var ui = {};
   function setSeg(btn, on) {
@@ -278,7 +284,7 @@
     bindGestures(full, function (sid) { select(sid, false); }, null);
     ov.addEventListener("click", function (e) {
       var bk = e.target.closest("[data-book]");
-      if (bk) { try { sessionStorage.setItem("autohub.service", bk.getAttribute("data-book")); } catch (x) {} return; }
+      if (bk) { remember(bk.getAttribute("data-book")); return; }
       var b = e.target.closest("button[data-action]"); if (!b) return;
       var a = b.dataset.action;
       if (a === "close") history.back();
@@ -346,7 +352,7 @@
 
     ui.list.addEventListener("click", function (e) {
       var a = e.target.closest("[data-book]");
-      if (a) { try { sessionStorage.setItem("autohub.service", a.getAttribute("data-book")); } catch (x) {} return; }
+      if (a) { remember(a.getAttribute("data-book")); return; }
       var c = e.target.closest("[data-card]");
       if (c && !e.target.closest("a,button")) select(c.getAttribute("data-card"), false);
     });

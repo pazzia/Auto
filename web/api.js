@@ -112,21 +112,37 @@
     { id: "s10", name: "Техцентр «[Название]»", town: "Звенигород", address: "[адрес]", lat: 55.7300, lng: 36.8600, hours: "до 19:00", ratingGis: 4.7, reviewsGis: 132, ratingYa: 4.6, reviewsYa: 71, priceTO: 3800, online: true, tires: true, today: "17:00", next: "Сегодня, 17:00", brands: "все марки" }
   ];
 
+  // Каталог запчастей (демо). cat: filters, brakes, suspension, oils, electrics
   var M_PARTS = [
-    { id: "p1", group: "ТО", name: "Фильтр масляный", brand: "Hyundai/Kia", article: "26300-35505", original: true, priceFrom: 690 },
-    { id: "p2", group: "ТО", name: "Фильтр масляный", brand: "MANN-FILTER", article: "W 811/80", original: false, priceFrom: 420 },
-    { id: "p3", group: "ТО", name: "Фильтр воздушный", brand: "Hyundai/Kia", article: "28113-H8100", original: true, priceFrom: 1150 },
-    { id: "p4", group: "ТО", name: "Фильтр салонный", brand: "Hyundai/Kia", article: "97133-H8000", original: true, priceFrom: 980 },
-    { id: "p5", group: "Тормоза", name: "Колодки тормозные передние", brand: "Hyundai/Kia", article: "58101-H8A20", original: true, priceFrom: 3900 },
-    { id: "p6", group: "Тормоза", name: "Колодки тормозные передние", brand: "Brembo", article: "P 30 055", original: false, priceFrom: 2700 },
-    { id: "p7", group: "ТО", name: "Масло моторное 5W-30, 4 л", brand: "Hyundai/Kia", article: "05100-00451", original: true, priceFrom: 3600 },
-    { id: "p8", group: "Зажигание", name: "Свеча зажигания", brand: "NGK", article: "LZKR6B-10E", original: false, priceFrom: 520 }
+    { id: "p-hk-26300", cat: "filters", name: "Фильтр масляный", brand: "Hyundai/Kia", article: "26300-35505", original: true, priceMin: 640, priceMax: 910, avg: 760, sellers: 8, days: 0, rating: 4.7, specs: { "Высота": "85 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то" },
+    { id: "p-mann-w811", cat: "filters", name: "Фильтр масляный", brand: "MANN-FILTER", article: "W 811/80", original: false, priceMin: 412, priceMax: 690, avg: 520, sellers: 11, days: 0, rating: 4.6, specs: { "Высота": "85 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то" },
+    { id: "p-mahle-oc1051", cat: "filters", name: "Фильтр масляный", brand: "Mahle", article: "OC 1051", original: false, priceMin: 455, priceMax: 640, avg: 540, sellers: 5, days: 2, rating: 4.5, specs: { "Высота": "86 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то" },
+    { id: "p-hk-28113", cat: "filters", name: "Фильтр воздушный", brand: "Hyundai/Kia", article: "28113-H8100", original: true, priceMin: 590, priceMax: 880, avg: 700, sellers: 9, days: 1, rating: 4.7, specs: { "Длина": "245 мм", "Ширина": "191 мм", "Высота": "48 мм" }, tags: "то" },
+    { id: "p-filtron-ap", cat: "filters", name: "Фильтр воздушный", brand: "Filtron", article: "AP 185/5", original: false, priceMin: 380, priceMax: 560, avg: 450, sellers: 7, days: 1, rating: 4.4, specs: { "Длина": "245 мм", "Ширина": "191 мм", "Высота": "46 мм" }, tags: "то" },
+    { id: "p-hk-97133", cat: "filters", name: "Фильтр салонный", brand: "Hyundai/Kia", article: "97133-H8000", original: true, priceMin: 540, priceMax: 820, avg: 650, sellers: 10, days: 0, rating: 4.6, specs: { "Тип": "угольный", "Длина": "215 мм" }, tags: "то салон" },
+    { id: "p-hk-58101", cat: "brakes", name: "Колодки тормозные передние", brand: "Hyundai/Kia", article: "58101-H8A20", original: true, priceMin: 3900, priceMax: 4800, avg: 4200, sellers: 6, days: 1, rating: 4.8, specs: { "Толщина": "17 мм", "Датчик износа": "есть", "Ось": "передняя" }, tags: "колодки тормоз" },
+    { id: "p-brembo-p30", cat: "brakes", name: "Колодки тормозные передние", brand: "Brembo", article: "P 30 055", original: false, priceMin: 2480, priceMax: 3300, avg: 2800, sellers: 9, days: 0, rating: 4.7, specs: { "Толщина": "17 мм", "Датчик износа": "нет", "Ось": "передняя" }, tags: "колодки тормоз" },
+    { id: "p-trw-disc", cat: "brakes", name: "Диск тормозной передний", brand: "TRW", article: "DF 6624", original: false, priceMin: 2950, priceMax: 3900, avg: 3300, sellers: 6, days: 2, rating: 4.6, specs: { "Диаметр": "256 мм", "Толщина": "22 мм", "Вентилируемый": "да" }, tags: "диск тормоз" },
+    { id: "p-kyb-339", cat: "suspension", name: "Амортизатор передний", brand: "KYB", article: "339 7058", original: false, priceMin: 4700, priceMax: 6100, avg: 5300, sellers: 7, days: 1, rating: 4.7, specs: { "Тип": "газомасляный", "Сторона": "левая" }, tags: "амортизатор стойка" },
+    { id: "p-hk-54651", cat: "suspension", name: "Амортизатор передний", brand: "Hyundai/Kia", article: "54651-H8000", original: true, priceMin: 7600, priceMax: 9400, avg: 8300, sellers: 4, days: 3, rating: 4.8, specs: { "Тип": "газомасляный", "Сторона": "левая" }, tags: "амортизатор стойка" },
+    { id: "p-lemf-link", cat: "suspension", name: "Стойка стабилизатора", brand: "Lemförder", article: "39574 01", original: false, priceMin: 890, priceMax: 1300, avg: 1050, sellers: 8, days: 1, rating: 4.6, specs: { "Длина": "275 мм", "Сторона": "любая" }, tags: "стабилизатор тяга" },
+    { id: "p-hk-oil", cat: "oils", name: "Масло моторное 5W-30, 4 л", brand: "Hyundai/Kia", article: "05100-00451", original: true, priceMin: 3150, priceMax: 3900, avg: 3450, sellers: 12, days: 0, rating: 4.8, specs: { "Вязкость": "5W-30", "Объём": "4 л", "Допуск": "ACEA C3" }, tags: "масло то" },
+    { id: "p-shell-oil", cat: "oils", name: "Масло моторное 5W-30, 4 л", brand: "Shell Helix", article: "550046375", original: false, priceMin: 2890, priceMax: 3500, avg: 3100, sellers: 14, days: 0, rating: 4.6, specs: { "Вязкость": "5W-30", "Объём": "4 л", "Допуск": "ACEA A3/B4" }, tags: "масло то" },
+    { id: "p-atf", cat: "oils", name: "Масло АКПП SP-IV, 1 л", brand: "Hyundai/Kia", article: "04500-00115", original: true, priceMin: 1150, priceMax: 1500, avg: 1300, sellers: 8, days: 1, rating: 4.7, specs: { "Тип": "ATF SP-IV", "Объём": "1 л" }, tags: "акпп коробка" },
+    { id: "p-ngk-spark", cat: "electrics", name: "Свеча зажигания", brand: "NGK", article: "LZKR6B-10E", original: false, priceMin: 520, priceMax: 720, avg: 600, sellers: 10, days: 0, rating: 4.7, specs: { "Зазор": "1,0 мм", "Резьба": "M14" }, tags: "свечи зажигание то" },
+    { id: "p-varta-akb", cat: "electrics", name: "Аккумулятор 60 А·ч", brand: "Varta", article: "560 409 054", original: false, priceMin: 8900, priceMax: 11200, avg: 9800, sellers: 9, days: 1, rating: 4.8, specs: { "Ёмкость": "60 А·ч", "Пусковой ток": "540 А", "Полярность": "обратная" }, tags: "акб батарея" },
+    { id: "p-osram-h4", cat: "electrics", name: "Лампа фары H4", brand: "Osram", article: "64193", original: false, priceMin: 390, priceMax: 620, avg: 480, sellers: 11, days: 0, rating: 4.5, specs: { "Цоколь": "H4", "Мощность": "60/55 Вт" }, tags: "лампа свет" }
   ];
-  var M_SELLERS = [
-    { id: "v1", name: "Магазин А", reliability: 96, deliveryDays: 1, delivery: 290, markup: 1.00 },
-    { id: "v2", name: "Магазин Б", reliability: 88, deliveryDays: 2, delivery: 0, markup: 1.06 },
-    { id: "v3", name: "Магазин В", reliability: 74, deliveryDays: 4, delivery: 490, markup: 0.93 }
-  ];
+  var TO_KIT = ["p-mann-w811", "p-hk-28113", "p-hk-97133", "p-hk-oil", "p-ngk-spark"];
+  var CAT_NAMES = { filters: "Фильтры", brakes: "Тормоза", suspension: "Подвеска", oils: "Масла", electrics: "Электрика" };
+  // Продавцы: задержка доставки (дней), стоимость доставки, наценка к минимальной цене
+  var SELLERS = {
+    A: { name: "Магазин А", reliability: 98, delivery: 199, days: 1, when: "доставка завтра", stock: "12 шт", markup: 1.00 },
+    B: { name: "Магазин Б", reliability: 97, delivery: 249, days: 0, when: "доставка сегодня", stock: "в наличии 3 шт", markup: 1.07 },
+    C: { name: "Магазин В", reliability: 99, delivery: 150, days: 2, when: "доставка 2–3 дня", stock: "40 шт", markup: 1.20 },
+    D: { name: "Магазин Г", reliability: 71, delivery: 250, days: 6, when: "под заказ 5–7 дней", stock: "под заказ", markup: 0.95 }
+  };
+  function sellerPrice(p, k) { return Math.round(p.priceMin * SELLERS[k].markup / 10) * 10 + (k === "A" ? p.priceMin - Math.round(p.priceMin / 10) * 10 : 0); }
 
   var M_REGLAMENT = [
     { id: "r1", work: "Замена масла и масляного фильтра", everyKm: 15000, everyMonths: 12, dueKm: 60000, status: "soon" },
@@ -223,26 +239,45 @@
     },
 
     parts: {
-      /** Поиск запчастей: оригинал и аналоги. */
+      categories: CAT_NAMES,
+      sellers: SELLERS,
+      /** Поиск запчастей: оригинал и аналоги. params: { query, cat, kit } */
       search: function (params) {
         params = params || {};
         if (!MOCK) return backend("GET", "/v1/parts/search?" + qs(params));
-        var q = String(params.query || "").toLowerCase();
+        var n = function (x) { return String(x || "").toLowerCase().replace(/ё/g, "е").replace(/[\s\-\/]/g, ""); };
+        var words = String(params.query || "").toLowerCase().replace(/ё/g, "е").split(/\s+/).filter(Boolean);
         var items = M_PARTS.filter(function (p) {
-          return !q || (p.name + " " + p.brand + " " + p.article + " " + p.group).toLowerCase().indexOf(q) >= 0;
+          if (params.kit) return TO_KIT.indexOf(p.id) >= 0;
+          if (params.cat && p.cat !== params.cat) return false;
+          if (!words.length) return true;
+          var hay = (p.name + " " + p.brand + " " + p.tags + " " + CAT_NAMES[p.cat]).toLowerCase().replace(/ё/g, "е");
+          var art = n(p.article);
+          return words.every(function (w) { return hay.indexOf(w.slice(0, Math.max(4, w.length - 2))) >= 0 || art.indexOf(n(w)) >= 0; });
         });
         return ok({ items: items, source: SRC_MOCK });
+      },
+      find: function (partId) { return clone(M_PARTS.filter(function (x) { return x.id === partId; })[0] || null); },
+      get: function (partId) {
+        var p = M_PARTS.filter(function (x) { return x.id === partId; })[0];
+        return p ? ok(p) : fail("not_found");
+      },
+      /** Цена у каждого продавца (для корзины: «собрать у одного»). */
+      priceTable: function (partId) {
+        var p = M_PARTS.filter(function (x) { return x.id === partId; })[0], t = {};
+        if (p) Object.keys(SELLERS).forEach(function (k) { t[k] = sellerPrice(p, k); });
+        return t;
       },
       /** Предложения продавцов с итоговой ценой «до двери». */
       offers: function (partId) {
         if (!MOCK) return backend("GET", "/v1/parts/" + encodeURIComponent(partId) + "/offers");
         var p = M_PARTS.filter(function (x) { return x.id === partId; })[0];
         if (!p) return fail("not_found");
-        var offers = M_SELLERS.map(function (s) {
-          var price = Math.round(p.priceFrom * s.markup / 10) * 10;
-          return { sellerId: s.id, seller: s.name, price: price, delivery: s.delivery, total: price + s.delivery,
-            deliveryDays: s.deliveryDays, reliability: s.reliability, inStock: true };
-        }).sort(function (a, b) { return a.total - b.total; });
+        var offers = Object.keys(SELLERS).map(function (k) {
+          var s = SELLERS[k], price = sellerPrice(p, k);
+          return { seller: k, sellerName: s.name, price: price, delivery: s.delivery, total: price + s.delivery,
+            days: s.days + p.days, when: s.when, stock: s.stock, reliability: s.reliability };
+        });
         return ok({ part: p, offers: offers, source: SRC_MOCK });
       }
     },
