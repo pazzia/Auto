@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>История обслуживания</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&amp;family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap">
+<style>
+body{margin:0;background:#F3F1EC;font-family:Manrope,'Segoe UI',sans-serif;color:#17191C}
+a{color:#C2410C}a:hover{color:#9A3412}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="Garage.dc.html" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<h1 style="margin: 0; flex-grow: 1; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">История</h1>
+<button aria-label="Добавить запись" style="height: 44px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; font-size: 13px; font-weight: 700; color: #17191C">+ Запись</button>
+</div>
+<div style="padding: 14px 16px 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #E7E3DB; border-radius: 14px">
+<button style="height: 40px; border-radius: 10px; border: none; background: #FFFFFF; font-size: 13px; font-weight: 700; color: #17191C">Всё</button>
+<button style="height: 40px; border-radius: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: #5B5F66">Обслуживание</button>
+<button style="height: 40px; border-radius: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: #5B5F66">Посещения</button>
+</div>
+<div style="background: #17191C; color: #FFFFFF; border-radius: 16px; padding: 14px 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div><div style="font-size: 12px; color: #C9CCD1">Расходы за 12 мес</div><div style="font-size: 20px; font-weight: 700">11 180 ₽</div></div>
+<div><div style="font-size: 12px; color: #C9CCD1">Сэкономлено на запчастях</div><div style="font-size: 20px; font-weight: 700; color: #FDBA8C">1 940 ₽</div></div>
+</div>
+</div>
+<div style="flex-grow: 1; padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 0">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 0 0 10px 4px">2026</div>
+<div style="display: flex; gap: 12px">
+<div style="width: 24px; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: {{accent}}; margin-top: 18px"></span><span style="flex-grow: 1; width: 2px; background: #DDD8CF"></span></div>
+<div style="flex-grow: 1; margin-bottom: 12px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B5F66"><span>12 марта · 45 200 км</span><span style="font-weight: 700; color: #9A3412">ВИЗИТ В СЕРВИС</span></div>
+<div style="font-weight: 700; font-size: 15px">Замена масла и фильтров</div>
+<div style="font-size: 13px; color: #5B5F66">Автосервис «[Название]» · запись через приложение</div>
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 700">6 300 ₽</span><a href="#" style="font-size: 13px; font-weight: 700">Заказ-наряд</a></div>
+</div>
+</div>
+<div style="display: flex; gap: 12px">
+<div style="width: 24px; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: #1B3F99; margin-top: 18px"></span><span style="flex-grow: 1; width: 2px; background: #DDD8CF"></span></div>
+<div style="flex-grow: 1; margin-bottom: 12px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B5F66"><span>3 февраля</span><span style="font-weight: 700; color: #1B3F99">ПОКУПКА</span></div>
+<div style="font-weight: 700; font-size: 15px">Колодки тормозные передние</div>
+<div style="font-size: 13px; color: #5B5F66">Магазин А · дешевле средней цены на 620 ₽</div>
+<div style="font-weight: 700">2 480 ₽</div>
+</div>
+</div>
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 10px 4px">2025</div>
+<div style="display: flex; gap: 12px">
+<div style="width: 24px; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: {{accent}}; margin-top: 18px"></span></div>
+<div style="flex-grow: 1; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B5F66"><span>18 сентября · 38 900 км</span><span style="font-weight: 700; color: #9A3412">ВИЗИТ В СЕРВИС</span></div>
+<div style="font-weight: 700; font-size: 15px">Сезонная смена шин</div>
+<div style="font-size: 13px; color: #5B5F66">Шиномонтаж «[Название]» · добавлено вручную</div>
+<div style="font-weight: 700">2 400 ₽</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#C2410C","options":["#C2410C","#1D4ED8","#17191C","#0F766E"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#C2410C' };
+  }
+}
+</script>
+</body>
+</html>

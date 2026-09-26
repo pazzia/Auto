@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3F1EC">
+<title>АвтоХаб</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+html,body{margin:0;height:100%;background:#E7E3DB;font-family:Manrope,'Segoe UI',Roboto,sans-serif;color:#17191C;-webkit-tap-highlight-color:transparent}
+button,input,select{font-family:inherit}
+a{color:#C2410C}
+.screen{display:none;height:100%;max-width:480px;margin:0 auto;background:#F3F1EC}
+.screen.active{display:block}
+.screen>div{width:100%!important;height:100%!important;box-sizing:border-box}
+.screen>div>div[style*="flex-grow: 1"]{overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch}
+#s-Results>div>div[style*="flex-grow: 1"]{padding-bottom:100px!important}
+button,a{cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+[hidden]{display:none!important}
+.btn-dark,.btn-light,.btn-accent{height:50px;border-radius:14px;font-weight:700;font-size:15px;width:100%}
+.btn-dark{background:#17191C;color:#fff;border:none}
+.btn-light{background:#F3F1EC;color:#17191C;border:none;height:44px;font-size:14px}
+.btn-accent{background:#C2410C;color:#fff;border:none;height:54px;font-size:16px}
+.err{font-size:13px;font-weight:600;color:#9A3412}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#5B5F66}
+.fld input,.fld select{height:48px;padding:0 12px;border-radius:12px;border:1px solid #E2DED6;background:#fff;font-size:15px;color:#17191C;min-width:0;box-sizing:border-box}
+.dot{width:22px;height:22px;border-radius:999px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.dot.ok{background:#0F6B3A}.dot.part{background:#9A3412}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:#17191C;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.screen>div>div[style*="flex-grow: 1"]>*{flex-shrink:0}
+/* Карта автосервисов (web/services.js) */
+.mapfull{position:absolute;inset:0;z-index:5;display:none;background:#E4E0D6}
+.mapfull-canvas{position:absolute;inset:0;overflow:hidden}
+.mapfull-top{position:absolute;left:12px;right:12px;top:44px;display:flex;gap:8px;align-items:center;pointer-events:none}
+.mapfull-top>*{pointer-events:auto}
+.mapfull-title{background:#fff;border:1px solid #E2DED6;border-radius:12px;padding:6px 12px;font-family:Unbounded,'Arial Black',sans-serif;font-weight:700;font-size:14px;display:flex;flex-direction:column;gap:1px}
+.mapfull-title span{font-family:Manrope,sans-serif;font-weight:600;font-size:11px;color:#5B5F66}
+.mapbtn{width:44px;height:44px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid #E2DED6;font-size:22px;font-weight:700;color:#17191C;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:0}
+.mapfull-zoom{position:absolute;right:12px;top:108px;display:flex;flex-direction:column;gap:8px}
+.mapfull-sheet{position:absolute;left:12px;right:12px;bottom:24px}
+.mapfull-sheet>div{box-shadow:0 4px 16px rgba(0,0,0,.12)}
+
+</style>
+</head>
+<body>
+<section class="screen" id="s-Garage" data-name="Garage">
+<div style="width: 390px; height: 1340px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="flex-grow: 1; padding: 56px 16px 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px">
+<h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 26px">Мой гараж</h1>
+<a href="#AddCar" aria-label="Добавить автомобиль" style="width: 44px; height: 44px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></a>
+</div>
+<a href="#Fines" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #FCEBDF; border-radius: 16px; text-decoration: none; color: #17191C">
+<span style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; background: #C2410C; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 14px">Новые штрафы · 750 ₽ со скидкой</span><span style="font-size: 12px; color: #9A3412; font-weight: 600">Скидка 50% на один из них — ещё 3 дня</span></span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+</a>
+<div style="background: #17191C; color: #FFFFFF; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px"><span data-car="name">Kia Rio IV</span></span><span style="font-size: 13px; color: #C9CCD1"><span data-car="specs">2019 · 1.6 MPI · АКПП · седан</span></span></div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 4px 8px; border-radius: 6px; background: #FFFFFF; color: #17191C; border: 1.5px solid #17191C"><span data-car="plate">А 123 ВС 177</span></span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: #25282D; border-radius: 12px; padding: 10px 12px"><div style="font-size: 12px; color: #C9CCD1">Пробег</div><div style="font-weight: 700; font-size: 17px"><span data-car="mileage">58 400 км</span></div></div>
+<div style="background: #25282D; border-radius: 12px; padding: 10px 12px"><div style="font-size: 12px; color: #C9CCD1">VIN</div><div style="font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 14px"><span data-car="vinMasked">XWE•••••1234</span></div></div>
+</div>
+<button data-action="mileage" style="align-self: flex-start; min-height: 36px; background: none; border: none; padding: 0; color: #FDBA8C; font-size: 13px; font-weight: 700">Обновить пробег</button>
+</div>
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 12px; align-items: center">
+<div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: #FCEBDF; color: #C2410C; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg></div>
+<div style="flex-grow: 1"><div style="font-weight: 700; font-size: 16px">ТО-60 000 км</div><div style="font-size: 13px; color: #5B5F66">через ~1 600 км или до 15 октября</div></div>
+</div>
+<div style="height: 8px; border-radius: 999px; background: #EFECE6; overflow: hidden"><div style="width: 89%; height: 8px; background: #C2410C"></div></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<a href="#Reminders" style="height: 44px; border-radius: 12px; border: 1.5px solid #17191C; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Что входит</a>
+<a href="#OneTapTO" style="height: 44px; border-radius: 12px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Собрать ТО</a>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<a href="#Reminders" style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: #17191C">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#17191C" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+<span style="font-weight: 700; font-size: 15px">Регламент ТО</span><span style="font-size: 12px; color: #5B5F66">2 работы скоро</span></a>
+<a href="#History" style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: #17191C">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#17191C" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+<span style="font-weight: 700; font-size: 15px">История</span><span style="font-size: 12px; color: #5B5F66">12 записей</span></a>
+</div>
+<a href="#RepairLive" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; text-decoration: none; color: #17191C">
+<div style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: #DCE6FB; color: #1B3F99; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1"><span style="font-weight: 700; font-size: 16px">3</span><span style="font-size: 10px; font-weight: 700">ОКТ</span></div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 14px">Запись в сервис · 10:00</span><span style="font-size: 12px; color: #5B5F66">Автосервис «[Название]» · ТО-60 000</span></div>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B5F66" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+</a>
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ВСЁ ДЛЯ МАШИНЫ</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px"><a href="#Fines" style="position: relative; height: 84px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: #17191C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Штрафы<span style="position: absolute; top: 6px; right: 6px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #C2410C; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span></a><a href="#Tires" style="position: relative; height: 84px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: #17191C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Шины</a><a href="#Insurance" style="position: relative; height: 84px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: #17191C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>Страховка<span style="position: absolute; top: 6px; right: 6px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #C2410C; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">!</span></a><a href="#SOS" style="position: relative; height: 84px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: #17191C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>SOS</a><a href="#CarPassport" style="position: relative; height: 84px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: #17191C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>Паспорт</a><a href="#Family" style="position: relative; height: 84px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: #17191C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.8-3.5 3.2-5 6-5s5.2 1.5 6 5M15 15.5c2.5 0 4.6 1.3 5.5 4.5"/></svg>Семья</a><a href="#Budget" style="position: relative; height: 84px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: #17191C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Бюджет</a><a href="#Warranty" style="position: relative; height: 84px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: #17191C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Гарантии</a></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><a href="#Wallet" style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: #17191C"><span style="font-size: 12px; color: #5B5F66">Баллы</span><span style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">1 240</span><span style="font-size: 12px; color: #5B5F66">копилка на ТО 75%</span></a><a href="#Subscription" style="background: #17191C; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: #FFFFFF"><span style="font-size: 12px; color: #FDBA8C; font-weight: 700">АвтоХаб Плюс</span><span style="font-weight: 700; font-size: 15px; line-height: 1.25">ТО по фиксированной цене</span><span style="font-size: 12px; color: #C9CCD1">30 дней бесплатно</span></a></div>
+<a href="#Community" style="display: flex; align-items: center; gap: 12px; padding: 14px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; text-decoration: none; color: #17191C">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 15px">Владельцы <span data-car="name">Kia Rio IV</span> советуют</span><span style="font-size: 13px; color: #5B5F66">41% ставят фильтр MANN W 811/80 · топ сервисов рядом</span></div>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B5F66" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></a>
+</div>
+<nav style="height: 80px; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E2DED6; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0 8px 14px">
+<a href="#Garage" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; text-decoration: none; color: #C2410C"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6v10H3z"/><path d="M7 20v-6h10v6"/></svg>Гараж</a>
+<a href="#Main" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.3-.5-.5-2.3z"/></svg>Запчасти</a>
+<a href="#Services" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Сервисы</a>
+<a href="#Cart" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h2l2 11h11l2-8H6"/><circle cx="9" cy="19.5" r="1"/><circle cx="17" cy="19.5" r="1"/></svg>Корзина</a>
+</nav>
+</div>
+</section>
+<section class="screen" id="s-AddCar" data-name="AddCar">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="flex-grow: 1; padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 16px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; margin-left: -10px; display: flex; align-items: center; justify-content: center; color: #17191C; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.15">Добавьте<br>автомобиль</h1>
+<span id="addSub" style="font-size: 14px; color: #5B5F66">Расшифруем VIN по открытой базе NHTSA vPIC и справочнику кодов производителей</span>
+</div>
+<div role="tablist" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #E7E3DB; border-radius: 14px; flex-shrink: 0">
+<button role="tab" class="cartab" data-tab="plate">Госномер</button>
+<button role="tab" class="cartab" data-tab="vin">VIN</button>
+<button role="tab" class="cartab" data-tab="model">Марка</button>
+</div>
+
+<div class="tabpane" data-pane="plate" style="display: flex; flex-direction: column; gap: 10px">
+<label for="plateInput" style="font-size: 13px; font-weight: 600; color: #5B5F66">Государственный номер</label>
+<div style="display: flex; height: 64px; background: #FFFFFF; border: 2.5px solid #17191C; border-radius: 10px; overflow: hidden">
+<input id="plateInput" placeholder="А123ВС" maxlength="6" autocomplete="off" autocapitalize="characters" style="flex-grow: 1; min-width: 0; border: none; outline: none; padding: 0 16px; font-family: 'JetBrains Mono', monospace; font-size: 26px; letter-spacing: 2px; color: #17191C; background: transparent; text-transform: uppercase">
+<div style="width: 76px; border-left: 2.5px solid #17191C; display: flex; flex-direction: column; align-items: center; justify-content: center"><input id="regionInput" aria-label="Регион" placeholder="77" maxlength="3" inputmode="numeric" style="width: 60px; border: none; outline: none; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 20px; background: transparent; color: #17191C"><span style="font-size: 10px; font-weight: 700">RUS</span></div>
+</div>
+<span id="plateErr" class="err" hidden></span>
+<button id="plateFind" data-action="1" class="btn-dark">Найти</button>
+<div id="plateMsg" hidden style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<span id="plateMsgTitle" style="font-weight: 700; font-size: 15px">Номер сохраним, данные найдём по VIN</span>
+<span id="plateMsgText" style="font-size: 13px; color: #5B5F66; line-height: 1.4">Бесплатной открытой базы для поиска по госномеру нет — такие данные есть только у платных сервисов. Введите VIN из СТС, это займёт минуту.</span>
+<button id="plateToVin" data-action="1" class="btn-light">Ввести VIN</button>
+</div>
+</div>
+
+<div class="tabpane" data-pane="vin" style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between"><label for="vinInput" style="font-size: 13px; font-weight: 600; color: #5B5F66">VIN-номер</label><span id="vinCount" style="font-size: 13px; font-weight: 600; color: #5B5F66">0 / 17</span></div>
+<input id="vinInput" maxlength="17" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="17 символов" style="height: 56px; padding: 0 14px; background: #FFFFFF; border: 1.5px solid #17191C; border-radius: 14px; outline: none; font-family: 'JetBrains Mono', monospace; font-size: 17px; letter-spacing: 1px; color: #17191C; text-transform: uppercase">
+<span style="font-size: 12px; color: #5B5F66">VIN указан в СТС, ПТС и под лобовым стеклом. Буквы I, O и Q в VIN не используются.</span>
+<span id="vinErr" class="err" hidden></span>
+<button id="vinFind" data-action="1" class="btn-dark">Расшифровать VIN</button>
+</div>
+
+<div class="tabpane" data-pane="model" style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<label class="fld">Марка<input id="mkInput" list="mkList" autocomplete="off" placeholder="Kia"><datalist id="mkList"></datalist></label>
+<label class="fld">Модель<input id="mdInput" list="mdList" autocomplete="off" placeholder="Rio"><datalist id="mdList"></datalist></label>
+<label class="fld">Год<select id="yrSel"></select></label>
+<label class="fld">Двигатель<input id="engInput" autocomplete="off" placeholder="1.6 бензин"></label>
+</div>
+<span id="mdHint" style="font-size: 12px; color: #5B5F66"></span>
+<span id="modelErr" class="err" hidden></span>
+<button id="modelApply" data-action="1" class="btn-dark">Готово</button>
+</div>
+
+<div id="carResult" hidden style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 18px; padding: 16px; flex-direction: column; gap: 12px">
+<div id="resStatus" style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px"></div>
+<div id="resTitle" style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 19px"></div>
+<div id="resGrid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; font-size: 13px"></div>
+<div id="resNote" hidden style="font-size: 12px; line-height: 1.4; color: #9A3412; background: #FCEBDF; border-radius: 10px; padding: 8px 10px"></div>
+<button id="resRefine" data-action="1" hidden class="btn-light">Уточнить марку и модель</button>
+<label class="fld">Пробег, км<input id="milInput" inputmode="numeric" autocomplete="off" placeholder="например, 58400"></label>
+<span id="resSource" style="font-size: 12px; color: #5B5F66"></span>
+</div>
+</div>
+<div style="padding: 0 20px 34px; flex-shrink: 0">
+<button id="saveCar" data-action="1" disabled class="btn-accent">Сохранить в гараж</button>
+</div>
+</div>
+</section>
+
+<section class="screen" id="s-Reminders" data-name="Reminders">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Регламент ТО</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> 1.6 · по регламенту производителя</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #9A3412; padding-left: 4px">СКОРО</div>
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between"><span style="font-weight: 700; font-size: 15px">Масло и масляный фильтр</span><span style="font-size: 13px; font-weight: 700; color: #9A3412">1 600 км</span></div>
+<div style="height: 6px; border-radius: 999px; background: #EFECE6"><div style="width: 89%; height: 6px; border-radius: 999px; background: #C2410C"></div></div>
+<span style="font-size: 12px; color: #5B5F66">Интервал [N] км или 12 мес · прошлая замена на 45 200 км</span>
+</div>
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between"><span style="font-weight: 700; font-size: 15px">Воздушный фильтр</span><span style="font-size: 13px; font-weight: 700; color: #9A3412">1 600 км</span></div>
+<div style="height: 6px; border-radius: 999px; background: #EFECE6"><div style="width: 89%; height: 6px; border-radius: 999px; background: #C2410C"></div></div>
+<span style="font-size: 12px; color: #5B5F66">Интервал [N] км</span>
+</div>
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 6px 0 0 4px">ПОЗЖЕ</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<div style="padding: 12px 14px; display: flex; justify-content: space-between; border-bottom: 1px solid #EFECE6; font-size: 14px"><span style="font-weight: 600">Тормозная жидкость</span><span style="color: #5B5F66">через 4 мес</span></div>
+<div style="padding: 12px 14px; display: flex; justify-content: space-between; border-bottom: 1px solid #EFECE6; font-size: 14px"><span style="font-weight: 600">Свечи зажигания</span><span style="color: #5B5F66">через 16 600 км</span></div>
+<div style="padding: 12px 14px; display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 600">Салонный фильтр</span><span style="color: #0F6B3A; font-weight: 600">✓ заменён в марте</span></div>
+</div>
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 6px 0 0 4px">НАПОМИНАНИЯ</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<label style="padding: 10px 14px; min-height: 44px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #EFECE6; font-size: 14px; font-weight: 600">За 1 000 км до работ<input type="checkbox" checked style="width: 22px; height: 22px; accent-color: #C2410C"></label>
+<label style="padding: 10px 14px; min-height: 44px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #EFECE6; font-size: 14px; font-weight: 600">За 2 недели по сроку<input type="checkbox" checked style="width: 22px; height: 22px; accent-color: #C2410C"></label>
+<label style="padding: 10px 14px; min-height: 44px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600">Просить обновить пробег раз в месяц<input type="checkbox" style="width: 22px; height: 22px; accent-color: #C2410C"></label>
+</div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<a href="#Results" style="height: 50px; border-radius: 14px; border: 1.5px solid #17191C; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Запчасти к ТО</a>
+<a href="#OneTapTO" style="height: 50px; border-radius: 14px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">ТО в один тап</a>
+</div>
+</div>
+</section>
+<section class="screen" id="s-History" data-name="History">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<h1 style="margin: 0; flex-grow: 1; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">История</h1>
+<button aria-label="Добавить запись" style="height: 44px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; font-size: 13px; font-weight: 700; color: #17191C">+ Запись</button>
+</div>
+<div style="padding: 14px 16px 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; background: #E7E3DB; border-radius: 14px">
+<button style="height: 40px; border-radius: 10px; border: none; background: #FFFFFF; font-size: 13px; font-weight: 700; color: #17191C">Всё</button>
+<button style="height: 40px; border-radius: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: #5B5F66">Обслуживание</button>
+<button style="height: 40px; border-radius: 10px; border: none; background: transparent; font-size: 13px; font-weight: 600; color: #5B5F66">Посещения</button>
+</div>
+<div style="background: #17191C; color: #FFFFFF; border-radius: 16px; padding: 14px 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div><div style="font-size: 12px; color: #C9CCD1">Расходы за 12 мес</div><div style="font-size: 20px; font-weight: 700">11 180 ₽</div></div>
+<div><div style="font-size: 12px; color: #C9CCD1">Сэкономлено на запчастях</div><div style="font-size: 20px; font-weight: 700; color: #FDBA8C">1 940 ₽</div></div>
+</div>
+</div>
+<div style="flex-grow: 1; padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 0">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 0 0 10px 4px">2026</div>
+<div style="display: flex; gap: 12px">
+<div style="width: 24px; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: #C2410C; margin-top: 18px"></span><span style="flex-grow: 1; width: 2px; background: #DDD8CF"></span></div>
+<div style="flex-grow: 1; margin-bottom: 12px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B5F66"><span>12 марта · 45 200 км</span><span style="font-weight: 700; color: #9A3412">ВИЗИТ В СЕРВИС</span></div>
+<div style="font-weight: 700; font-size: 15px">Замена масла и фильтров</div>
+<div style="font-size: 13px; color: #5B5F66">Автосервис «[Название]» · запись через приложение</div>
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 700">6 300 ₽</span><a href="javascript:void(0)" style="font-size: 13px; font-weight: 700">Заказ-наряд</a></div>
+</div>
+</div>
+<div style="display: flex; gap: 12px">
+<div style="width: 24px; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: #1B3F99; margin-top: 18px"></span><span style="flex-grow: 1; width: 2px; background: #DDD8CF"></span></div>
+<div style="flex-grow: 1; margin-bottom: 12px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B5F66"><span>3 февраля</span><span style="font-weight: 700; color: #1B3F99">ПОКУПКА</span></div>
+<div style="font-weight: 700; font-size: 15px">Колодки тормозные передние</div>
+<div style="font-size: 13px; color: #5B5F66">Магазин А · дешевле средней цены на 620 ₽</div>
+<div style="font-weight: 700">2 480 ₽</div>
+</div>
+</div>
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 10px 4px">2025</div>
+<div style="display: flex; gap: 12px">
+<div style="width: 24px; display: flex; flex-direction: column; align-items: center"><span style="width: 12px; height: 12px; border-radius: 999px; background: #C2410C; margin-top: 18px"></span></div>
+<div style="flex-grow: 1; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B5F66"><span>18 сентября · 38 900 км</span><span style="font-weight: 700; color: #9A3412">ВИЗИТ В СЕРВИС</span></div>
+<div style="font-weight: 700; font-size: 15px">Сезонная смена шин</div>
+<div style="font-size: 13px; color: #5B5F66">Шиномонтаж «[Название]» · добавлено вручную</div>
+<div style="font-weight: 700">2 400 ₽</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="screen" id="s-OneTapTO" data-name="OneTapTO">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">ТО-60 000 км</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> · работы, запчасти и сервис одним заказом</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; gap: 12px">
+<span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">1</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between"><span style="font-weight: 700; font-size: 15px">Работы по регламенту</span><a href="#Reminders" style="font-size: 13px; font-weight: 700">Состав</a></div><span style="font-size: 13px; color: #5B5F66">Замена масла и масляного фильтра, воздушного фильтра, осмотр ходовой</span></div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; gap: 12px">
+<span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between"><span style="font-weight: 700; font-size: 15px">Запчасти · 6 позиций</span><span style="font-weight: 700; font-size: 15px">7 480 ₽</span></div><span style="font-size: 13px; color: #5B5F66">Лучший итог с доставкой в сервис из 12 магазинов, 2 продавца</span><a href="#Results" style="font-size: 13px; font-weight: 700">Изменить комплект</a></div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; gap: 12px">
+<span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">3</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between"><span style="font-weight: 700; font-size: 15px">Сервис и время</span><span style="font-weight: 700; font-size: 15px">3 900 ₽</span></div><span style="font-size: 13px; color: #5B5F66">Автосервис «[Название]» · сб, 3 октября, 10:00</span><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A">Цена работ в норме</span><a href="#Services" style="font-size: 13px; font-weight: 700">Другой сервис или время</a></div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; gap: 12px">
+<span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">4</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px"><span style="font-weight: 700; font-size: 15px">Доставка в сервис</span>
+<div style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600"><span style="padding: 4px 8px; border-radius: 6px; background: #F3F1EC">Заказ сегодня</span><span style="flex-grow: 1; height: 2px; background: #DDD8CF"></span><span style="padding: 4px 8px; border-radius: 6px; background: #F3F1EC">В сервисе 2 окт</span><span style="flex-grow: 1; height: 2px; background: #DDD8CF"></span><span style="padding: 4px 8px; border-radius: 6px; background: #FCEBDF; color: #9A3412">ТО 3 окт</span></div>
+<span style="font-size: 12px; color: #5B5F66">Магазины везут запчасти прямо в сервис, вам ничего не нужно забирать</span></div>
+</div>
+</div>
+<div style="padding: 14px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 14px; color: #5B5F66">Запчасти 7 480 ₽ + работы 3 900 ₽</span><span style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">11 380 ₽</span></div>
+<a href="#BookingDone" style="height: 54px; border-radius: 14px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; text-decoration: none">Оформить ТО</a>
+</div>
+</div>
+</section>
+<section class="screen" id="s-Main" data-name="Main">
+<div style="width: 390px; height: 900px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="flex-grow: 1; padding: 56px 20px 20px; display: flex; flex-direction: column; gap: 22px">
+<a href="#Garage" style="text-decoration: none; align-self: flex-start; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px 6px 8px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 999px; font-size: 14px; font-weight: 600; color: #17191C; cursor: pointer">
+<span style="width: 32px; height: 32px; border-radius: 999px; background: #17191C; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-3l2-5h12l2 5v3z"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg></span>
+<span data-car="chip">Kia Rio IV · 1.6 AT · 2019</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B5F66" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+</a>
+<h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 30px; line-height: 1.12; letter-spacing: -0.5px">Запчасти<br>по лучшей цене</h1>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<label for="q" style="font-size: 13px; font-weight: 600; color: #5B5F66">Название или артикул — подбор по VIN вашего авто</label>
+<div style="display: flex; gap: 8px">
+<div style="flex-grow: 1; display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 14px; background: #FFFFFF; border: 1.5px solid #17191C; border-radius: 14px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B5F66" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+<input id="q" value="масляный фильтр" style="border: none; outline: none; background: transparent; font-family: inherit; font-size: 16px; width: 100%; color: #17191C">
+</div>
+<button aria-label="Сканировать артикул" style="width: 52px; height: 52px; border-radius: 14px; background: #C2410C; border: none; color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8 12h8"/></svg></button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 13px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: #5B5F66">Категории</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<button style="height: 88px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 12px; font-size: 14px; font-weight: 600; color: #17191C; cursor: pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M6 8h12M6 16h12"/></svg>Фильтры</button>
+<button style="height: 88px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 12px; font-size: 14px; font-weight: 600; color: #17191C; cursor: pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Тормоза</button>
+<button style="height: 88px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 12px; font-size: 14px; font-weight: 600; color: #17191C; cursor: pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v3M8 6h8l-2 3 2 3-2 3 2 3H8l2-3-2-3 2-3z"/></svg>Подвеска</button>
+<button style="height: 88px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 12px; font-size: 14px; font-weight: 600; color: #17191C; cursor: pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg>Масла</button>
+<button style="height: 88px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 12px; font-size: 14px; font-weight: 600; color: #17191C; cursor: pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>Электрика</button>
+<button style="height: 88px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 12px; font-size: 14px; font-weight: 600; color: #17191C; cursor: pointer"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>Все</button>
+</div>
+</div>
+<a href="#Results" style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: #17191C; border-radius: 18px; text-decoration: none; color: #FFFFFF">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #FDBA8C">СКОРО ТО-60 000 КМ</span><span style="font-size: 12px; color: #C9CCD1">через ~1 600 км</span></div>
+<div style="font-weight: 700; font-size: 17px">Комплект запчастей к ТО</div>
+<div style="font-size: 13px; color: #C9CCD1">6 позиций по регламенту · сравнили цены в 12 магазинах</div>
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 20px; font-weight: 700">от 7 480 ₽</span><span style="height: 40px; padding: 0 16px; border-radius: 10px; background: #C2410C; font-weight: 700; font-size: 14px; display: flex; align-items: center">Собрать</span></div>
+</a>
+<div style="font-size: 12px; color: #5B5F66; text-align: center">Цены из каталогов 12 подключённых магазинов · обновлено 5 мин назад</div>
+</div>
+<nav style="height: 80px; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E2DED6; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0 8px 14px">
+<a href="#Garage" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6v10H3z"/><path d="M7 20v-6h10v6"/></svg>Гараж</a>
+<a href="#Main" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; text-decoration: none; color: #C2410C"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.3-.5-.5-2.3z"/></svg>Запчасти</a>
+<a href="#Services" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Сервисы</a>
+<a href="#Cart" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h2l2 11h11l2-8H6"/><circle cx="9" cy="19.5" r="1"/><circle cx="17" cy="19.5" r="1"/></svg>Корзина</a>
+</nav>
+</div>
+</section>
+<section class="screen" id="s-Results" data-name="Results">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 12px; display: flex; flex-direction: column; gap: 14px; background: #F3F1EC">
+<div style="display: flex; align-items: center; gap: 8px">
+<a href="#Main" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1; height: 44px; display: flex; align-items: center; padding: 0 14px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 12px; font-size: 15px; font-weight: 600">масляный фильтр</div>
+</div>
+<div style="display: flex; gap: 8px; overflow: hidden">
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #17191C; color: #FFFFFF; border: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px">Цена ↑</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">В наличии</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">До 2 дней</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">Оригинал</button>
+</div>
+<div style="font-size: 13px; color: #5B5F66"><b style="color: #17191C">3 детали</b> подходят к <span data-car="name">Kia Rio IV</span> · 24 предложения от 6 продавцов</div>
+</div>
+<div style="flex-grow: 1; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 12px">
+<div style="width: 72px; height: 72px; flex-shrink: 0; border-radius: 12px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #5B5F66; text-align: center">[ФОТО]</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; gap: 6px; align-items: center"><span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #17191C; color: #FFFFFF">ОРИГИНАЛ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5B5F66">26300-35505</span></div>
+<div style="font-weight: 700; font-size: 15px; line-height: 1.3">Фильтр масляный Hyundai/Kia</div>
+<div style="font-size: 12px; color: #0F6B3A; font-weight: 600">✓ Подходит к вашему авто</div>
+</div>
+</div>
+<div style="display: flex; align-items: flex-end; justify-content: space-between">
+<div><div style="font-size: 12px; color: #5B5F66">8 продавцов</div><div style="font-size: 20px; font-weight: 700">640 – 910 ₽</div></div>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; min-height: 44px"><input type="checkbox" checked style="width: 20px; height: 20px; accent-color: #C2410C">К сравнению</label>
+</div>
+<a href="#Offers" style="height: 44px; border-radius: 12px; background: #F3F1EC; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Сравнить цены продавцов</a>
+</div>
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 12px">
+<div style="width: 72px; height: 72px; flex-shrink: 0; border-radius: 12px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #5B5F66">[ФОТО]</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; gap: 6px; align-items: center"><span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #EDEAE3; color: #17191C">АНАЛОГ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5B5F66">W 811/80</span></div>
+<div style="font-weight: 700; font-size: 15px; line-height: 1.3">Фильтр масляный MANN-FILTER</div>
+<div style="font-size: 12px; color: #0F6B3A; font-weight: 600">✓ Подходит к вашему авто</div>
+</div>
+</div>
+<div style="display: flex; align-items: flex-end; justify-content: space-between">
+<div><div style="font-size: 12px; color: #5B5F66">11 продавцов</div><div style="font-size: 20px; font-weight: 700">412 – 690 ₽</div></div>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; min-height: 44px"><input type="checkbox" checked style="width: 20px; height: 20px; accent-color: #C2410C">К сравнению</label>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 18px; padding: 14px; display: flex; gap: 12px">
+<div style="width: 72px; height: 72px; flex-shrink: 0; border-radius: 12px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #5B5F66">[ФОТО]</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; gap: 6px; align-items: center"><span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #EDEAE3; color: #17191C">АНАЛОГ</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #5B5F66">OC 1051</span></div>
+<div style="font-weight: 700; font-size: 15px">Фильтр масляный Mahle</div>
+<div style="font-size: 12px; color: #5B5F66">5 продавцов · <b style="color: #17191C; font-size: 15px">от 455 ₽</b></div>
+</div>
+</div>
+</div>
+<div style="position: absolute; left: 12px; right: 12px; bottom: 20px; height: 64px; background: #17191C; border-radius: 18px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 18px; color: #FFFFFF">
+<div style="display: flex; flex-direction: column"><span style="font-weight: 700; font-size: 15px">2 детали выбрано</span><span style="font-size: 12px; color: #C9CCD1">сравнить характеристики</span></div>
+<a href="#Compare" style="height: 48px; padding: 0 20px; border-radius: 12px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 15px; display: flex; align-items: center; text-decoration: none">Сравнить</a>
+</div>
+</div>
+</section>
+<section class="screen" id="s-Offers" data-name="Offers">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; justify-content: space-between">
+<a href="#Results" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<button aria-label="Следить за ценой" style="height: 44px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #17191C"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>Следить за ценой</button>
+</div>
+<div style="padding: 8px 20px 16px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #5B5F66">MANN-FILTER · W 811/80</span>
+<h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.2">Фильтр масляный</h1>
+</div>
+<div style="margin: 0 16px; padding: 14px 16px; background: #17191C; color: #FFFFFF; border-radius: 18px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div><div style="font-size: 12px; color: #C9CCD1">Лучший итог</div><div style="font-size: 20px; font-weight: 700">468 ₽</div></div>
+<div><div style="font-size: 12px; color: #C9CCD1">Худший итог</div><div style="font-size: 20px; font-weight: 700">645 ₽</div></div>
+<div><div style="font-size: 12px; color: #C9CCD1">Экономия</div><div style="font-size: 20px; font-weight: 700; color: #FDBA8C">177 ₽</div></div>
+</div>
+<div style="font-size: 12px; color: #C9CCD1">Цены с доставкой до: [ваш адрес] · изменить</div>
+</div>
+<div style="padding: 14px 16px 10px; display: flex; gap: 6px">
+<button style="flex-grow: 1; height: 40px; border-radius: 10px; background: #FFFFFF; border: 1.5px solid #17191C; font-size: 13px; font-weight: 700; color: #17191C">Итог с доставкой</button>
+<button style="flex-grow: 1; height: 40px; border-radius: 10px; background: transparent; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600; color: #5B5F66">Быстрее</button>
+<button style="flex-grow: 1; height: 40px; border-radius: 10px; background: transparent; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600; color: #5B5F66">Надёжнее</button>
+</div>
+<div style="flex-grow: 1; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #C2410C; color: #FFFFFF">ЛУЧШИЙ ИТОГ</span><a href="#Cart" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 13px; display: flex; align-items: center; text-decoration: none">В корзину</a></div>
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">Магазин Б</span><span style="font-size: 13px; color: #5B5F66">в наличии 3 шт · сегодня</span><span style="font-size: 12px; font-weight: 700; color: #0F6B3A">Надёжность 97% · отказов почти нет</span></div>
+<div style="text-align: right; flex-shrink: 0"><div style="font-size: 20px; font-weight: 700">468 ₽</div><div style="font-size: 12px; color: #5B5F66">468 ₽ + доставка 0 ₽</div></div>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">Магазин А</span><span style="font-size: 13px; color: #5B5F66">12 шт · завтра</span><span style="font-size: 12px; font-weight: 700; color: #0F6B3A">Надёжность 98%</span></div>
+<div style="text-align: right; flex-shrink: 0"><div style="font-size: 20px; font-weight: 700">611 ₽</div><div style="font-size: 12px; color: #5B5F66">412 ₽ + доставка 199 ₽</div></div>
+</div><div style="font-size: 12px; color: #5B5F66; background: #F3F1EC; border-radius: 8px; padding: 6px 10px">Самый низкий ценник, но с доставкой дороже на 143 ₽</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">Магазин Г</span><span style="font-size: 13px; color: #5B5F66">под заказ · 5–7 дней</span><span style="font-size: 12px; font-weight: 700; color: #9A3412">Надёжность 71% · часто отменяет заказы</span></div>
+<div style="text-align: right; flex-shrink: 0"><div style="font-size: 20px; font-weight: 700">640 ₽</div><div style="font-size: 12px; color: #5B5F66">390 ₽ + доставка 250 ₽</div></div>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">Магазин В</span><span style="font-size: 13px; color: #5B5F66">40 шт · 2–3 дня</span><span style="font-size: 12px; font-weight: 700; color: #0F6B3A">Надёжность 99%</span></div>
+<div style="text-align: right; flex-shrink: 0"><div style="font-size: 20px; font-weight: 700">645 ₽</div><div style="font-size: 12px; color: #5B5F66">495 ₽ + доставка 150 ₽</div></div>
+</div>
+</div>
+<div style="font-size: 12px; color: #5B5F66; line-height: 1.4">Надёжность — доля заказов, которые продавец выполнил без отмены и возврата за 90 дней</div>
+</div>
+</div>
+</section>
+<section class="screen" id="s-Compare" data-name="Compare">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 12px; display: flex; align-items: center; gap: 8px">
+<a href="#Results" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<h1 style="margin: 0; flex-grow: 1; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Сравнение</h1>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #5B5F66"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #C2410C">Только различия</label>
+</div>
+<div style="flex-grow: 1; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px">
+<div></div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 6px">
+<div style="height: 60px; border-radius: 10px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #5B5F66">[ФОТО]</div>
+<span style="font-size: 10px; font-weight: 700; color: #5B5F66">ОРИГИНАЛ</span>
+<span style="font-weight: 700; font-size: 13px; line-height: 1.25">Hyundai/Kia</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">26300-35505</span>
+</div>
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 6px">
+<div style="height: 60px; border-radius: 10px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #5B5F66">[ФОТО]</div>
+<span style="font-size: 10px; font-weight: 700; color: #C2410C">ВЫГОДНЕЕ</span>
+<span style="font-weight: 700; font-size: 13px; line-height: 1.25">MANN-FILTER</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">W 811/80</span>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<div style="padding: 10px 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: #5B5F66; background: #FAF9F6">ЦЕНЫ И ДОСТАВКА</div>
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 12px; border-top: 1px solid #EFECE6; align-items: center; font-size: 14px"><span style="font-size: 12px; color: #5B5F66">Мин. цена</span><span style="font-weight: 600">640 ₽</span><span style="font-weight: 700; color: #C2410C">412 ₽ ✓</span></div>
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 12px; border-top: 1px solid #EFECE6; align-items: center; font-size: 14px"><span style="font-size: 12px; color: #5B5F66">Средняя цена</span><span style="font-weight: 600">760 ₽</span><span style="font-weight: 700; color: #C2410C">520 ₽ ✓</span></div>
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 12px; border-top: 1px solid #EFECE6; align-items: center; font-size: 14px"><span style="font-size: 12px; color: #5B5F66">Продавцов</span><span style="font-weight: 600">8</span><span style="font-weight: 700; color: #C2410C">11 ✓</span></div>
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 12px; border-top: 1px solid #EFECE6; align-items: center; font-size: 14px"><span style="font-size: 12px; color: #5B5F66">Быстрее всего</span><span style="font-weight: 700; color: #C2410C">сегодня ✓</span><span style="font-weight: 700; color: #C2410C">сегодня ✓</span></div>
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 12px; border-top: 1px solid #EFECE6; align-items: center; font-size: 14px"><span style="font-size: 12px; color: #5B5F66">Рейтинг продавцов</span><span style="font-weight: 700; color: #C2410C">★ 4.7 ✓</span><span style="font-weight: 600">★ 4.6</span></div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<div style="padding: 10px 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: #5B5F66; background: #FAF9F6">ХАРАКТЕРИСТИКИ</div>
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 12px; border-top: 1px solid #EFECE6; align-items: center; font-size: 14px"><span style="font-size: 12px; color: #5B5F66">Совместимость</span><span style="font-weight: 600; color: #0F6B3A">✓ <span data-car="name">Kia Rio IV</span></span><span style="font-weight: 600; color: #0F6B3A">✓ <span data-car="name">Kia Rio IV</span></span></div>
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 12px; border-top: 1px solid #EFECE6; align-items: center; font-size: 14px"><span style="font-size: 12px; color: #5B5F66">Высота</span><span style="font-weight: 600">[мм]</span><span style="font-weight: 600">[мм]</span></div>
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding: 12px; border-top: 1px solid #EFECE6; align-items: center; font-size: 14px"><span style="font-size: 12px; color: #5B5F66">Резьба</span><span style="font-weight: 600">[размер]</span><span style="font-weight: 600">[размер]</span></div>
+</div>
+</div>
+<div style="padding: 12px 16px 28px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<a href="#Offers" style="height: 50px; border-radius: 14px; border: 1.5px solid #17191C; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Цены оригинала</a>
+<a href="#Offers" style="height: 50px; border-radius: 14px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Выбрать MANN</a>
+</div>
+</div>
+</section>
+<section class="screen" id="s-Cart" data-name="Cart">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 60px 20px 14px; display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 26px">Корзина</h1>
+<span style="font-size: 14px; color: #5B5F66">3 детали · 2 продавца</span>
+</div>
+<div style="flex-grow: 1; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #FCEBDF; border-radius: 16px; padding: 14px; display: flex; gap: 12px; align-items: center">
+<div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: #C2410C; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6 4 4 6-8"/><path d="M15 7h5v5"/></svg></div>
+<div style="flex-grow: 1; font-size: 13px; line-height: 1.4"><b style="font-size: 14px">Соберите заказ у одного продавца</b><br>Магазин А — дешевле на 140 ₽ с учётом доставки</div>
+<button style="height: 44px; padding: 0 12px; border-radius: 10px; background: #FFFFFF; border: none; font-size: 13px; font-weight: 700; color: #9A3412">Применить</button>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; background: #FAF9F6; border-bottom: 1px solid #EFECE6"><span style="font-weight: 700; font-size: 15px">Магазин А</span><span style="font-size: 12px; color: #5B5F66">доставка завтра · 199 ₽</span></div>
+<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid #EFECE6">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Фильтр масляный MANN</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">W 811/80</span></div>
+<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
+<span style="width: 64px; text-align: right; font-weight: 700">412 ₽</span>
+</div>
+<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Фильтр воздушный</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">[АРТИКУЛ]</span></div>
+<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
+<span style="width: 64px; text-align: right; font-weight: 700">590 ₽</span>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; background: #FAF9F6; border-bottom: 1px solid #EFECE6"><span style="font-weight: 700; font-size: 15px">Магазин Б</span><span style="font-size: 12px; color: #5B5F66">доставка сегодня · 249 ₽</span></div>
+<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Масло моторное 5W-30, 4 л</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">[АРТИКУЛ]</span></div>
+<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
+<span style="width: 64px; text-align: right; font-weight: 700">3 150 ₽</span>
+</div>
+</div>
+</div>
+<div style="padding: 16px 20px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #5B5F66"><span>Товары</span><span>4 152 ₽</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #5B5F66"><span>Доставка (2 продавца)</span><span>448 ₽</span></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 700; font-size: 16px">Итого</span><span style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 24px">4 600 ₽</span></div>
+<button style="height: 54px; border-radius: 14px; background: #C2410C; border: none; color: #FFFFFF; font-weight: 700; font-size: 16px">Оформить у 2 продавцов</button>
+</div>
+</div>
+</section>
+<section class="screen" id="s-Services" data-name="Services">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 56px 16px 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4px">
+<div><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 24px">Автосервисы</h1><div style="font-size: 13px; color: #5B5F66">рядом · для <span data-car="name">Kia Rio IV</span></div></div>
+<div style="display: flex; padding: 3px; background: #E7E3DB; border-radius: 10px"><button style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: #FFFFFF; font-size: 12px; font-weight: 700; color: #17191C">Карта</button><button style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: transparent; font-size: 12px; font-weight: 600; color: #5B5F66">Список</button></div>
+</div>
+<div style="display: flex; gap: 8px; overflow: hidden">
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #17191C; color: #FFFFFF; border: none; font-size: 13px; font-weight: 600">Онлайн-запись</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">ТО</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">Свободно сегодня</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">Шиномонтаж</button>
+</div>
+</div>
+<div style="margin: 0 16px; height: 180px; border-radius: 18px; background: #E4E0D6; position: relative; overflow: hidden; flex-shrink: 0">
+<svg width="358" height="180" viewBox="0 0 358 180" fill="none" style="position: absolute; left: 0; top: 0"><path d="M0 60 L358 90 M0 140 L358 120 M90 0 L120 180 M250 0 L230 180" stroke="#F6F4EF" stroke-width="10"/><path d="M0 20 L358 30 M170 0 L180 180" stroke="#F6F4EF" stroke-width="4"/></svg>
+<div style="position: absolute; left: 100px; top: 58px; height: 30px; padding: 0 10px; border-radius: 999px; background: #C2410C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center">★ 4.8</div>
+<div style="position: absolute; left: 210px; top: 100px; height: 30px; padding: 0 10px; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center">★ 4.6</div>
+<div style="position: absolute; left: 260px; top: 30px; height: 30px; padding: 0 10px; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center">★ 4.9</div>
+<div style="position: absolute; left: 160px; top: 128px; width: 16px; height: 16px; border-radius: 999px; background: #1D4ED8; border: 3px solid #FFFFFF"></div>
+</div>
+<div style="flex-grow: 1; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">Автосервис «[Название]»</span><span style="font-size: 13px; color: #5B5F66">1,2 км · [адрес] · до 21:00</span></div>
+<span style="font-weight: 700; font-size: 15px; white-space: nowrap">★ 4.8</span>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px"><span style="padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; font-weight: 700">ТО 3 900 ₽ · цена в норме</span><span style="padding: 3px 8px; border-radius: 6px; background: #EFECE6; font-weight: 600">2ГИС 4.8 · 312 отз.</span><span style="padding: 3px 8px; border-radius: 6px; background: #EFECE6; font-weight: 600">Яндекс 4.7 · 208 отз.</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div><div style="font-size: 12px; color: #5B5F66">Ближайшее окно</div><div style="font-weight: 700; font-size: 15px; color: #0F6B3A">Сегодня, 16:30</div></div>
+<a href="#ServiceBooking" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 14px; display: flex; align-items: center; text-decoration: none">Записаться</a>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">Техцентр «[Название]»</span><span style="font-size: 13px; color: #5B5F66">2,4 км · работает с Kia</span></div>
+<span style="font-weight: 700; font-size: 15px">★ 4.6</span>
+</div>
+<span style="align-self: flex-start; font-size: 12px; padding: 3px 8px; border-radius: 6px; background: #FCEBDF; color: #9A3412; font-weight: 700">ТО 5 200 ₽ · выше рынка на 13%</span>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div><div style="font-size: 12px; color: #5B5F66">Ближайшее окно</div><div style="font-weight: 700; font-size: 15px">Завтра, 10:00</div></div>
+<a href="#ServiceBooking" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #F3F1EC; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; text-decoration: none">Записаться</a>
+</div>
+</div>
+</div>
+<nav style="height: 80px; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E2DED6; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0 8px 14px">
+<a href="#Garage" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6v10H3z"/><path d="M7 20v-6h10v6"/></svg>Гараж</a>
+<a href="#Main" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.3-.5-.5-2.3z"/></svg>Запчасти</a>
+<a href="#Services" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; text-decoration: none; color: #C2410C"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Сервисы</a>
+<a href="#Cart" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h2l2 11h11l2-8H6"/><circle cx="9" cy="19.5" r="1"/><circle cx="17" cy="19.5" r="1"/></svg>Корзина</a>
+</nav>
+</div>
+</section>
+<section class="screen" id="s-ServiceBooking" data-name="ServiceBooking">
+<div style="width: 390px; height: 900px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Services" aria-label="Назад" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><div style="font-weight: 700; font-size: 17px">Автосервис «[Название]»</div><div style="font-size: 12px; color: #5B5F66">★ 4.8 · 1,2 км · запись через 2ГИС</div></div>
+</div>
+<div style="flex-grow: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 14px; font-size: 14px"><span style="font-weight: 700"><span data-car="name">Kia Rio IV</span></span><span style="color: #5B5F66"><span data-car="plate">А 123 ВС 177</span> · <span data-car="mileage">58 400 км</span></span></div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66">РАБОТЫ</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<label style="padding: 10px 14px; min-height: 48px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #EFECE6"><input type="checkbox" checked style="width: 20px; height: 20px; accent-color: #C2410C"><span style="flex-grow: 1"><span style="display: block; font-weight: 700; font-size: 14px">ТО-60 000 км</span><span style="font-size: 12px; color: #9A3412; font-weight: 600">из вашего регламента</span></span><span style="font-weight: 700; font-size: 14px">от 3 900 ₽</span></label>
+<label style="padding: 10px 14px; min-height: 48px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #EFECE6"><input type="checkbox" style="width: 20px; height: 20px; accent-color: #C2410C"><span style="flex-grow: 1; font-weight: 600; font-size: 14px">Компьютерная диагностика</span><span style="font-size: 14px">1 200 ₽</span></label>
+<label style="padding: 10px 14px; min-height: 48px; display: flex; gap: 10px; align-items: center"><input type="checkbox" checked style="width: 20px; height: 20px; accent-color: #C2410C"><span style="flex-grow: 1"><span style="display: block; font-weight: 600; font-size: 14px">Привезу свои запчасти</span><span style="font-size: 12px; color: #5B5F66">комплект к ТО от 7 480 ₽ в приложении</span></span></label>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 700; font-size: 14px">Честная цена ТО-60 000</span><span style="font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A">В норме</span></div>
+<div style="position: relative; height: 26px">
+<div style="position: absolute; left: 0; right: 0; top: 10px; height: 6px; border-radius: 999px; background: #EFECE6"></div>
+<div style="position: absolute; left: 20%; width: 55%; top: 10px; height: 6px; border-radius: 999px; background: #9CCFB0"></div>
+<div style="position: absolute; left: 40%; top: 3px; width: 20px; height: 20px; margin-left: -10px; border-radius: 999px; background: #17191C; border: 3px solid #FFFFFF; box-sizing: border-box"></div>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B5F66"><span>3 400 ₽</span><span style="font-weight: 700; color: #17191C">здесь 3 900 ₽</span><span>4 600 ₽</span></div>
+<span style="font-size: 12px; color: #5B5F66">Типичная цена для <span data-car="name">Kia Rio IV</span> в вашем городе по заказ-нарядам пользователей</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66">ДАТА</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<button style="height: 60px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #17191C"><span style="font-size: 11px; color: #5B5F66">вт</span><span style="font-weight: 700; font-size: 17px">29</span></button>
+<button style="height: 60px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #17191C"><span style="font-size: 11px; color: #5B5F66">ср</span><span style="font-weight: 700; font-size: 17px">30</span></button>
+<button style="height: 60px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #17191C"><span style="font-size: 11px; color: #5B5F66">чт</span><span style="font-weight: 700; font-size: 17px">1</span></button>
+<button style="height: 60px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #17191C"><span style="font-size: 11px; color: #5B5F66">пт</span><span style="font-weight: 700; font-size: 17px">2</span></button>
+<button style="height: 60px; border-radius: 12px; background: #17191C; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #FFFFFF"><span style="font-size: 11px; color: #C9CCD1">сб</span><span style="font-weight: 700; font-size: 17px">3</span></button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66">СВОБОДНОЕ ВРЕМЯ</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+<button style="height: 44px; border-radius: 10px; background: #C2410C; border: none; color: #FFFFFF; font-weight: 700; font-size: 14px">10:00</button>
+<button style="height: 44px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DED6; color: #17191C; font-weight: 600; font-size: 14px">11:30</button>
+<button style="height: 44px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DED6; color: #17191C; font-weight: 600; font-size: 14px">14:00</button>
+<button style="height: 44px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E2DED6; color: #17191C; font-weight: 600; font-size: 14px">16:30</button>
+</div>
+</div>
+</div>
+<div style="padding: 14px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 14px; color: #5B5F66">Работы, предварительно</span><span style="font-weight: 700; font-size: 18px">от 3 900 ₽</span></div>
+<a href="#BookingDone" style="height: 54px; border-radius: 14px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; text-decoration: none">Записаться на 3 окт, 10:00</a>
+</div>
+</div>
+</section>
+<section class="screen" id="s-BookingDone" data-name="BookingDone">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="flex-grow: 1; padding: 96px 20px 20px; display: flex; flex-direction: column; gap: 20px">
+<div style="width: 64px; height: 64px; border-radius: 20px; background: #0F6B3A; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 28px">Вы записаны</h1>
+<span style="font-size: 14px; color: #5B5F66">Сервис подтвердил запись. Напомним за день и за 2 часа. В день визита следите за ремонтом в разделе <a href="#RepairLive" style="font-weight: 700">«Ремонт онлайн»</a>, работы под гарантией 30 дней.</span>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 18px; overflow: hidden">
+<div style="padding: 14px 16px; display: flex; justify-content: space-between; border-bottom: 1px solid #EFECE6; font-size: 14px"><span style="color: #5B5F66">Когда</span><span style="font-weight: 700">сб, 3 октября, 10:00</span></div>
+<div style="padding: 14px 16px; display: flex; justify-content: space-between; border-bottom: 1px solid #EFECE6; font-size: 14px"><span style="color: #5B5F66">Где</span><span style="font-weight: 700; text-align: right">Автосервис «[Название]»<br><span style="font-weight: 500; color: #5B5F66">[адрес]</span></span></div>
+<div style="padding: 14px 16px; display: flex; justify-content: space-between; border-bottom: 1px solid #EFECE6; font-size: 14px"><span style="color: #5B5F66">Работы</span><span style="font-weight: 700">ТО-60 000 км</span></div>
+<div style="padding: 14px 16px; display: flex; justify-content: space-between; font-size: 14px"><span style="color: #5B5F66">Автомобиль</span><span style="font-weight: 700"><span data-car="name">Kia Rio IV</span> · <span data-car="plate">А 123 ВС 177</span></span></div>
+</div>
+<div style="background: #17191C; color: #FFFFFF; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-weight: 700; font-size: 16px">Вы привезёте свои запчасти</div>
+<div style="font-size: 13px; color: #C9CCD1">Комплект к ТО: 6 позиций, доставка до 2 октября — успеете к визиту</div>
+<a href="#Results" style="height: 44px; border-radius: 12px; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Купить от 7 480 ₽</a>
+</div>
+</div>
+<div style="padding: 0 20px 34px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button style="height: 50px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E2DED6; font-weight: 700; font-size: 14px; color: #17191C">В календарь</button>
+<a href="#Garage" style="height: 50px; border-radius: 14px; border: 1.5px solid #17191C; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">В гараж</a>
+</div>
+</div>
+</section>
+<section class="screen" id="s-Fines" data-name="Fines">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Штрафы</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> · <span data-car="plate">А 123 ВС 177</span> · проверка каждый день</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #17191C; border: none; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; color: #FFFFFF;"><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px"><div><div style="font-size: 12px; color: #C9CCD1">Неоплачено</div><div style="font-size: 19px; font-weight: 700; color: #FFFFFF">2</div></div><div><div style="font-size: 12px; color: #C9CCD1">К оплате</div><div style="font-size: 19px; font-weight: 700; color: #FFFFFF">750 ₽</div></div><div><div style="font-size: 12px; color: #C9CCD1">Экономия</div><div style="font-size: 19px; font-weight: 700; color: #FDBA8C">750 ₽</div></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4"><span style="color:#C9CCD1">Скидка 50% — 20 дней с даты постановления · данные ГИС ГМП</span></span></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; gap: 12px"><div style="width: 76px; height: 76px; flex-shrink: 0; border-radius: 12px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #5B5F66; text-align: center">[ФОТО<br>С КАМЕРЫ]</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 700; font-size: 15px; line-height: 1.3">Превышение скорости на 20–40 км/ч</span><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">22 сент, 14:32 · [адрес камеры] · УИН •••4821</span><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; white-space: nowrap">Скидка ещё 16 дней</span></div></div>
+<div style="display: flex; justify-content: space-between; align-items: center"><div><span style="font-size: 20px; font-weight: 700">250 ₽</span> <span style="font-size: 13px; color: #5B5F66; text-decoration: line-through">500 ₽</span></div><button style="height: 40px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Оплатить</button></div></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; gap: 12px"><div style="width: 76px; height: 76px; flex-shrink: 0; border-radius: 12px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #5B5F66; text-align: center">[ФОТО<br>С КАМЕРЫ]</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 700; font-size: 15px; line-height: 1.3">Проезд на запрещающий сигнал</span><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">19 сент, 08:11 · [адрес камеры] · УИН •••1170</span><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #FCEBDF; color: #9A3412; white-space: nowrap">Скидка ещё 3 дня</span></div></div>
+<div style="display: flex; justify-content: space-between; align-items: center"><div><span style="font-size: 20px; font-weight: 700">500 ₽</span> <span style="font-size: 13px; color: #5B5F66; text-decoration: line-through">1 000 ₽</span></div><button style="height: 40px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Оплатить</button></div></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">НАСТРОЙКИ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Пуш о новом штрафе</span><span style="color: #5B5F66; text-align: right">сразу</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Напомнить до конца скидки</span><span style="color: #5B5F66; text-align: right">за 2 дня</span></div></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><button style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Оплатить оба со скидкой · 750 ₽</button></div>
+</div>
+</section>
+<section class="screen" id="s-Tires" data-name="Tires">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Смена шин</h1><div style="font-size: 12px; color: #5B5F66">Сезонное напоминание по прогнозу погоды</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #FFFFFF; border: 1.5px solid #1D4ED8; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; gap: 12px; align-items: center"><div style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 14px; background: #DCE6FB; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1B3F99" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4.9 6.9l14.2 10.2M19.1 6.9L4.9 17.1"/></svg></div>
+<div><div style="font-weight: 700; font-size: 16px">Через 5 дней ночью до −3 °C</div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Пора менять на зимние: перед первым снегом слоты заканчиваются быстрее всего</span></div></div></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ВАШИ ШИНЫ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Летние · сейчас на машине</span><span style="color: #5B5F66; text-align: right">185/65 R15</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Зимние · на хранении</span><span style="color: #5B5F66; text-align: right">в «[Сервис]» до 30 окт</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Износ по последнему осмотру</span><span style="color: #5B5F66; text-align: right">зимние 6 мм · норма</span></div></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">БЛИЖАЙШИЕ ОКНА РЯДОМ</div><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px"><button style="height: 60px; border-radius: 12px; border: none; background: #C2410C; color: #FFFFFF; font-weight: 700; font-size: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center"><span style="font-size: 11px; font-weight: 600; opacity: .75">пн, 28</span>18:30</button><button style="height: 60px; border-radius: 12px; border: 1px solid #E2DED6; background: #FFFFFF; color: #17191C; font-weight: 700; font-size: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center"><span style="font-size: 11px; font-weight: 600; opacity: .75">вт, 29</span>09:00</button><button style="height: 60px; border-radius: 12px; border: 1px solid #E2DED6; background: #FFFFFF; color: #17191C; font-weight: 700; font-size: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center"><span style="font-size: 11px; font-weight: 600; opacity: .75">вт, 29</span>13:30</button></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">Шиномонтаж 4 колёс</span><span style="font-weight: 700; font-size: 15px; white-space: nowrap">2 400 ₽</span></div><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 14px">Забрать зимние с хранения</span><span style="font-weight: 600; font-size: 14px; white-space: nowrap">0 ₽</span></div><label style="display: flex; gap: 10px; align-items: center; min-height: 44px; font-size: 14px; font-weight: 600"><input type="checkbox" checked style="width: 20px; height: 20px; accent-color: #C2410C">Сдать летние на хранение до весны · [ЦЕНА] ₽</label><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; white-space: nowrap">Цена в норме для R15</span></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><button style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Записаться на пн, 28 сент, 18:30</button></div>
+</div>
+</section>
+<section class="screen" id="s-Insurance" data-name="Insurance">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Страховка</h1><div style="font-size: 12px; color: #5B5F66">Данные авто и водителей уже заполнены</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; align-items: center"><span style="font-weight: 700; font-size: 16px">ОСАГО заканчивается</span><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #FCEBDF; color: #9A3412; white-space: nowrap">через 28 дней</span></div>
+<span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Полис до 24 октября · Страховая [Название] · 2 водителя</span>
+<div style="height: 8px; border-radius: 999px; background: #EFECE6; overflow: hidden"><div style="width: 92%; height: 8px; background: #C2410C"></div></div></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ПРЕДЛОЖЕНИЯ НА ПРОДЛЕНИЕ</div><div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 16px">Страховая А</span><span style="font-weight: 700; font-size: 16px; white-space: nowrap">7 840 ₽</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">е-ОСАГО · полис на почту через 10 минут</span><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #C2410C; color: #FFFFFF; white-space: nowrap">Выгоднее всего</span></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 16px">Страховая Б</span><span style="font-weight: 700; font-size: 16px; white-space: nowrap">8 120 ₽</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">е-ОСАГО · кэшбэк 400 баллов</span></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 16px">Страховая В</span><span style="font-weight: 700; font-size: 16px; white-space: nowrap">8 900 ₽</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">е-ОСАГО · выезд аварийного комиссара</span></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">КАСКО</span><span style="font-weight: 600; font-size: 15px; white-space: nowrap">расчёт за 2 минуты</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Сравним 6 страховых по вашему авто, стажу и пробегу</span></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><button style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Продлить ОСАГО за 7 840 ₽</button></div>
+</div>
+</section>
+<section class="screen" id="s-SOS" data-name="SOS">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Помощь на дороге</h1><div style="font-size: 12px; color: #5B5F66">Вы здесь: [адрес по геолокации]</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><button style="min-height: 104px; border-radius: 18px; border: none; background: #C2410C; color: #FFFFFF; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; text-align: left"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16h13l3-5h2v5h-2M3 16V9h9l2 3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><span><span style="display: block; font-weight: 700; font-size: 16px">Эвакуатор</span><span style="font-size: 12px; opacity: .8">подача ~40 мин</span></span></button><button style="min-height: 104px; border-radius: 18px; border: none; background: #17191C; color: #FFFFFF; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; text-align: left"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.3-.5-.5-2.3z"/></svg><span><span style="display: block; font-weight: 700; font-size: 16px">Техпомощь</span><span style="font-size: 12px; opacity: .8">прикурить, колесо, топливо</span></span></button><button style="min-height: 104px; border-radius: 18px; border: none; background: #FFFFFF; color: #17191C; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; text-align: left"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#17191C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span><span style="display: block; font-weight: 700; font-size: 16px">ДТП</span><span style="font-size: 12px; opacity: .8">пошаговый помощник</span></span></button><button style="min-height: 104px; border-radius: 18px; border: none; background: #FFFFFF; color: #9A3412; padding: 14px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; text-align: left"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9A3412" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg><span><span style="display: block; font-weight: 700; font-size: 16px">Позвонить 112</span><span style="font-size: 12px; opacity: .8">экстренные службы</span></span></button></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ЕСЛИ ПРОИЗОШЛО ДТП</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; gap: 10px; font-size: 14px; line-height: 1.4"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">1</span><span>Включите аварийку и выставьте знак: 15 м в городе, 30 м за городом</span></div><div style="display: flex; gap: 10px; font-size: 14px; line-height: 1.4"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span><span>Проверьте, нет ли пострадавших. Если есть — звоните 112</span></div><div style="display: flex; gap: 10px; font-size: 14px; line-height: 1.4"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">3</span><span>Сфотографируйте машины, номера и место — приложение подскажет ракурсы</span></div><div style="display: flex; gap: 10px; font-size: 14px; line-height: 1.4"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">4</span><span>Без пострадавших и при согласии сторон оформите европротокол онлайн</span></div></div><label style="display: flex; gap: 10px; align-items: center; min-height: 44px; font-size: 14px; font-weight: 600"><input type="checkbox" checked style="width: 20px; height: 20px; accent-color: #C2410C">Отправить мою геопозицию близким</label>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><button style="height: 48px; border-radius: 14px; background: #17191C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Начать фотофиксацию ДТП</button></div>
+</div>
+</section>
+<section class="screen" id="s-Subscription" data-name="Subscription">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">АвтоХаб Плюс</h1><div style="font-size: 12px; color: #5B5F66">ТО по фиксированной цене у сервисов-партнёров</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 17px">Базовый</span><span style="font-weight: 700; font-size: 17px; white-space: nowrap">0 ₽</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Гараж, напоминания, штрафы</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Сравнение цен на запчасти</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Запись в сервисы</span></div></div><div style="background: #FFFFFF; border: 2px solid #C2410C; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 17px">Плюс</span><span style="font-weight: 700; font-size: 17px; white-space: nowrap">[ЦЕНА] ₽/мес</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Регламентное ТО по фиксированной цене</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>2 сезонных шиномонтажа в год</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Диагностика раз в год</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Кэшбэк ×2 баллами</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Бесплатный эвакуатор 1 раз в год</span></div><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #C2410C; color: #FFFFFF; white-space: nowrap">Окупается уже на первом ТО</span></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 17px">Семья</span><span style="font-weight: 700; font-size: 17px; white-space: nowrap">[ЦЕНА] ₽/мес</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Всё из «Плюс» для 3 машин</span></div><div style="display: flex; gap: 8px; font-size: 14px"><span style="color: #0F6B3A; font-weight: 700">✓</span><span>Общий семейный гараж</span></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Отменить можно в любой момент. Неиспользованные услуги переносятся на следующий месяц.</span>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><button style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Попробовать «Плюс» 30 дней бесплатно</button></div>
+</div>
+</section>
+<section class="screen" id="s-Wallet" data-name="Wallet">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Баллы и копилка</h1><div style="font-size: 12px; color: #5B5F66">1 балл = 1 ₽ при оплате в приложении</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #17191C; border: none; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; color: #FFFFFF;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 14px"><span style="font-weight:600;font-size:14px;color:#C9CCD1">Баллы</span></span><span style="font-weight: 700; font-size: 14px; white-space: nowrap"><span style="font-size:13px;color:#FDBA8C">сгорят 0</span></span></div><div style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 34px">1 240</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4"><span style="color:#C9CCD1">Можно оплатить до 30% любого заказа</span></span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">КАК НАКОПИЛИСЬ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">ТО в сервисе, 12 марта</span><span style="color: #5B5F66; text-align: right">+315</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Колодки у Магазина А</span><span style="color: #5B5F66; text-align: right">+124</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Оплата штрафа</span><span style="color: #5B5F66; text-align: right">+15</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Отзыв о сервисе с фото</span><span style="color: #5B5F66; text-align: right">+100</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Приглашённый друг</span><span style="color: #5B5F66; text-align: right">+500</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Бонус за первый заказ</span><span style="color: #5B5F66; text-align: right">+186</span></div></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">КОПИЛКА НА ТО-60 000</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 16px">8 500 ₽</span><span style="font-weight: 700; font-size: 16px; white-space: nowrap">из 11 380 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6; overflow: hidden"><div style="width: 75%; height: 8px; background: #C2410C"></div></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Автопополнение 1 000 ₽ каждую пятницу · успеете к 3 октября</span></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><a href="#OneTapTO" style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Потратить баллы на ТО</a></div>
+</div>
+</section>
+<section class="screen" id="s-Budget" data-name="Budget">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Бюджет владения</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> · последние 12 месяцев</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #17191C; border: none; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; color: #FFFFFF;"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><div><div style="font-size: 12px; color: #C9CCD1">Потрачено за год</div><div style="font-size: 19px; font-weight: 700; color: #FFFFFF">19 770 ₽</div></div><div><div style="font-size: 12px; color: #C9CCD1">Сэкономлено с АвтоХабом</div><div style="font-size: 19px; font-weight: 700; color: #FDBA8C">1 940 ₽</div></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4"><span style="color:#C9CCD1">≈ 1,0 ₽ за километр без учёта топлива · 19 500 км за год</span></span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">НА ЧТО УХОДЯТ ДЕНЬГИ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px;"><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">Обслуживание</span><span>8 700 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6"><div style="width: 44%; height: 8px; border-radius: 999px; background: #17191C"></div></div></div><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">ОСАГО</span><span>7 840 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6"><div style="width: 40%; height: 8px; border-radius: 999px; background: #17191C"></div></div></div><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">Запчасти</span><span>2 480 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6"><div style="width: 13%; height: 8px; border-radius: 999px; background: #17191C"></div></div></div><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">Штрафы</span><span>750 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6"><div style="width: 4%; height: 8px; border-radius: 999px; background: #C2410C"></div></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Топливо можно добавить вручную или по чекам</span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ПРОГНОЗ НА 12 МЕСЯЦЕВ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">ТО-60 000, октябрь</span><span style="color: #5B5F66; text-align: right">11 380 ₽</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">ОСАГО, октябрь</span><span style="color: #5B5F66; text-align: right">~7 840 ₽</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Шиномонтаж ×2</span><span style="color: #5B5F66; text-align: right">4 800 ₽</span></div></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 16px">Итого прогноз</span><span style="font-weight: 700; font-size: 16px; white-space: nowrap">от 24 020 ₽</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Откладывайте ~2 000 ₽ в месяц — копилка сделает это сама</span></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><a href="#Wallet" style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Настроить копилку</a></div>
+</div>
+</section>
+<section class="screen" id="s-RepairLive" data-name="RepairLive">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Ремонт онлайн</h1><div style="font-size: 12px; color: #5B5F66">ТО-60 000 · Автосервис «[Название]» · бокс 3</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; gap: 10px; align-items: flex-start"><span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 999px; background: #0F6B3A; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">✓</span><div><div style="font-weight: 700; font-size: 14px">Машина принята</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">10:05 · фото кузова при приёмке</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start"><span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 999px; background: #0F6B3A; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">✓</span><div><div style="font-weight: 700; font-size: 14px">Диагностика</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">10:40 · осмотр ходовой и тормозов</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start"><span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 999px; background: #C2410C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center"></span><div><div style="font-weight: 700; font-size: 14px">Нужно ваше решение</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">мастер нашёл проблему</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start"><span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 999px; background: #EFECE6; color: #5B5F66; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center"></span><div><div style="font-weight: 700; font-size: 14px">Работы по ТО</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">ожидает</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start"><span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 999px; background: #EFECE6; color: #5B5F66; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center"></span><div><div style="font-weight: 700; font-size: 14px">Готово к выдаче</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">ожидается к 13:00</span></div></div></div><div style="background: #FFFFFF; border: 1.5px solid #C2410C; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">Задние тормозные колодки</span><span style="font-weight: 700; font-size: 15px; white-space: nowrap">остаток 2 мм</span></div>
+<div style="height: 90px; border-radius: 12px; background: #EDEAE3; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #5B5F66">[ФОТО И ВИДЕО ОТ МАСТЕРА]</div>
+<span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Мастер Алексей: «Колодки почти стёрты, рекомендую заменить сейчас» · <a href='javascript:void(0)' style='font-weight: 700'>Ответить</a></span>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 14px">Работа</span><span style="font-weight: 600; font-size: 14px; white-space: nowrap">1 200 ₽</span></div><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; white-space: nowrap">Работа в норме: 900–1 500 ₽</span>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 14px">Колодки у сервиса</span><span style="font-weight: 600; font-size: 14px; white-space: nowrap">3 400 ₽</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 14px">Колодки из приложения, привезут к 12:30</span><span style="font-weight: 600; font-size: 14px; white-space: nowrap">2 480 ₽</span></div></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">Итого с колодками из приложения</span><span style="font-weight: 700; font-size: 15px; white-space: nowrap">3 680 ₽</span></div><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><button style="height: 48px; border-radius: 14px; background: #FFFFFF; color: #17191C; border: 1.5px solid #17191C; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Отложить</button><button style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Согласовать</button></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Без вашего согласия сервис не может добавить работы в счёт</span></div>
+</div>
+</section>
+<section class="screen" id="s-Warranty" data-name="Warranty">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Гарантии</h1><div style="font-size: 12px; color: #5B5F66">Работы и запчасти, купленные через приложение</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #17191C; border: none; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; color: #FFFFFF;"><div style="font-weight: 700; font-size: 16px">Гарантия АвтоХаба</div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4"><span style="color:#C9CCD1">Если поломка вернулась в течение 30 дней после ремонта через приложение — сервис переделает бесплатно, а если не договоритесь, вернём деньги мы</span></span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ДЕЙСТВУЮТ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">ТО-60 000 км</span><span style="font-weight: 700; font-size: 15px; white-space: nowrap">до 2 ноября</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Автосервис «[Название]» · работы 3 900 ₽</span><div style="height: 6px; border-radius: 999px; background: #EFECE6"><div style="width: 20%; height: 6px; border-radius: 999px; background: #0F6B3A"></div></div></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">Задние колодки</span><span style="font-weight: 700; font-size: 15px; white-space: nowrap">до 3 окт 2027</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Гарантия продавца 12 месяцев · чек сохранён</span></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">Масляный фильтр MANN</span><span style="font-weight: 700; font-size: 15px; white-space: nowrap">до 3 окт 2027</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Гарантия продавца · чек сохранён</span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ИСТЁКШИЕ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Замена масла, март</span><span style="color: #5B5F66; text-align: right">истекла 11 апр</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Шиномонтаж, сентябрь 2025</span><span style="color: #5B5F66; text-align: right">истекла 18 окт</span></div></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><button style="height: 48px; border-radius: 14px; background: #17191C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Поломка вернулась — открыть заявку</button></div>
+</div>
+</section>
+<section class="screen" id="s-CarPassport" data-name="CarPassport">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Паспорт автомобиля</h1><div style="font-size: 12px; color: #5B5F66">Подтверждённая история для продажи</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #17191C; border: none; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; color: #FFFFFF;"><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px"><div><div style="font-size: 12px; color: #C9CCD1">Записей</div><div style="font-size: 19px; font-weight: 700; color: #FFFFFF">12</div></div><div><div style="font-size: 12px; color: #C9CCD1">Подтверждено</div><div style="font-size: 19px; font-weight: 700; color: #FFFFFF">9</div></div><div><div style="font-size: 12px; color: #C9CCD1">Пробег</div><div style="font-size: 19px; font-weight: 700; color: #9CCFB0">чистый</div></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4"><span style="color:#C9CCD1">Подтверждено = заказ-наряд сервиса или чек магазина</span></span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ПРОБЕГ ПО ДАННЫМ ИСТОРИИ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: flex-end; gap: 6px; height: 80px"><div style="flex-grow: 1; height: 30%; background: #DDD8CF; border-radius: 6px 6px 0 0"></div><div style="flex-grow: 1; height: 45%; background: #DDD8CF; border-radius: 6px 6px 0 0"></div><div style="flex-grow: 1; height: 58%; background: #DDD8CF; border-radius: 6px 6px 0 0"></div><div style="flex-grow: 1; height: 66%; background: #DDD8CF; border-radius: 6px 6px 0 0"></div><div style="flex-grow: 1; height: 77%; background: #DDD8CF; border-radius: 6px 6px 0 0"></div><div style="flex-grow: 1; height: 100%; background: #C2410C; border-radius: 6px 6px 0 0"></div></div>
+<div style="display: flex; justify-content: space-between; font-size: 11px; color: #5B5F66"><span>2021</span><span>2022</span><span>2023</span><span>2024</span><span>2025</span><span>2026</span></div>
+<span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Пробег только растёт — признаков скрутки нет. Источники: сервисы, техосмотры, ваши отметки</span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ДОКУМЕНТЫ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Заказ-наряды</span><span style="color: #5B5F66; text-align: right">9 шт.</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Чеки на запчасти</span><span style="color: #5B5F66; text-align: right">14 шт.</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">СТС и ОСАГО</span><span style="color: #5B5F66; text-align: right">загружены</span></div></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; gap: 14px; align-items: center"><div style="width: 88px; height: 88px; flex-shrink: 0; border-radius: 10px; background: #FFFFFF; border: 2px solid #17191C; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700">[QR]</div>
+<div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Покупатель увидит историю обслуживания и пробег, но не ваши личные данные. Ссылка действует 7 дней.</span></div></div></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><button style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Поделиться с покупателем</button></div>
+</div>
+</section>
+<section class="screen" id="s-Family" data-name="Family">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Семейный гараж</h1><div style="font-size: 12px; color: #5B5F66">Общие машины, штрафы и записи</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">УЧАСТНИКИ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; gap: 12px; align-items: center"><span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #17191C; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">ВЫ</span>
+<div style="flex-grow: 1"><div style="font-weight: 700; font-size: 15px">Вы</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">владелец · <span data-car="name">Kia Rio IV</span>, Lada Granta</span></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Полный доступ</span></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; gap: 12px; align-items: center"><span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #1B3F99; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">А</span>
+<div style="flex-grow: 1"><div style="font-weight: 700; font-size: 15px">Анна</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">водитель <span data-car="name">Kia Rio IV</span></span></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Видит машину, получает штрафы и напоминания, может записать в сервис</span></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; gap: 12px; align-items: center"><span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #0F6B3A; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">П</span>
+<div style="flex-grow: 1"><div style="font-weight: 700; font-size: 15px">Папа</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">владелец Lada Granta</span></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Вы помогаете: видите напоминания о его ТО и можете оплатить заказ</span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">МАШИНЫ СЕМЬИ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600"><span data-car="name">Kia Rio IV</span> · <span data-car="plate">А 123 ВС 177</span></span><span style="color: #5B5F66; text-align: right">ТО через 1 600 км</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Lada Granta · [госномер]</span><span style="color: #5B5F66; text-align: right">ОСАГО через 2 мес</span></div></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">Для бизнеса</span><span style="font-weight: 700; font-size: 15px; white-space: nowrap">до 10 машин</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Путевые листы, закрывающие документы для бухгалтерии, лимиты расходов на водителя</span></div>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><button style="height: 48px; border-radius: 14px; background: #17191C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Пригласить в гараж</button></div>
+</div>
+</section>
+<section class="screen" id="s-Community" data-name="Community">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 52px 16px 0; display: flex; align-items: center; gap: 8px">
+<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Владельцы <span data-car="name">Kia Rio IV</span></h1><div style="font-size: 12px; color: #5B5F66">1.6 бензин · данные по покупкам и визитам в АвтоХабе</div></div>
+</div>
+<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">МАСЛЯНЫЙ ФИЛЬТР: ЧТО СТАВЯТ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px;"><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 700">MANN W 811/80</span><span style="font-weight: 700">41%</span></div><div style="height: 6px; border-radius: 999px; background: #EFECE6"><div style="width: 41%; height: 6px; border-radius: 999px; background: #C2410C"></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">★ 4.8 · «ходит весь интервал без вопросов»</span></div><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 700">Оригинал 26300-35505</span><span style="font-weight: 700">33%</span></div><div style="height: 6px; border-radius: 999px; background: #EFECE6"><div style="width: 33%; height: 6px; border-radius: 999px; background: #C2410C"></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">★ 4.9 · дороже на ~230 ₽</span></div><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 700">Mahle OC 1051</span><span style="font-weight: 700">12%</span></div><div style="height: 6px; border-radius: 999px; background: #EFECE6"><div style="width: 12%; height: 6px; border-radius: 999px; background: #C2410C"></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">★ 4.6</span></div></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ЧТО МЕНЯЛИ НА ПРОБЕГЕ 50–70 ТЫС. КМ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Передние колодки</span><span style="color: #5B5F66; text-align: right">38% владельцев</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Аккумулятор</span><span style="color: #5B5F66; text-align: right">17%</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">[Типовая замена]</span><span style="color: #5B5F66; text-align: right">[доля]</span></div></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">СЕРВИСЫ, КОТОРЫМ ДОВЕРЯЮТ ВЛАДЕЛЬЦЫ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 15px">Автосервис «[Название]»</span><span style="font-weight: 700; font-size: 15px; white-space: nowrap">★ 4.8</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Обслуживают 214 владельцев Kia Rio · 1,2 км</span><span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; white-space: nowrap">ТО 3 900 ₽ · цена в норме</span></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Цифры — по анонимной статистике покупок и визитов пользователей. Отзывы только от подтверждённых покупателей.</span>
+</div>
+<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><a href="#Offers" style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Сравнить цены на MANN W 811/80</a></div>
+</div>
+</section>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<template id="map-podmoskovye"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 335 312" data-lon0="35.0" data-lat0="57.0" data-kx="62.6514" data-ky="111.2000" role="img" aria-label="Схема Московской области">
+<title>Подмосковье — схема для прототипа АвтоХаб</title>
+<style>.map-towns text,.map-roads text{paint-order:stroke;stroke:#F6F4EF;stroke-width:3px;stroke-linejoin:round;vector-effect:non-scaling-stroke}</style>
+<rect x="-400" y="-400" width="1135" height="1112" fill="#E4E0D6"/>
+<path d="M9.4 116.8 L25.1 83.4 L56.4 61.2 L94.0 50.0 L119.0 22.2 L137.8 24.5 L162.9 4.4 L188.0 16.7 L206.7 44.5 L225.5 66.7 L256.9 105.6 L269.4 116.8 L303.9 139.0 L325.8 166.8 L319.5 200.2 L275.7 233.5 L250.6 266.9 L238.1 305.8 L213.0 294.7 L194.2 261.3 L169.2 244.6 L144.1 239.1 L119.0 228.0 L94.0 200.2 L68.9 183.5 L43.9 172.4 L18.8 155.7 Z" fill="#F6F4EF" stroke="#C9C3B6" stroke-width="1.2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+<g fill="none" stroke="#C9DAE8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+<path d="M131.6 235.7 L151.6 233.5 L169.2 239.1 L197.4 239.1 L213.0 228.0 L236.2 213.5 L253.7 222.4 L272.5 239.1" vector-effect="non-scaling-stroke"><title>Ока</title></path>
+<path d="M56.4 161.2 L75.2 146.8 L94.0 150.1 L116.5 142.3 L137.8 135.7 L150.4 139.0 L164.1 140.1 L178.6 150.1 L188.0 161.2 L204.2 175.7 L219.3 183.5 L230.6 186.8 L236.8 211.3" vector-effect="non-scaling-stroke"><title>Москва-река</title></path>
+</g>
+<circle cx="164.0" cy="138.9" r="55.0" fill="none" stroke="#D8D2C6" stroke-width="2" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/>
+<g fill="none" stroke="#D8D2C6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M151.7 126.6 L137.2 112.3 L124.0 91.2 L108.4 74.5 L95.2 52.3" vector-effect="non-scaling-stroke"/>
+<path d="M160.8 121.8 L159.8 116.8 L157.9 73.4 L136.0 30.0" vector-effect="non-scaling-stroke"/>
+<path d="M170.4 122.7 L171.0 121.2 L178.6 110.1 L196.1 76.7 L213.0 53.4" vector-effect="non-scaling-stroke"/>
+<path d="M177.9 128.4 L178.6 127.9 L186.1 120.1 L203.6 114.5" vector-effect="non-scaling-stroke"/>
+<path d="M180.8 134.3 L184.2 133.4 L215.5 127.9 L228.7 135.7 L253.7 124.5" vector-effect="non-scaling-stroke"/>
+<path d="M179.9 146.0 L181.7 146.8 L204.2 174.6 L234.9 211.3 L266.3 235.7" vector-effect="non-scaling-stroke"/>
+<path d="M168.2 155.8 L172.3 172.4 L184.8 222.4 L197.4 241.3 L206.7 272.4" vector-effect="non-scaling-stroke"/>
+<path d="M162.0 156.2 L159.8 174.6 L154.7 206.8 L152.2 230.2 L154.7 241.3" vector-effect="non-scaling-stroke"/>
+<path d="M149.4 148.4 L129.7 161.2 L108.4 179.0 L84.6 194.6" vector-effect="non-scaling-stroke"/>
+<path d="M147.7 145.0 L142.8 146.8 L106.5 157.9 L64.5 167.9 L31.3 170.1" vector-effect="non-scaling-stroke"/>
+<path d="M147.8 132.6 L144.1 131.2 L116.5 121.2 L60.1 111.2 L15.7 113.4" vector-effect="non-scaling-stroke"/>
+</g>
+<g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+<path d="M151.7 126.6 L137.2 112.3 L124.0 91.2 L108.4 74.5 L95.2 52.3" vector-effect="non-scaling-stroke"/>
+<path d="M160.8 121.8 L159.8 116.8 L157.9 73.4 L136.0 30.0" vector-effect="non-scaling-stroke"/>
+<path d="M170.4 122.7 L171.0 121.2 L178.6 110.1 L196.1 76.7 L213.0 53.4" vector-effect="non-scaling-stroke"/>
+<path d="M177.9 128.4 L178.6 127.9 L186.1 120.1 L203.6 114.5" vector-effect="non-scaling-stroke"/>
+<path d="M180.8 134.3 L184.2 133.4 L215.5 127.9 L228.7 135.7 L253.7 124.5" vector-effect="non-scaling-stroke"/>
+<path d="M179.9 146.0 L181.7 146.8 L204.2 174.6 L234.9 211.3 L266.3 235.7" vector-effect="non-scaling-stroke"/>
+<path d="M168.2 155.8 L172.3 172.4 L184.8 222.4 L197.4 241.3 L206.7 272.4" vector-effect="non-scaling-stroke"/>
+<path d="M162.0 156.2 L159.8 174.6 L154.7 206.8 L152.2 230.2 L154.7 241.3" vector-effect="non-scaling-stroke"/>
+<path d="M149.4 148.4 L129.7 161.2 L108.4 179.0 L84.6 194.6" vector-effect="non-scaling-stroke"/>
+<path d="M147.7 145.0 L142.8 146.8 L106.5 157.9 L64.5 167.9 L31.3 170.1" vector-effect="non-scaling-stroke"/>
+<path d="M147.8 132.6 L144.1 131.2 L116.5 121.2 L60.1 111.2 L15.7 113.4" vector-effect="non-scaling-stroke"/>
+</g>
+<circle cx="164.0" cy="138.9" r="17.4" fill="#E7E3DB" stroke="#17191C" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+<g class="map-roads" font-size="3.5" font-family="JetBrains Mono, monospace" fill="#5B5F66" text-anchor="middle">
+<text x="101.8" y="63.4" data-rank="2">М-10</text>
+<text x="146.9" y="51.7" data-rank="2">А-104</text>
+<text x="204.6" y="65.0" data-rank="2">М-8</text>
+<text x="194.8" y="117.3" data-rank="2">А-103</text>
+<text x="241.2" y="130.1" data-rank="2">М-7</text>
+<text x="250.6" y="223.5" data-rank="2">М-5</text>
+<text x="202.1" y="256.9" data-rank="2">М-4</text>
+<text x="153.4" y="235.8" data-rank="2">М-2</text>
+<text x="96.5" y="186.8" data-rank="2">М-3</text>
+<text x="47.9" y="169.0" data-rank="2">М-1</text>
+<text x="37.9" y="112.3" data-rank="2">М-9</text>
+</g>
+<g class="map-towns" font-size="4.5" font-family="Manrope, sans-serif" fill="#17191C">
+<g data-rank="1"><circle cx="153.2" cy="123.5" r="1" fill="#5B5F66"/><text x="153.2" y="123.5" data-dx="1" data-dy="-1">Химки</text></g>
+<g data-rank="1"><circle cx="171.0" cy="121.1" r="1" fill="#5B5F66"/><text x="171.0" y="121.1" data-dx="1" data-dy="-1">Мытищи</text></g>
+<g data-rank="1"><circle cx="184.1" cy="133.9" r="1" fill="#5B5F66"/><text x="184.1" y="133.9" data-dx="1" data-dy="-1">Балашиха</text></g>
+<g data-rank="1"><circle cx="181.3" cy="147.2" r="1" fill="#5B5F66"/><text x="181.3" y="147.2" data-dx="1" data-dy="-1">Люберцы</text></g>
+<g data-rank="1"><circle cx="159.4" cy="174.5" r="1" fill="#5B5F66"/><text x="159.4" y="174.5" data-dx="1" data-dy="-1">Подольск</text></g>
+<g data-rank="1"><circle cx="142.7" cy="147.0" r="1" fill="#5B5F66"/><text x="142.7" y="147.0" data-dx="1" data-dy="-1">Одинцово</text></g>
+<g data-rank="1"><circle cx="146.0" cy="130.0" r="1" fill="#5B5F66"/><text x="146.0" y="130.0" data-dx="1" data-dy="-1">Красногорск</text></g>
+<g data-rank="2"><circle cx="178.8" cy="119.9" r="1" fill="#5B5F66"/><text x="178.8" y="119.9" data-dx="1" data-dy="-1">Королёв</text></g>
+<g data-rank="2"><circle cx="138.7" cy="112.2" r="1" fill="#5B5F66"/><text x="138.7" y="112.2" data-dx="1" data-dy="-1">Зеленоград</text></g>
+<g data-rank="1"><circle cx="173.3" cy="173.8" r="1" fill="#5B5F66"/><text x="173.3" y="173.8" data-dx="1" data-dy="-1">Домодедово</text></g>
+<g data-rank="1"><circle cx="196.5" cy="76.2" r="1" fill="#5B5F66"/><text x="196.5" y="76.2" data-dx="1" data-dy="-1">Сергиев Посад</text></g>
+<g data-rank="1"><circle cx="235.1" cy="210.9" r="1" fill="#5B5F66"/><text x="235.1" y="210.9" data-dx="1" data-dy="-1">Коломна</text></g>
+<g data-rank="1"><circle cx="151.1" cy="232.1" r="1" fill="#5B5F66"/><text x="151.1" y="232.1" data-dx="1" data-dy="-1">Серпухов</text></g>
+<g data-rank="1"><circle cx="108.3" cy="74.4" r="1" fill="#5B5F66"/><text x="108.3" y="74.4" data-dx="1" data-dy="-1">Клин</text></g>
+<g data-rank="1"><circle cx="157.9" cy="72.9" r="1" fill="#5B5F66"/><text x="157.9" y="72.9" data-dx="1" data-dy="-1">Дмитров</text></g>
+<g data-rank="1"><circle cx="215.6" cy="127.4" r="1" fill="#5B5F66"/><text x="215.6" y="127.4" data-dx="1" data-dy="-1">Ногинск</text></g>
+<g data-rank="1"><circle cx="248.2" cy="132.8" r="1" fill="#5B5F66"/><text x="248.2" y="132.8" data-dx="1" data-dy="-1">Орехово-Зуево</text></g>
+<g data-rank="1"><circle cx="108.6" cy="179.5" r="1" fill="#5B5F66"/><text x="108.6" y="179.5" data-dx="1" data-dy="-1">Наро-Фоминск</text></g>
+<g data-rank="1"><circle cx="64.2" cy="165.9" r="1" fill="#5B5F66"/><text x="64.2" y="165.9" data-dx="1" data-dy="-1">Можайск</text></g>
+<g data-rank="1"><circle cx="60.1" cy="107.3" r="1" fill="#5B5F66"/><text x="60.1" y="107.3" data-dx="1" data-dy="-1">Волоколамск</text></g>
+<g data-rank="2"><circle cx="116.6" cy="120.7" r="1" fill="#5B5F66"/><text x="116.6" y="120.7" data-dx="1" data-dy="-1">Истра</text></g>
+<g data-rank="1"><circle cx="135.8" cy="29.8" r="1" fill="#5B5F66"/><text x="135.8" y="29.8" data-dx="1" data-dy="-1">Дубна</text></g>
+<g data-rank="1"><circle cx="252.9" cy="179.8" r="1" fill="#5B5F66"/><text x="252.9" y="179.8" data-dx="1" data-dy="-1">Егорьевск</text></g>
+<g data-rank="1"><circle cx="197.4" cy="240.9" r="1" fill="#5B5F66"/><text x="197.4" y="240.9" data-dx="1" data-dy="-1">Кашира</text></g>
+<g data-rank="2"><circle cx="154.7" cy="206.5" r="1" fill="#5B5F66"/><text x="154.7" y="206.5" data-dx="1" data-dy="-1">Чехов</text></g>
+<g data-rank="2"><circle cx="202.4" cy="159.3" r="1" fill="#5B5F66"/><text x="202.4" y="159.3" data-dx="1" data-dy="-1">Раменское</text></g>
+<g data-rank="2"><circle cx="186.2" cy="119.7" r="1" fill="#5B5F66"/><text x="186.2" y="119.7" data-dx="1" data-dy="-1">Щёлково</text></g>
+<g data-rank="2"><circle cx="178.4" cy="110.0" r="1" fill="#5B5F66"/><text x="178.4" y="110.0" data-dx="1" data-dy="-1">Пушкино</text></g>
+<g data-rank="1"><circle cx="284.7" cy="158.2" r="1" fill="#5B5F66"/><text x="284.7" y="158.2" data-dx="1" data-dy="-1">Шатура</text></g>
+<g data-rank="2"><circle cx="230.6" cy="186.5" r="1" fill="#5B5F66"/><text x="230.6" y="186.5" data-dx="1" data-dy="-1">Воскресенск</text></g>
+<g data-rank="2"><circle cx="123.9" cy="90.6" r="1" fill="#5B5F66"/><text x="123.9" y="90.6" data-dx="1" data-dy="-1">Солнечногорск</text></g>
+<g data-rank="2"><circle cx="74.9" cy="144.4" r="1" fill="#5B5F66"/><text x="74.9" y="144.4" data-dx="1" data-dy="-1">Руза</text></g>
+<g data-rank="2"><circle cx="243.3" cy="248.9" r="1" fill="#5B5F66"/><text x="243.3" y="248.9" data-dx="1" data-dy="-1">Зарайск</text></g>
+<g data-rank="2"><circle cx="158.3" cy="29.9" r="1" fill="#5B5F66"/><text x="158.3" y="29.9" data-dx="1" data-dy="-1">Талдом</text></g>
+<g data-rank="2"><circle cx="155.1" cy="109.9" r="1" fill="#5B5F66"/><text x="155.1" y="109.9" data-dx="1" data-dy="-1">Лобня</text></g>
+<g data-rank="2"><circle cx="157.5" cy="118.7" r="1" fill="#5B5F66"/><text x="157.5" y="118.7" data-dx="1" data-dy="-1">Долгопрудный</text></g>
+<g data-rank="2"><circle cx="169.7" cy="161.1" r="1" fill="#5B5F66"/><text x="169.7" y="161.1" data-dx="1" data-dy="-1">Видное</text></g>
+<g data-rank="2"><circle cx="178.9" cy="138.0" r="1" fill="#5B5F66"/><text x="178.9" y="138.0" data-dx="1" data-dy="-1">Реутов</text></g>
+<g data-rank="2"><circle cx="195.3" cy="155.8" r="1" fill="#5B5F66"/><text x="195.3" y="155.8" data-dx="1" data-dy="-1">Жуковский</text></g>
+<g data-rank="2"><circle cx="215.8" cy="135.1" r="1" fill="#5B5F66"/><text x="215.8" y="135.1" data-dx="1" data-dy="-1">Электросталь</text></g>
+<g data-rank="2"><circle cx="192.8" cy="235.1" r="1" fill="#5B5F66"/><text x="192.8" y="235.1" data-dx="1" data-dy="-1">Ступино</text></g>
+<g data-rank="2"><circle cx="116.2" cy="141.2" r="1" fill="#5B5F66"/><text x="116.2" y="141.2" data-dx="1" data-dy="-1">Звенигород</text></g>
+<g data-rank="2"><circle cx="136.8" cy="128.8" r="1" fill="#5B5F66"/><text x="136.8" y="128.8" data-dx="1" data-dy="-1">Нахабино</text></g>
+<g data-rank="2"><circle cx="132.9" cy="125.7" r="1" fill="#5B5F66"/><text x="132.9" y="125.7" data-dx="1" data-dy="-1">Дедовск</text></g>
+<g data-rank="0"><text x="164.0" y="138.9" text-anchor="middle" font-weight="700" font-size="5" data-fs="12" font-family="Unbounded, sans-serif">МОСКВА</text></g>
+<g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
+</g>
+</svg></template>
+<script src="api.js"></script>
+<script src="car.js"></script>
+<script src="services.js"></script>
+<script>
+(function(){
+  function show(){
+    var name=(location.hash||"#Garage").slice(1).split("/")[0];
+    var el=document.getElementById("s-"+name)||document.getElementById("s-Garage");
+    document.querySelectorAll(".screen").forEach(function(s){s.classList.toggle("active",s===el)});
+    var sc=el.querySelector('div[style*="flex-grow: 1"]'); if(sc) sc.scrollTop=0;
+  }
+  var toastT;
+  function toast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove("show")},1600)}
+  document.addEventListener("click",function(e){
+    var btn=e.target.closest("button");
+    if(btn&&!btn.closest("a")&&!btn.dataset.action&&!btn.classList.contains("cartab")){toast("В прототипе это действие пока не подключено")}
+  });
+  window.addEventListener("hashchange",show);
+  if(window.AutoHubCar) window.AutoHubCar.init();
+  if(window.AutoHubServices) window.AutoHubServices.init();
+  show();
+})();
+
+</script>
+</body>
+</html>

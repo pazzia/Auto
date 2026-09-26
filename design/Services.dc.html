@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Автосервисы рядом</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&amp;family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap">
+<style>
+body{margin:0;background:#F3F1EC;font-family:Manrope,'Segoe UI',sans-serif;color:#17191C}
+a{color:#C2410C}a:hover{color:#9A3412}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 56px 16px 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4px">
+<div><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 24px">Автосервисы</h1><div style="font-size: 13px; color: #5B5F66">рядом · для Kia Rio IV</div></div>
+<div style="display: flex; padding: 3px; background: #E7E3DB; border-radius: 10px"><button style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: #FFFFFF; font-size: 12px; font-weight: 700; color: #17191C">Карта</button><button style="height: 36px; padding: 0 10px; border-radius: 8px; border: none; background: transparent; font-size: 12px; font-weight: 600; color: #5B5F66">Список</button></div>
+</div>
+<div style="display: flex; gap: 8px; overflow: hidden">
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #17191C; color: #FFFFFF; border: none; font-size: 13px; font-weight: 600">Онлайн-запись</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">ТО</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">Свободно сегодня</button>
+<button style="flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; color: #17191C; border: 1px solid #E2DED6; font-size: 13px; font-weight: 600">Шиномонтаж</button>
+</div>
+</div>
+<div style="margin: 0 16px; height: 180px; border-radius: 18px; background: #E4E0D6; position: relative; overflow: hidden; flex-shrink: 0">
+<svg width="358" height="180" viewBox="0 0 358 180" fill="none" style="position: absolute; left: 0; top: 0"><path d="M0 60 L358 90 M0 140 L358 120 M90 0 L120 180 M250 0 L230 180" stroke="#F6F4EF" stroke-width="10"/><path d="M0 20 L358 30 M170 0 L180 180" stroke="#F6F4EF" stroke-width="4"/></svg>
+<div style="position: absolute; left: 100px; top: 58px; height: 30px; padding: 0 10px; border-radius: 999px; background: {{accent}}; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center">★ 4.8</div>
+<div style="position: absolute; left: 210px; top: 100px; height: 30px; padding: 0 10px; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center">★ 4.6</div>
+<div style="position: absolute; left: 260px; top: 30px; height: 30px; padding: 0 10px; border-radius: 999px; background: #17191C; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center">★ 4.9</div>
+<div style="position: absolute; left: 160px; top: 128px; width: 16px; height: 16px; border-radius: 999px; background: #1D4ED8; border: 3px solid #FFFFFF"></div>
+</div>
+<div style="flex-grow: 1; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="background: #FFFFFF; border: 1.5px solid {{accent}}; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">Автосервис «[Название]»</span><span style="font-size: 13px; color: #5B5F66">1,2 км · [адрес] · до 21:00</span></div>
+<span style="font-weight: 700; font-size: 15px; white-space: nowrap">★ 4.8</span>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px"><span style="padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; font-weight: 700">ТО 3 900 ₽ · цена в норме</span><span style="padding: 3px 8px; border-radius: 6px; background: #EFECE6; font-weight: 600">2ГИС 4.8 · 312 отз.</span><span style="padding: 3px 8px; border-radius: 6px; background: #EFECE6; font-weight: 600">Яндекс 4.7 · 208 отз.</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div><div style="font-size: 12px; color: #5B5F66">Ближайшее окно</div><div style="font-weight: 700; font-size: 15px; color: #0F6B3A">Сегодня, 16:30</div></div>
+<a href="ServiceBooking.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: {{accent}}; color: #FFFFFF; font-weight: 700; font-size: 14px; display: flex; align-items: center; text-decoration: none">Записаться</a>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">Техцентр «[Название]»</span><span style="font-size: 13px; color: #5B5F66">2,4 км · работает с Kia</span></div>
+<span style="font-weight: 700; font-size: 15px">★ 4.6</span>
+</div>
+<span style="align-self: flex-start; font-size: 12px; padding: 3px 8px; border-radius: 6px; background: #FCEBDF; color: #9A3412; font-weight: 700">ТО 5 200 ₽ · выше рынка на 13%</span>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div><div style="font-size: 12px; color: #5B5F66">Ближайшее окно</div><div style="font-weight: 700; font-size: 15px">Завтра, 10:00</div></div>
+<a href="ServiceBooking.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #F3F1EC; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; text-decoration: none">Записаться</a>
+</div>
+</div>
+</div>
+<nav style="height: 80px; flex-shrink: 0; background: #FFFFFF; border-top: 1px solid #E2DED6; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0 8px 14px">
+<a href="Garage.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6v10H3z"/><path d="M7 20v-6h10v6"/></svg>Гараж</a>
+<a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L4 16.8V20h3.2l5.3-5.3a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.3-.5-.5-2.3z"/></svg>Запчасти</a>
+<a href="Services.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; text-decoration: none; color: {{accent}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Сервисы</a>
+<a href="Cart.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; text-decoration: none; color: #5B5F66"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h2l2 11h11l2-8H6"/><circle cx="9" cy="19.5" r="1"/><circle cx="17" cy="19.5" r="1"/></svg>Корзина</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#C2410C","options":["#C2410C","#1D4ED8","#17191C","#0F766E"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#C2410C' };
+  }
+}
+</script>
+</body>
+</html>

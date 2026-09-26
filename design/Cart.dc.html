@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Корзина</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&amp;family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap">
+<style>
+body{margin:0;background:#F3F1EC;font-family:Manrope,'Segoe UI',sans-serif;color:#17191C}
+a{color:#C2410C}a:hover{color:#9A3412}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: 60px 20px 14px; display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 26px">Корзина</h1>
+<span style="font-size: 14px; color: #5B5F66">3 детали · 2 продавца</span>
+</div>
+<div style="flex-grow: 1; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="background: #FCEBDF; border-radius: 16px; padding: 14px; display: flex; gap: 12px; align-items: center">
+<div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: {{accent}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6 4 4 6-8"/><path d="M15 7h5v5"/></svg></div>
+<div style="flex-grow: 1; font-size: 13px; line-height: 1.4"><b style="font-size: 14px">Соберите заказ у одного продавца</b><br>Магазин А — дешевле на 140 ₽ с учётом доставки</div>
+<button style="height: 44px; padding: 0 12px; border-radius: 10px; background: #FFFFFF; border: none; font-size: 13px; font-weight: 700; color: #9A3412">Применить</button>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; background: #FAF9F6; border-bottom: 1px solid #EFECE6"><span style="font-weight: 700; font-size: 15px">Магазин А</span><span style="font-size: 12px; color: #5B5F66">доставка завтра · 199 ₽</span></div>
+<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid #EFECE6">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Фильтр масляный MANN</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">W 811/80</span></div>
+<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
+<span style="width: 64px; text-align: right; font-weight: 700">412 ₽</span>
+</div>
+<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Фильтр воздушный</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">[АРТИКУЛ]</span></div>
+<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
+<span style="width: 64px; text-align: right; font-weight: 700">590 ₽</span>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden">
+<div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; background: #FAF9F6; border-bottom: 1px solid #EFECE6"><span style="font-weight: 700; font-size: 15px">Магазин Б</span><span style="font-size: 12px; color: #5B5F66">доставка сегодня · 249 ₽</span></div>
+<div style="padding: 12px 14px; display: flex; gap: 12px; align-items: center">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 14px">Масло моторное 5W-30, 4 л</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #5B5F66">[АРТИКУЛ]</span></div>
+<div style="display: flex; align-items: center; border: 1px solid #E2DED6; border-radius: 10px"><button aria-label="Меньше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">−</button><span style="width: 20px; text-align: center; font-weight: 700">1</span><button aria-label="Больше" style="width: 36px; height: 36px; background: none; border: none; font-size: 18px; color: #17191C">+</button></div>
+<span style="width: 64px; text-align: right; font-weight: 700">3 150 ₽</span>
+</div>
+</div>
+</div>
+<div style="padding: 16px 20px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #5B5F66"><span>Товары</span><span>4 152 ₽</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 14px; color: #5B5F66"><span>Доставка (2 продавца)</span><span>448 ₽</span></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-weight: 700; font-size: 16px">Итого</span><span style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 24px">4 600 ₽</span></div>
+<button style="height: 54px; border-radius: 14px; background: {{accent}}; border: none; color: #FFFFFF; font-weight: 700; font-size: 16px">Оформить у 2 продавцов</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#C2410C","options":["#C2410C","#1D4ED8","#17191C","#0F766E"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#C2410C' };
+  }
+}
+</script>
+</body>
+</html>

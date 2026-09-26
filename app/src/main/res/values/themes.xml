@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.AutoHub" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:colorAccent">@color/accent</item>
+    </style>
+    <color name="bg">#F3F1EC</color>
+    <color name="accent">#C2410C</color>
+    <color name="ink">#17191C</color>
+</resources>

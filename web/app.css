@@ -1,0 +1,36 @@
+html,body{margin:0;height:100%;background:#E7E3DB;font-family:Manrope,'Segoe UI',Roboto,sans-serif;color:#17191C;-webkit-tap-highlight-color:transparent}
+button,input,select{font-family:inherit}
+a{color:#C2410C}
+.screen{display:none;height:100%;max-width:480px;margin:0 auto;background:#F3F1EC}
+.screen.active{display:block}
+.screen>div{width:100%!important;height:100%!important;box-sizing:border-box}
+.screen>div>div[style*="flex-grow: 1"]{overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch}
+#s-Results>div>div[style*="flex-grow: 1"]{padding-bottom:100px!important}
+button,a{cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
+[hidden]{display:none!important}
+.btn-dark,.btn-light,.btn-accent{height:50px;border-radius:14px;font-weight:700;font-size:15px;width:100%}
+.btn-dark{background:#17191C;color:#fff;border:none}
+.btn-light{background:#F3F1EC;color:#17191C;border:none;height:44px;font-size:14px}
+.btn-accent{background:#C2410C;color:#fff;border:none;height:54px;font-size:16px}
+.err{font-size:13px;font-weight:600;color:#9A3412}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#5B5F66}
+.fld input,.fld select{height:48px;padding:0 12px;border-radius:12px;border:1px solid #E2DED6;background:#fff;font-size:15px;color:#17191C;min-width:0;box-sizing:border-box}
+.dot{width:22px;height:22px;border-radius:999px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.dot.ok{background:#0F6B3A}.dot.part{background:#9A3412}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:#17191C;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.screen>div>div[style*="flex-grow: 1"]>*{flex-shrink:0}
+/* Карта автосервисов (web/services.js) */
+.mapfull{position:absolute;inset:0;z-index:5;display:none;background:#E4E0D6}
+.mapfull-canvas{position:absolute;inset:0;overflow:hidden}
+.mapfull-top{position:absolute;left:12px;right:12px;top:44px;display:flex;gap:8px;align-items:center;pointer-events:none}
+.mapfull-top>*{pointer-events:auto}
+.mapfull-title{background:#fff;border:1px solid #E2DED6;border-radius:12px;padding:6px 12px;font-family:Unbounded,'Arial Black',sans-serif;font-weight:700;font-size:14px;display:flex;flex-direction:column;gap:1px}
+.mapfull-title span{font-family:Manrope,sans-serif;font-weight:600;font-size:11px;color:#5B5F66}
+.mapbtn{width:44px;height:44px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid #E2DED6;font-size:22px;font-weight:700;color:#17191C;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:0}
+.mapfull-zoom{position:absolute;right:12px;top:108px;display:flex;flex-direction:column;gap:8px}
+.mapfull-sheet{position:absolute;left:12px;right:12px;bottom:24px}
+.mapfull-sheet>div{box-shadow:0 4px 16px rgba(0,0,0,.12)}
