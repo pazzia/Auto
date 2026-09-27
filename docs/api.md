@@ -24,7 +24,9 @@
 | `vehicle.decodeVin(vin)` | NHTSA vPIC | vPIC + Laximo/Acat | «Добавить авто» → VIN |
 | `vehicle.findByPlate(plate, region)` | `GET /v1/vehicles/by-plate` | AvtoVinCod, Автокод, apipoint (платно) | «Добавить авто» → Госномер |
 | `vehicle.modelsForMake(make)` | NHTSA vPIC | Справочник поставщика | «Добавить авто» → Марка |
-| `maintenance.schedule(car)` | `GET /v1/maintenance/schedule` | Свой справочник регламентов | готово к подключению |
+| `maintenance.nextTO(car)` | расчёт на телефоне | Свой справочник регламентов | Гараж, «Запчасти», сценарий ТО |
+| `maintenance.options(slot)` | `GET /v1/maintenance/parts` | Exist, Emex, Автопитер, ZZap, Autodoc (API площадок) | Сценарий ТО → запчасти |
+| `maintenance.worksPrice(service, items)` | — | Прайс сервиса из CRM | Сценарий ТО → сервис |
 | `parts.search({query, vin})` | `GET /v1/parts/search` | API магазинов + подбор по VIN | готово к подключению |
 | `parts.offers(partId)` | `GET /v1/parts/{id}/offers` | API магазинов | готово к подключению |
 | `services.list({lat, lng, online, to, today, tires})` | `GET /v1/services` | Каталог сервисов + CRM | «Автосервисы»: карта, список, фильтры |

@@ -360,10 +360,13 @@
     window.addEventListener("hashchange", syncHash);
     window.addEventListener("resize", function () { if (small && location.hash.indexOf("#Services") === 0) small.render(); if (full && ui.full && ui.full.style.display !== "none") full.render(); });
 
-    window.AutoHubApi.userPosition().then(function (pos) { state.origin = pos; }).then(load).then(function () {
+    // Точка отсчёта — адрес из личного кабинета
+    var here = window.AutoHubAuth ? Promise.resolve(window.AutoHubAuth.location()) : window.AutoHubApi.userPosition();
+    here.then(function (pos) { state.origin = pos; }).then(load).then(function () {
       applyView(); syncHash();
     });
   }
 
-  window.AutoHubServices = { init: init };
+  function relocate() { if (window.AutoHubAuth) { state.origin = window.AutoHubAuth.location(); load(); } }
+  window.AutoHubServices = { init: init, relocate: relocate };
 })();

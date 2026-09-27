@@ -104,12 +104,15 @@
     { id: "s2", name: "Техцентр «[Название]»", town: "Нахабино", address: "[адрес]", lat: 55.8440, lng: 37.1795, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 184, ratingYa: 4.5, reviewsYa: 97, priceTO: 5200, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "работает с Kia" },
     { id: "s3", name: "Автосервис «[Название]»", town: "Химки", address: "[адрес]", lat: 55.8960, lng: 37.4300, hours: "круглосуточно", ratingGis: 4.9, reviewsGis: 521, ratingYa: 4.8, reviewsYa: 344, priceTO: 4400, online: true, tires: true, today: "18:00", next: "Сегодня, 18:00", brands: "корейские марки" },
     { id: "s4", name: "Шиномонтаж «[Название]»", town: "Опалиха", address: "[адрес]", lat: 55.8255, lng: 37.2360, hours: "до 22:00", ratingGis: 4.5, reviewsGis: 76, ratingYa: 4.4, reviewsYa: 41, priceTO: null, online: true, tires: true, today: "15:00", next: "Сегодня, 15:00", brands: "шиномонтаж и хранение" },
-    { id: "s5", name: "Кузовной центр «[Название]»", town: "Одинцово", address: "[адрес]", lat: 55.6830, lng: 37.2750, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 203, ratingYa: 4.6, reviewsYa: 150, priceTO: 4700, online: false, tires: false, today: null, next: "Пт, 12:00", brands: "все марки" },
+    { id: "s5", kind: "body", name: "Кузовной центр «[Название]»", town: "Одинцово", address: "[адрес]", lat: 55.6830, lng: 37.2750, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 203, ratingYa: 4.6, reviewsYa: 150, priceTO: 4700, online: false, tires: false, today: null, next: "Пт, 12:00", brands: "все марки" },
     { id: "s6", name: "Автосервис «[Название]»", town: "Дедовск", address: "[адрес]", lat: 55.8690, lng: 37.1250, hours: "до 19:00", ratingGis: 4.3, reviewsGis: 58, ratingYa: 4.2, reviewsYa: 33, priceTO: 3600, online: true, tires: true, today: null, next: "Завтра, 9:30", brands: "все марки" },
     { id: "s7", name: "Техцентр «[Название]»", town: "Долгопрудный", address: "[адрес]", lat: 55.9380, lng: 37.5020, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 410, ratingYa: 4.7, reviewsYa: 265, priceTO: 4900, online: true, tires: false, today: "19:30", next: "Сегодня, 19:30", brands: "Kia, Hyundai" },
     { id: "s8", name: "Автосервис «[Название]»", town: "Истра", address: "[адрес]", lat: 55.9120, lng: 36.8700, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 121, ratingYa: 4.6, reviewsYa: 88, priceTO: 4100, online: true, tires: true, today: null, next: "Завтра, 11:00", brands: "все марки" },
     { id: "s9", name: "Сервис «[Название]»", town: "Лобня", address: "[адрес]", lat: 56.0100, lng: 37.4800, hours: "до 20:00", ratingGis: 4.4, reviewsGis: 95, ratingYa: 4.3, reviewsYa: 60, priceTO: 4300, online: false, tires: true, today: null, next: "Сб, 10:00", brands: "все марки" },
-    { id: "s10", name: "Техцентр «[Название]»", town: "Звенигород", address: "[адрес]", lat: 55.7300, lng: 36.8600, hours: "до 19:00", ratingGis: 4.7, reviewsGis: 132, ratingYa: 4.6, reviewsYa: 71, priceTO: 3800, online: true, tires: true, today: "17:00", next: "Сегодня, 17:00", brands: "все марки" }
+    { id: "s10", name: "Техцентр «[Название]»", town: "Звенигород", address: "[адрес]", lat: 55.7300, lng: 36.8600, hours: "до 19:00", ratingGis: 4.7, reviewsGis: 132, ratingYa: 4.6, reviewsYa: 71, priceTO: 3800, online: true, tires: true, today: "17:00", next: "Сегодня, 17:00", brands: "все марки" },
+    { id: "s11", name: "Техцентр «[Название]»", town: "Одинцово", address: "[адрес]", lat: 55.6720, lng: 37.2900, hours: "до 21:00", ratingGis: 4.7, reviewsGis: 356, ratingYa: 4.7, reviewsYa: 190, priceTO: 4200, online: true, tires: true, today: "18:30", next: "Сегодня, 18:30", brands: "все марки" },
+    { id: "s12", name: "Автосервис «[Название]»", town: "Мытищи", address: "[адрес]", lat: 55.9050, lng: 37.7400, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 240, ratingYa: 4.5, reviewsYa: 130, priceTO: 4000, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "все марки" },
+    { id: "s13", name: "Техцентр «[Название]»", town: "Подольск", address: "[адрес]", lat: 55.4380, lng: 37.5500, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 198, ratingYa: 4.6, reviewsYa: 112, priceTO: 3950, online: true, tires: true, today: "16:00", next: "Сегодня, 16:00", brands: "все марки" }
   ];
 
   // Каталог запчастей (демо). cat: filters, brakes, suspension, oils, electrics
@@ -144,13 +147,68 @@
   };
   function sellerPrice(p, k) { return Math.round(p.priceMin * SELLERS[k].markup / 10) * 10 + (k === "A" ? p.priceMin - Math.round(p.priceMin / 10) * 10 : 0); }
 
-  var M_REGLAMENT = [
-    { id: "r1", work: "Замена масла и масляного фильтра", everyKm: 15000, everyMonths: 12, dueKm: 60000, status: "soon" },
-    { id: "r2", work: "Замена воздушного фильтра", everyKm: 30000, everyMonths: 24, dueKm: 60000, status: "soon" },
-    { id: "r3", work: "Замена салонного фильтра", everyKm: 15000, everyMonths: 12, dueKm: 60000, status: "soon" },
-    { id: "r4", work: "Замена тормозной жидкости", everyKm: 45000, everyMonths: 24, dueKm: 45000, status: "overdue" },
-    { id: "r5", work: "Замена свечей зажигания", everyKm: 60000, everyMonths: 48, dueKm: 60000, status: "soon" }
+  /* ---------- Регламент ТО (демо: типичный для Kia Rio / Hyundai Solaris 1.6) ---------- */
+  var TO_STEP = 15000;
+  var REGULATION = [
+    { key: "oil", work: "Замена моторного масла", every: 15000, part: "oil", qty: 1, extra: 0 },
+    { key: "oilf", work: "Замена масляного фильтра", every: 15000, part: "oilf", qty: 1, extra: 0 },
+    { key: "cabin", work: "Замена салонного фильтра", every: 15000, part: "cabin", qty: 1, extra: 150 },
+    { key: "diag", work: "Осмотр ходовой, тормозов и жидкостей", every: 15000, part: null, extra: 0 },
+    { key: "air", work: "Замена воздушного фильтра", every: 30000, part: "air", qty: 1, extra: 200 },
+    { key: "brake", work: "Замена тормозной жидкости", every: 30000, part: "brake", qty: 1, extra: 800 },
+    { key: "plugs", work: "Замена свечей зажигания", every: 60000, part: "plugs", qty: 4, extra: 900 }
   ];
+  var PART_TITLES = { oil: "Моторное масло 5W-30, 4 л", oilf: "Масляный фильтр", cabin: "Салонный фильтр", air: "Воздушный фильтр", brake: "Тормозная жидкость DOT 4, 1 л", plugs: "Свеча зажигания" };
+  // Варианты деталей под каждую позицию ТО: бренд, артикул, оригинал, рейтинг и число отзывов, базовая цена за штуку
+  var TO_PARTS = {
+    oil: [["Hyundai/Kia", "05100-00451", 1, 4.8, 1240, 3150], ["Shell Helix HX8", "550046375", 0, 4.7, 3100, 2890], ["ZIC X9", "162614", 0, 4.6, 2100, 2450], ["Лукойл Генезис", "3148675", 0, 4.3, 900, 2150]],
+    oilf: [["Hyundai/Kia", "26300-35505", 1, 4.8, 610, 640], ["MANN-FILTER", "W 811/80", 0, 4.8, 1450, 412], ["Mahle", "OC 1051", 0, 4.6, 380, 455], ["Big Filter", "GB-1076", 0, 4.2, 210, 230]],
+    cabin: [["Hyundai/Kia", "97133-H8000", 1, 4.7, 320, 540], ["MANN-FILTER", "CUK 1919", 0, 4.8, 540, 610], ["Filtron", "K 1329A", 0, 4.5, 260, 390], ["Nevsky Filter", "NF-6159", 0, 4.1, 120, 260]],
+    air: [["Hyundai/Kia", "28113-H8100", 1, 4.7, 290, 590], ["MANN-FILTER", "C 26 017", 0, 4.7, 410, 560], ["Filtron", "AP 185/5", 0, 4.4, 230, 380], ["Sakura", "A-28260", 0, 4.2, 150, 330]],
+    brake: [["Hyundai/Kia", "01100-00130", 1, 4.7, 180, 780], ["ATE SL.6", "03.9901-6402.2", 0, 4.9, 870, 890], ["Bosch", "1987479107", 0, 4.6, 640, 520], ["Rosdot 4", "430101H03", 0, 4.3, 1300, 330]],
+    plugs: [["Hyundai/Kia", "18855-10060", 1, 4.7, 240, 690], ["NGK", "LZKR6B-10E", 0, 4.8, 1900, 520], ["Denso", "XU22TT", 0, 4.6, 400, 610], ["Bosch", "FR7DC+", 0, 4.3, 520, 260]]
+  };
+  // Площадки-продавцы (мок-интеграции): наценка к базовой цене, срок доставки в днях, доставка в сервис
+  var MARKETS = {
+    exist: { name: "Exist", k: 1.04, days: 2, delivery: 199 },
+    emex: { name: "Emex", k: 0.97, days: 4, delivery: 249 },
+    autopiter: { name: "Автопитер", k: 1.00, days: 3, delivery: 0 },
+    zzap: { name: "ZZap", k: 0.94, days: 6, delivery: 290 },
+    autodoc: { name: "Autodoc", k: 1.03, days: 1, delivery: 150 }
+  };
+  function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+  function partOptions(slot) {
+    return (TO_PARTS[slot] || []).map(function (r) {
+      var id = slot + ":" + r[1];
+      var offers = Object.keys(MARKETS).map(function (m, i) {
+        var mk = MARKETS[m], h = hashStr(id + m);
+        return { market: m, marketName: mk.name, price: Math.round(r[5] * mk.k * (0.98 + (h % 5) / 100)), days: mk.days + (h % 2),
+          delivery: mk.delivery, inStock: (h % 7) !== 0 };
+      }).filter(function (o) { return o.inStock; });
+      // Лучшее предложение: цена с поправкой на срок (день ожидания «стоит» 25 ₽)
+      var best = offers.slice().sort(function (a, b) { return (a.price + a.days * 25) - (b.price + b.days * 25); })[0];
+      return { id: id, slot: slot, name: PART_TITLES[slot], brand: r[0], article: r[1], original: !!r[2], rating: r[3], reviews: r[4],
+        offers: offers.sort(function (a, b) { return a.price - b.price; }), best: best };
+    });
+  }
+  // Три понятных варианта: оригинал, оптимальный (лучший рейтинг среди аналогов), дешёвый (из проверенных, рейтинг ≥ 4,0)
+  function pickTiers(opts) {
+    var orig = opts.filter(function (o) { return o.original; })[0];
+    var analogs = opts.filter(function (o) { return !o.original && o.reviews >= 200; });
+    var optimal = analogs.sort(function (a, b) { return b.rating - a.rating || a.best.price - b.best.price; })[0] || orig;
+    var cheap = opts.filter(function (o) { return o.rating >= 4.0; }).sort(function (a, b) { return a.best.price - b.best.price; })[0];
+    return { original: orig, optimal: optimal, cheap: cheap };
+  }
+  function nextTO(car) {
+    car = car || {};
+    var m = car.mileage || 0;
+    var km = car.lastTOkm ? car.lastTOkm + TO_STEP : (Math.floor(m / TO_STEP) + 1) * TO_STEP;
+    if (car.lastTOkm && m > km + TO_STEP) km = (Math.floor(m / TO_STEP) + 1) * TO_STEP; // пропущено несколько ТО
+    var items = REGULATION.filter(function (r) { return km % r.every === 0; });
+    var left = km - m;
+    return { km: km, left: left, overdue: m > 0 && left < 0, soon: m > 0 && left <= 2000, noMileage: !m, items: items,
+      parts: items.filter(function (r) { return r.part; }) };
+  }
 
   var M_FINES = [
     { id: "f1", date: "2026-09-14", article: "12.9.2", text: "Превышение скорости на 20–40 км/ч", amount: 500, discountUntil: "2026-10-04", discountAmount: 250 },
@@ -231,10 +289,20 @@
     },
 
     maintenance: {
-      /** Регламент ТО по авто и пробегу. */
-      schedule: function (car) {
-        if (!MOCK) return backend("GET", "/v1/maintenance/schedule?" + qs({ vin: car && car.vin, mileage: car && car.mileage }));
-        return ok({ items: M_REGLAMENT, source: SRC_MOCK });
+      step: TO_STEP,
+      regulation: REGULATION,
+      markets: MARKETS,
+      /** Очередное ТО по пробегу и последнему ТО (синхронно — расчёт на телефоне). */
+      nextTO: nextTO,
+      /** Варианты деталей для позиции ТО с предложениями площадок и тремя уровнями выбора. */
+      options: function (slot) {
+        if (!MOCK) return backend("GET", "/v1/maintenance/parts?" + qs({ slot: slot }));
+        var opts = partOptions(slot);
+        return ok({ slot: slot, title: PART_TITLES[slot], options: opts, tiers: pickTiers(opts), source: SRC_MOCK });
+      },
+      /** Стоимость работ сервиса для набора работ ТО. */
+      worksPrice: function (service, items) {
+        return (service.priceTO || 4000) + items.reduce(function (s, r) { return s + (r.extra || 0); }, 0);
       }
     },
 

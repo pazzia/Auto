@@ -61,7 +61,9 @@
       setTimeout(function () {
         saveSession(s); btn.disabled = false; btn.textContent = mode === "reg" ? "Создать аккаунт" : "Войти";
         $("aPass").value = "";
-        location.hash = "#Garage";
+        // Новому пользователю — сразу добавить свою машину, чтобы ТО считалось по ней
+        var hasOwn = window.AutoHubCar && window.AutoHubCar.cars().some(function (c) { return !c.demo; });
+        if (mode === "reg" && !hasOwn && window.AutoHubCar) window.AutoHubCar.startOnboarding(); else location.hash = "#Garage";
         UI.toast(mode === "reg" ? "Аккаунт создан. Добро пожаловать, " + s.name.split(" ")[0] + "!" : "С возвращением, " + s.name.split(" ")[0]);
         renderAvatar();
       }, 500);
@@ -71,7 +73,29 @@
   }
 
   /* ---------- Личный кабинет ---------- */
-  var CITIES = ["Москва", "Красногорск", "Химки", "Одинцово", "Мытищи", "Балашиха", "Подольск", "Королёв", "Люберцы"];
+  // Координаты городов — точка отсчёта для «сервисов рядом» (в рабочей версии — геокодер адреса)
+  var CITY_POS = { "Москва": [55.751, 37.617], "Красногорск": [55.8215, 37.3302], "Химки": [55.889, 37.445], "Одинцово": [55.678, 37.278],
+    "Мытищи": [55.911, 37.730], "Балашиха": [55.796, 37.938], "Подольск": [55.431, 37.545], "Королёв": [55.922, 37.854], "Люберцы": [55.676, 37.893],
+    "Истра": [55.915, 36.861], "Долгопрудный": [55.933, 37.514] };
+  var CITIES = Object.keys(CITY_POS);
+  function location_() {
+    var st = settings(), p = CITY_POS[st.city] || CITY_POS["Красногорск"];
+    return { city: st.city, address: st.address || "", lat: p[0], lng: p[1], label: st.city };
+  }
+  /** Шторка «Мой адрес»: город и улица. cb — после сохранения. */
+  function editAddress(cb) {
+    var st = settings();
+    UI.sheet({ title: "Мой адрес", html: '<p class="sheet-text" style="font-size:13px;color:#5B5F66">По адресу подбираем ближайшие автосервисы и считаем доставку.</p>' +
+      '<label class="fld">Город<select id="adCity">' + CITIES.map(function (c) { return '<option' + (c === st.city ? " selected" : "") + ">" + c + "</option>"; }).join("") + "</select></label>" +
+      '<label class="fld">Улица и дом<input id="adStreet" autocomplete="street-address" placeholder="ул. Ленина, 5" value="' + esc(st.address || "") + '"></label>' +
+      '<button class="btn-accent" data-action="save-addr" style="height:52px">Сохранить</button>',
+      onMount: function (b) {
+        b.querySelector("[data-action=save-addr]").addEventListener("click", function () {
+          st.city = b.querySelector("#adCity").value; st.address = b.querySelector("#adStreet").value.trim(); saveSettings(st);
+          UI.close(function () { UI.toast("Адрес сохранён"); if (window.AutoHubServices && window.AutoHubServices.relocate) window.AutoHubServices.relocate(); if (cb) cb(); });
+        });
+      } });
+  }
   function row(href, icon, title, sub, right) {
     return '<a href="' + href + '" class="prow"><span class="prow-ic">' + icon + '</span><span class="prow-txt"><b>' + esc(title) + "</b>" + (sub ? "<span>" + esc(sub) + "</span>" : "") + "</span>" +
       (right ? '<span class="prow-r">' + esc(right) + "</span>" : "") + '<span class="prow-go">›</span></a>';
@@ -85,12 +109,13 @@
     var cars = C ? C.cars() : [], active = C ? C.active() : null, own = cars.filter(function (c) { return !c.demo; });
     var hist = 0; try { var h = JSON.parse(localStorage.getItem("autohub.history.v1") || "{}"); Object.keys(h).forEach(function (k) { hist += h[k].length; }); } catch (e) {}
     var plus = null; try { plus = JSON.parse(localStorage.getItem("autohub.plus.v1") || "null"); } catch (e) {}
+    var pts = window.AutoHubTO ? window.AutoHubTO.points() : 1240;
     var since = s.since ? new Date(s.since + "T12:00:00").toLocaleDateString("ru-RU", { month: "long", year: "numeric" }) : "";
     var html =
       '<div class="pcard"><span class="pav">' + esc(initials(s.name)) + '</span><div class="pinfo"><b>' + esc(s.name || "Без имени") + "</b>" +
       "<span>" + esc(s.email || "e-mail не указан") + "</span><span>" + esc(s.phone || "телефон не указан") + "</span>" +
       '<span class="pmeta">' + esc(st.city) + (since ? " · с нами с " + esc(since) : "") + "</span></div></div>" +
-      '<div class="pstats"><div><b>' + own.length + "</b><span>машин</span></div><div><b>" + hist + '</b><span>записей</span></div><div><b>1 240</b><span>баллов</span></div></div>' +
+      '<div class="pstats"><div><b>' + own.length + "</b><span>машин</span></div><div><b>" + hist + '</b><span>записей</span></div><div><b>' + pts.toLocaleString("ru-RU") + '</b><span>баллов</span></div></div>' +
 
       '<div class="psec">МОИ МАШИНЫ</div><div class="pcars">' +
       (own.length ? own.map(function (c) {
@@ -104,7 +129,7 @@
 
       '<div class="psec">СЕРВИСЫ</div><div class="pgroup">' +
       row("#Subscription", "★", "АвтоХаб Плюс", plus ? "активна до " + plus.until : "тариф «Базовый»", "") +
-      row("#Wallet", "₽", "Баллы и копилка", "1 240 баллов · копилка на ТО", "") +
+      row("#Wallet", "₽", "Баллы и копилка", pts.toLocaleString("ru-RU") + " баллов · 1 балл = 1 ₽", "") +
       row("#History", "≡", "История обслуживания", "визиты, покупки, заказ-наряды", "") +
       row("#Family", "♥", "Семейный гараж", "доступ для близких", "") +
       row("#CarPassport", "▣", "Паспорт автомобиля", "история для продажи", "") +
@@ -114,7 +139,7 @@
       toggle("push", "Пуш-уведомления", "записи, заказы, акции", st.push) +
       toggle("to", "Напоминания о ТО", "по пробегу и сроку", st.to) +
       toggle("fines", "Новые штрафы", "проверка каждый день", st.fines) +
-      '<button class="prow" data-action="city"><span class="prow-txt"><b>Город</b><span>для цен и сервисов рядом</span></span><span class="prow-r">' + esc(st.city) + '</span><span class="prow-go">›</span></button>' +
+      '<button class="prow" data-action="city"><span class="prow-txt"><b>Мой адрес</b><span>' + esc(st.city + (st.address ? ", " + st.address : "") + " · для сервисов рядом") + '</span></span><span class="prow-go">›</span></button>' +
       '<div class="prow"><span class="prow-txt"><b>Данные</b><span>' + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? "демо-режим: заглушки API" : "реальные источники") + "</span></span></div></div>" +
 
       '<div class="pgroup">' +
@@ -180,10 +205,7 @@
       var m = e.target.closest("[data-car-menu]"); if (m) { carMenu(m.getAttribute("data-car-menu")); return; }
       var b = e.target.closest("button[data-action]"); if (!b) return;
       var a = b.dataset.action;
-      if (a === "city") {
-        UI.sheet({ title: "Ваш город", html: CITIES.map(function (c) { return '<button class="pick' + (c === settings().city ? " on" : "") + '" data-city="' + c + '" data-action="c"><span class="pick-txt"><b>' + c + "</b></span></button>"; }).join(""),
-          onMount: function (bd) { bd.addEventListener("click", function (ev) { var c = ev.target.closest("[data-city]"); if (!c) return; var st = settings(); st.city = c.dataset.city; saveSettings(st); UI.close(renderProfile); }); } });
-      }
+      if (a === "city") editAddress(renderProfile);
       if (a === "export") {
         var dump = {}; Object.keys(localStorage).filter(function (k) { return k.indexOf("autohub.") === 0; }).forEach(function (k) { try { dump[k] = JSON.parse(localStorage.getItem(k)); } catch (x) {} });
         var txt = JSON.stringify(dump, null, 2);
@@ -231,5 +253,5 @@
   function init() {
     addNavTab(); renderAvatar(); initWelcome(); initProfile();
   }
-  window.AutoHubAuth = { init: init, guard: guard, session: session };
+  window.AutoHubAuth = { init: init, guard: guard, session: session, location: location_, editAddress: editAddress };
 })();

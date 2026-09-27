@@ -315,7 +315,7 @@
     draft.savedAt = new Date().toISOString();
     var car = Object.assign({}, draft); delete car.id;
     var updated = addCar(car);
-    location.hash = "#Profile";
+    location.hash = backTo();
     window.AutoHubUI.toast(updated ? "Данные автомобиля обновлены" : "Автомобиль добавлен в гараж");
   }
   function resetForm() {
@@ -329,11 +329,12 @@
 
   /* ---------- Гараж: колода карточек ---------- */
   function shortName(c) { return [c.make, c.model].filter(Boolean).join(" ") || "Мой автомобиль"; }
-  var TO_EVERY = 15000; // демо-интервал ТО, км
+  // Статус ТО считается по регламенту (AutoHubApi.maintenance.nextTO), с учётом последнего пройденного ТО
   function toStatus(c) {
-    if (!c.mileage) return { text: "Укажите пробег", soon: false };
-    var next = (Math.floor(c.mileage / TO_EVERY) + 1) * TO_EVERY, left = next - c.mileage;
-    return { text: (left <= 2000 ? "ТО скоро · " : "ТО через ") + (left <= 2000 ? "через " : "") + left.toLocaleString("ru-RU") + " км", soon: left <= 2000 };
+    var t = window.AutoHubApi.maintenance.nextTO(c);
+    if (t.noMileage) return { text: "Укажите пробег", soon: false };
+    if (t.overdue) return { text: "Пора на ТО-" + t.km.toLocaleString("ru-RU"), soon: true };
+    return { text: (t.soon ? "ТО скоро · через " : "ТО через ") + t.left.toLocaleString("ru-RU") + " км", soon: t.soon };
   }
   function statusKind(c) { var st = toStatus(c); return !c.mileage ? "none" : st.soon ? "soon" : "ok"; }
   function modelShort(c) { return c.model || c.make || "Авто"; }
@@ -472,6 +473,10 @@
     if (n) updateActive({ mileage: n });
   }
 
+  var cameFrom = "Garage", onboarding = false;
+  function backTo() { var r = onboarding ? "#Garage" : "#" + cameFrom; onboarding = false; return r; }
+  function startOnboarding() { onboarding = true; location.hash = "#AddCar"; }
+
   /* ---------- Выбор машины (шторка) ---------- */
   function openPicker() {
     var g = loadGarage(), a = activeCar(g);
@@ -535,7 +540,16 @@
       var a = e.target.closest("a"); if (!a || !a.querySelector('[data-car="chip"]')) return;
       e.preventDefault(); openPicker();
     });
-    window.addEventListener("hashchange", function () { if (location.hash === "#AddCar") resetForm(); });
+    window.addEventListener("hashchange", function (e) {
+      if (location.hash === "#Garage") onboarding = false; // «Пропустить» или возврат
+      if (location.hash === "#AddCar") {
+        resetForm();
+        var from = (e.oldURL || "").split("#")[1] || "";
+        cameFrom = /^(Welcome|AddCar)?$/.test(from) ? "Garage" : from.split("/")[0];
+        var back = document.querySelector('#s-AddCar a[aria-label="Назад"]'); if (back) back.href = "#" + cameFrom;
+        var skip = document.getElementById("addSkip"); if (skip) skip.hidden = !onboarding;
+      }
+    });
     // ?demo=fleet — заполнить гараж 12 демо-машинами (проверка «Все»)
     if (/[?&]demo=fleet\b/.test(location.search)) seedFleet();
     refresh();
@@ -555,5 +569,5 @@
   function updateCar(id, patch) { var g = loadGarage(); g.cars.forEach(function (c) { if (c.id === id) Object.assign(c, patch); }); saveGarage(g); refresh(); }
   window.AutoHubCar = { init: init, active: function () { return activeCar(); }, cars: function () { return loadGarage().cars; },
     setActive: setActive, remove: removeCar, update: updateCar, status: toStatus, statusKind: statusKind, view: carView, plate: fmtPlate, name: shortName,
-    openPicker: openPicker, decodeLocal: decodeLocal, vinError: vinError, normPlate: normPlate, validPlate: validPlate };
+    openPicker: openPicker, startOnboarding: startOnboarding, decodeLocal: decodeLocal, vinError: vinError, normPlate: normPlate, validPlate: validPlate };
 })();

@@ -40,8 +40,8 @@
     if (!all[id]) { all[id] = HIST_DEMO; save("history.v1", all); }
     return all[id];
   }
-  function addHistory(rec) {
-    var all = load("history.v1", {}), id = car().id || "demo";
+  function addHistory(rec, carId) {
+    var all = load("history.v1", {}), id = carId || car().id || "demo";
     if (!all[id]) all[id] = HIST_DEMO.slice();
     rec.id = "h" + Date.now(); all[id].unshift(rec); save("history.v1", all);
     drawHistory();
@@ -148,6 +148,7 @@
         service: svc.name, address: svc.town ? svc.town + ", " + svc.address : "[адрес]", works: works.join(", ") || "Осмотр", own: bk.checks[2] && bk.checks[2].checked,
         car: carName(), carId: car().id, total: totalWorks() };
       save("booking.v1", b);
+      if (window.AutoHubTO) setTimeout(window.AutoHubTO.renderGarage, 0);
       addHistory({ date: "2026-" + (d[2] + 1 < 10 ? "0" : "") + (d[2] + 1) + "-" + (d[1] < 10 ? "0" : "") + d[1], km: null, kind: "booking",
         title: b.works, place: b.service + " · " + t, cost: 0 });
     });
@@ -484,10 +485,9 @@
   function init() {
     // Каждый экран отдельно: ошибка в одном не выключает остальные
     [initHistory, initBooking, initBookingDone, initFines, initTires, initInsurance, initSOS,
-      initSubscription, initRepair, initWarranty, initPassport, initFamily, drawGarageBooking, drawGarageFines].forEach(function (f) {
+      initSubscription, initRepair, initWarranty, initPassport, initFamily, drawGarageFines].forEach(function (f) {
       try { f(); } catch (e) { if (window.console) console.error("AutoHubScreens." + f.name, e); }
     });
-    window.addEventListener("hashchange", function () { if (location.hash === "#Garage") drawGarageBooking(); });
   }
   window.AutoHubScreens = { init: init, addHistory: addHistory };
 })();
