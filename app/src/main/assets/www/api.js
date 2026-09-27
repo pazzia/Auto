@@ -416,6 +416,16 @@
       }
     },
 
+    ai: {
+      /** Вопрос AI-механику. req: { message, node, car }. Ответ: { text, verdict, causes, todo, acts, options }.
+       * mock — встроенная база знаний (без интернета); live — сервер-прокси с LLM (AUTO-4), ключ хранится только на сервере. */
+      ask: function (req) {
+        if (!MOCK) return backend("POST", "/v1/ai/ask", req);
+        var kb = window.AutoHubMechanicKB;
+        return kb ? ok(kb.answer(req || {})) : fail("not_configured");
+      }
+    },
+
     sos: {
       /** Вызов помощи на дороге. */
       request: function (req) {

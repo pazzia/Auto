@@ -3,6 +3,14 @@
 
     <!-- Нужен для шрифтов Google Fonts; позже — для обращения к вашему бэкенду -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- «Где я припарковался»: координаты машины (GPS работает без интернета) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Напоминание об окончании парковки -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -22,5 +30,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver
+            android:name=".ReminderReceiver"
+            android:exported="false" />
     </application>
 </manifest>

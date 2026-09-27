@@ -35,6 +35,7 @@
 | `fines.list(car)` / `fines.pay(ids)` | `GET /v1/fines`, `POST /v1/fines/pay` | Платёжный партнёр (ГИС ГМП) | готово к подключению |
 | `insurance.quotes(car, kind)` | `GET /v1/insurance/quotes` | Брокер или агрегатор | готово к подключению |
 | `tires.advice(pos)` | `GET /v1/tires/advice` | API погоды | готово к подключению |
+| `ai.ask({message, node, car})` | `POST /v1/ai/ask` | Сервер-прокси с LLM (AUTO-4) | AI-механик (AUTO-3) |
 | `sos.request(req)` | `POST /v1/sos` | Оператор помощи на дорогах | готово к подключению |
 
 «Готово к подключению» — метод и демо-данные есть, но экран пока свёрстан статично из макета.

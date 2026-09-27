@@ -17,7 +17,7 @@
 | `web/` | Исходники логики прототипа: `ui.js` (шторки, диалоги), `api.js` (слой API и заглушки), `car.js` (гараж и добавление авто), `services.js` (сервисы и карта), `cart.js` + `cart.html` (корзина), `parts.js` (поиск, цены, сравнение), `screens.js` (остальные экраны), `auth.js` + `welcome.html` + `profile.html` (вход и кабинет), `addcar.html`, `app.js`, `app.css`, `map/podmoskovye.svg` |
 | `design/` | Исходники 25 экранов из Claude Design (`*.dc.html`) и раскладка холста |
 | `tools/` | `build_prototype.py` — сборка прототипа, `make_map.py` — генерация карты Подмосковья |
-| `docs/` | Контекст, дорожная карта, инструкция проекта, описание API ([`docs/api.md`](docs/api.md)) |
+| `docs/` | Контекст, дорожная карта, инструкция проекта, описание API ([`docs/api.md`](docs/api.md)), бэклог задач AUTO-№ ([`docs/backlog.md`](docs/backlog.md)) |
 | `.github/workflows/` | Сборка APK и публикация веб-версии на GitHub Pages |
 
 ## Как вносить изменения
