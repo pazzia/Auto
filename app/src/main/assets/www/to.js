@@ -333,6 +333,8 @@
         return '<div class="to-tl-i' + (i < st ? " done" : i === st ? " on" : "") + '"><span class="to-tl-d">' + (i < st ? "✓" : i + 1) + "</span><div><b>" + n + "</b><span>" + esc(sub) + "</span>" +
           (i === st ? '<small>' + (i === 0 ? "сегодня" : dShort(stageDate(o, i))) + "</small>" : "") + "</div></div>";
       }).join("") + "</div>";
+      // AUTO-20: зафиксировать состояние кузова до визита
+      if (st < 3 && document.getElementById("s-BodyPhoto")) html += '<a class="to-card to-row link" href="#BodyPhoto" data-photo="1"><div><b>Сфотографируйте машину перед визитом</b><span>6 кадров с датой — если после сервиса появится царапина</span></div><span class="prow-go">›</span></a>';
       if (st === 3) html += '<a class="to-card to-row link" href="#RepairLive"><div><b>Ремонт онлайн</b><span>фото от мастера и согласование доп. работ</span></div><span class="prow-go">›</span></a>';
       html += '<div class="to-card to-row"><div><b>' + esc(o.service ? o.service.name : "") + "</b><span>" + esc(o.service ? o.service.town + ", " + o.service.address : "") + '</span></div><span class="to-star">★ ' + (o.service ? o.service.rating.toFixed(1) : "") + "</span></div>" +
         '<div class="kv"><div><span>Запчасти ' + o.items.length + " поз. + доставка</span><b>" + rub(o.partsTotal + o.delivery) + "</b></div><div><span>Работы — в сервисе</span><b>" + rub(o.worksPrice) + "</b></div></div>" +
@@ -356,6 +358,7 @@
 
   /* ---------- Действия ---------- */
   function onClick(e) {
+    if (e.target.closest("[data-photo]")) { try { sessionStorage.setItem("autohub.photoPurpose", "Перед сервисом"); } catch (x) {} return; }
     var b = e.target.closest("[data-to],[data-tier],[data-slot],[data-svc],[data-date],[data-time],[data-deliv],[data-star]"); if (!b) return;
     var c = car(), t = API.maintenance.nextTO(c), d = draft(), o = order(c.id);
     if (b.dataset.tier) { loadOptions(t).then(function () { applyTier(d, t, b.dataset.tier); saveDraft(d); render(); }); return; }

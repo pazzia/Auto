@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
-<meta name="autohub-build" content="0.11">
+<meta name="autohub-build" content="0.12">
 <title>АвтоХаб</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -438,6 +438,21 @@ body{position:fixed;inset:0}
 .dy-num{font-family:Unbounded,'Arial Black',sans-serif;font-size:48px;color:#17191C}.dy-pic>svg:not(:only-child){width:48px;height:48px}
 .dy-text{margin:0;font-size:17px;line-height:1.5;font-weight:600}
 .dy-tip{background:#DCE6FB;border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.4}
+/* AUTO-20 Фото кузова */
+.bp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.bp-slot{position:relative;height:132px;border-radius:16px;background:#fff;border:1.5px dashed #C9C3B6;color:#9A958B;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-family:inherit;overflow:hidden;padding:0}
+.bp-slot svg{width:92px;height:52px}
+.bp-slot span{font-size:12px;font-weight:700;color:#5B5F66}
+.bp-slot.now{background:#FCEBDF;border:2px solid #C2410C;color:#C2410C}.bp-slot.now span{color:#C2410C;font-weight:800}
+.bp-slot.done{border:none;background:#3A3D42}
+.bp-slot.done img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bp-slot.done span{position:absolute;left:8px;bottom:8px;background:rgba(23,25,28,.75);color:#fff;border-radius:8px;padding:3px 8px}
+/* AUTO-18 Калькуляторы */
+.cc-res{background:#17191C;color:#fff;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.cc-res>span{font-size:13px;color:#C9CCD1}.cc-res>b{font-family:Unbounded,'Arial Black',sans-serif;font-size:28px}
+.cc-split{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #3A3D42;padding-top:10px;margin-top:4px;font-size:14px}.cc-split b{color:#FDBA8C}
+.cc-people{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border:1px solid #E2DED6;border-radius:14px;padding:10px 14px}
+.cc-people>span{display:flex;flex-direction:column;gap:2px}.cc-people b{font-size:14px}.cc-people small{font-size:12px;color:#5B5F66}
 
 </style>
 </head>
@@ -570,6 +585,22 @@ body{position:fixed;inset:0}
 <div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="dyH1" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Сделай сам за 5 минут</h1><span id="dySub" style="font-size: 13px; color: #5B5F66">пошагово, с картинками, без интернета</span></div></div>
 <div id="dyBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
 <div id="dyFoot" class="to-foot" hidden></div>
+</div>
+</section>
+
+<section class="screen" id="s-BodyPhoto" data-name="BodyPhoto">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="bpH1" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Состояние кузова</h1><span id="bpSub" style="font-size: 13px; color: #5B5F66">перед сервисом, мойкой или арендой</span></div></div>
+<div id="bpBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
+<div id="bpFoot" class="to-foot" hidden></div>
+</div>
+</section>
+
+<section class="screen" id="s-Calc" data-name="Calc">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="ccH1" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Калькуляторы</h1><span id="ccSub" style="font-size: 13px; color: #5B5F66">считают по вашим данным</span></div></div>
+<div id="ccBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
+
 </div>
 </section>
 
@@ -1426,7 +1457,7 @@ body{position:fixed;inset:0}
 <g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
 </g>
 </svg></template>
-<script>window.AUTOHUB_BUILD = "0.11";</script>
+<script>window.AUTOHUB_BUILD = "0.12";</script>
 <script src="ui.js"></script>
 <script src="device.js"></script>
 <script src="api.js"></script>
@@ -1445,6 +1476,8 @@ body{position:fixed;inset:0}
 <script src="season.js"></script>
 <script src="checklists.js"></script>
 <script src="diy.js"></script>
+<script src="bodyphoto.js"></script>
+<script src="calc.js"></script>
 <script src="auth.js"></script>
 <script src="hub.js"></script>
 <script>
@@ -1479,7 +1512,7 @@ body{position:fixed;inset:0}
   window.addEventListener("resize",function(){ setTimeout(resetScroll,50); });
   document.addEventListener("focusout",function(){ setTimeout(resetScroll,300); });
   window.addEventListener("hashchange",show);
-  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubAuth","AutoHubHub"].forEach(function(m){
+  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubHub"].forEach(function(m){
     try{ if(window[m]) window[m].init(); }catch(err){ if(window.console) console.error(m,err); }
   });
   show();
