@@ -142,5 +142,16 @@
     return { refresh: update, hide: hide };
   }
 
-  window.AutoHubUI = { sheet: sheet, close: close, dialog: dialog, toast: toast, esc: esc, suggest: suggest, norm: norm };
+  /* ---------- Счётчик событий для достижений (AUTO-19) ---------- */
+  function events() { try { return JSON.parse(localStorage.getItem("autohub.events.v1") || "{}"); } catch (e) { return {}; } }
+  /** Отметить событие: name — вид, id — чтобы не считать одно и то же дважды. */
+  function track(name, id) {
+    var ev = events(), e = ev[name] || { count: 0, ids: {} };
+    if (id != null) { if (e.ids[id]) return; e.ids[id] = Date.now(); }
+    e.count++; e.last = Date.now(); ev[name] = e;
+    try { localStorage.setItem("autohub.events.v1", JSON.stringify(ev)); } catch (x) {}
+    try { window.dispatchEvent(new CustomEvent("autohub:event", { detail: name })); } catch (x) {}
+  }
+
+  window.AutoHubUI = { track: track, events: events, sheet: sheet, close: close, dialog: dialog, toast: toast, esc: esc, suggest: suggest, norm: norm };
 })();
