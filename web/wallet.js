@@ -117,7 +117,8 @@
   function startPiggy(goal, km) {
     if (!goal) { forecast().then(function (f) { startPiggy(f.toCost, f.toKm); }); return; }
     save("piggy.v1", { goal: Math.round(goal), km: km, saved: (load("piggy.v1", null) || {}).saved || 0 });
-    location.hash = "#Wallet"; UI.toast("Копилка на ТО создана");
+    if (location.hash === "#Wallet") renderWallet(); else location.hash = "#Wallet"; // тот же экран — просто перерисовать
+    UI.toast("Копилка на ТО создана");
   }
 
   function init() {

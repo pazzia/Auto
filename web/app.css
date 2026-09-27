@@ -443,3 +443,17 @@ body{position:fixed;inset:0}
 .cc-split{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #3A3D42;padding-top:10px;margin-top:4px;font-size:14px}.cc-split b{color:#FDBA8C}
 .cc-people{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border:1px solid #E2DED6;border-radius:14px;padding:10px 14px}
 .cc-people>span{display:flex;flex-direction:column;gap:2px}.cc-people b{font-size:14px}.cc-people small{font-size:12px;color:#5B5F66}
+/* AUTO-19 Достижения */
+.ac-level{background:#17191C;color:#fff;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.ac-level .to-bar{background:#3A3D42}.ac-level .to-bar>div{background:#C2410C}
+.ac-top{display:flex;align-items:center;gap:12px}.ac-top>span:last-child{display:flex;flex-direction:column;gap:2px}
+.ac-top b{font-size:17px}.ac-top small{font-size:12px;color:#C9CCD1}
+.ac-n{width:52px;height:52px;flex-shrink:0;border-radius:99px;background:#C2410C;display:flex;align-items:center;justify-content:center;font-family:Unbounded,'Arial Black',sans-serif;font-size:22px}
+.ac-streak{display:flex;gap:12px;align-items:center;background:#FCEBDF;border-radius:14px;padding:12px 14px;text-decoration:none;color:#17191C}
+.ac-streak>span:last-child{display:flex;flex-direction:column;gap:2px}.ac-streak b{font-size:14px}.ac-streak small{font-size:12px;color:#7A2E0E}
+.ac-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ac-b{background:#fff;border:1px solid #E2DED6;border-radius:16px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-family:inherit;color:#5B5F66}
+.ac-b b{font-size:12px;line-height:1.2}.ac-b small{font-size:11px;line-height:1.25}
+.ac-ic{width:48px;height:48px;border-radius:99px;background:#EFECE6;display:flex;align-items:center;justify-content:center}
+.ac-b.got{color:#17191C}.ac-b.got .ac-ic{background:#C2410C}.ac-b.got small{color:#0F6B3A;font-weight:700}
+.ac-b i{width:80%;height:4px;border-radius:9px;background:#EFECE6}.ac-b i em{display:block;height:100%;border-radius:9px;background:#0F6B3A}
