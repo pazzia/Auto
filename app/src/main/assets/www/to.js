@@ -512,6 +512,13 @@
     var month = new Date().getMonth(), list = TIPS.slice();
     if (!(month >= 8 && month <= 10) && !(month >= 2 && month <= 3)) list.shift(); // резина — в сезон
     if (load("osago.v1", null)) list = list.filter(function (x) { return x[0] !== "#Insurance"; });
+    // AUTO-21: совет дня по сезону; если модуля нет — прежние подсказки о разделах
+    if (window.AutoHubSeason) {
+      var sn = window.AutoHubSeason.tip();
+      tip.href = sn.href;
+      tip.innerHTML = '<span class="tip-k">' + esc(sn.label) + "</span><b>" + esc(sn.title) + "</b><span>" + esc(sn.text) + '</span><span class="prow-go">›</span>';
+      return;
+    }
     var x = list[new Date().getDate() % list.length];
     tip.href = x[0];
     tip.innerHTML = '<span class="tip-k">СЕГОДНЯ ПОЛЕЗНО</span><b>' + esc(x[1]) + "</b><span>" + esc(x[2]) + '</span><span class="prow-go">›</span>';

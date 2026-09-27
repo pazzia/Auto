@@ -66,7 +66,8 @@
     card.hidden = !d.first;
     if (!d.first) return;
     card.classList.toggle("over", d.first.days < 0);
-    card.innerHTML = '<span class="dl-ic">' + icon("bell", "#C2410C") + "</span><span class=\"dl-t\"><b>" + UI().esc(d.first.title) + " " + (d.first.days < 0 ? "просрочен" + (d.first.fem ? "а" : "") : "истекает через " + d.first.days + " " + plural(d.first.days)) + "</b>" +
+    var when = d.first.days < 0 ? " — срок истёк" : d.first.days === 0 ? " — истекает сегодня" : " — истекает через " + d.first.days + " " + plural(d.first.days);
+    card.innerHTML = '<span class="dl-ic">' + icon("bell", "#C2410C") + "</span><span class=\"dl-t\"><b>" + UI().esc(d.first.title) + when + "</b>" +
       (d.more ? "<span>и ещё " + d.more + " " + (d.more === 1 ? "срок" : "срока") + " в этом месяце</span>" : "<span>напомним заранее</span>") + '</span><span class="prow-go">›</span>';
   }
   function plural(n) { n = Math.abs(n); var m = n % 10, h = n % 100; return m === 1 && h !== 11 ? "день" : m >= 2 && m <= 4 && (h < 10 || h >= 20) ? "дня" : "дней"; }

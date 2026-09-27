@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
-<meta name="autohub-build" content="0.9">
+<meta name="autohub-build" content="0.10">
 <title>АвтоХаб</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -406,6 +406,26 @@ body{position:fixed;inset:0}
 .fu-row small{font-size:12px;color:#5B5F66}.fu-row small.ok{color:#0F6B3A;font-weight:700}
 .fu-row .linkbtn{min-height:28px;padding:0;font-size:12px;color:#9A958B}
 .fu-hint{font-size:12px;font-weight:600;color:#0F6B3A;min-height:16px}
+/* AUTO-15 Документы */
+.dl-card.static{cursor:default}
+.dc-row{display:flex!important;align-items:center;gap:12px!important;width:100%;background:none;border:none;border-top:1px solid #EFECE6;text-align:left;font-family:inherit;color:#17191C;padding:12px 14px!important}
+.kv>.dc-row:first-child{border-top:none}
+.dc-ic{width:40px;height:40px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center}
+.dc-ic.ok{background:#DDF0E4;color:#0F6B3A}.dc-ic.soon{background:#FCEBDF;color:#C2410C}.dc-ic.over{background:#FEE4E2;color:#B42318}.dc-ic.none{background:#EFECE6;color:#5B5F66}
+.dc-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.dc-t b{font-size:14px}
+.dc-s{font-size:13px;white-space:nowrap}.dc-s.ok{color:#0F6B3A}.dc-s.soon{color:#C2410C}.dc-s.over{color:#B42318}.dc-s.none{color:#5B5F66}
+/* AUTO-21 Сезон */
+.sn-tip{background:#17191C;color:#fff;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:6px;text-decoration:none}
+.sn-tip span{font-size:11px;font-weight:800;letter-spacing:.6px;color:#9DBBF5}.sn-tip b{font-size:17px;line-height:1.3}.sn-tip small{font-size:13px;color:#C9CCD1;line-height:1.4}
+.sn-head{display:flex;justify-content:space-between;align-items:baseline;padding:4px 4px 0}
+.sn-head b{font-family:Unbounded,'Arial Black',sans-serif;font-size:16px}.sn-head span{font-size:13px;font-weight:700;color:#0F6B3A}
+.sn-task{display:flex!important;align-items:center;gap:12px!important;justify-content:flex-start!important;min-height:44px}
+.sn-task input{width:22px;height:22px;accent-color:#0F6B3A;flex-shrink:0}
+.sn-task>span{flex:1;display:flex;flex-direction:column;gap:1px;color:#17191C}.sn-task>span b{font-size:14px}
+.sn-task>span.done b{text-decoration:line-through;color:#9A958B}
+.sn-go{width:36px;height:36px;border-radius:10px;background:#F3F1EC;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:20px;color:#17191C;flex-shrink:0}
+.sn-month{display:flex!important;width:100%;background:none;border:none;font-family:inherit;color:#17191C;text-align:left;align-items:center;justify-content:space-between;padding:12px 14px!important}
+.sn-month>span:first-child{display:flex;flex-direction:column;gap:1px}.sn-month b{font-size:14px}
 
 </style>
 </head>
@@ -503,9 +523,25 @@ body{position:fixed;inset:0}
 
 <section class="screen" id="s-Fuel" data-name="Fuel">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="fuTitle" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Заправки</h1><span id="fuSub" style="font-size: 13px; color: #5B5F66"></span></div></div>
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="fuH1" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Заправки</h1><span id="fuSub" style="font-size: 13px; color: #5B5F66"></span></div></div>
 <div id="fuBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
 <div id="fuFoot" class="to-foot"><button class="btn-accent" data-action="add">Добавить заправку</button></div>
+</div>
+</section>
+
+<section class="screen" id="s-Docs" data-name="Docs">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="dcH1" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Документы и сроки</h1><span id="dcSub" style="font-size: 13px; color: #5B5F66">напомним заранее, даже без интернета</span></div></div>
+<div id="dcBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
+<div id="dcFoot" class="to-foot"><button class="btn-accent" data-action="add">Добавить документ или срок</button></div>
+</div>
+</section>
+
+<section class="screen" id="s-Season" data-name="Season">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="snH1" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Сезонный календарь</h1><span id="snSub" style="font-size: 13px; color: #5B5F66">что сделать с машиной в этом месяце</span></div></div>
+<div id="snBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
+
 </div>
 </section>
 
@@ -1177,7 +1213,7 @@ body{position:fixed;inset:0}
 </section>
 <section class="screen" id="s-Wallet" data-name="Wallet">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="wlTitle" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Баллы и копилка</h1><span id="wlSub" style="font-size: 13px; color: #5B5F66">1 балл = 1 ₽ при оплате в приложении</span></div></div>
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="wlH1" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Баллы и копилка</h1><span id="wlSub" style="font-size: 13px; color: #5B5F66">1 балл = 1 ₽ при оплате в приложении</span></div></div>
 <div id="wlBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
 
 </div>
@@ -1185,7 +1221,7 @@ body{position:fixed;inset:0}
 
 <section class="screen" id="s-Budget" data-name="Budget">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="bdTitle" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Бюджет владения</h1><span id="bdSub" style="font-size: 13px; color: #5B5F66">по вашим данным</span></div></div>
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="bdH1" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Бюджет владения</h1><span id="bdSub" style="font-size: 13px; color: #5B5F66">по вашим данным</span></div></div>
 <div class="seg3" style="margin: 0 16px 8px"><button data-period="month" data-action="p">Месяц</button><button data-period="year" data-action="p" class="on">Год</button><button data-period="all" data-action="p">Всё время</button></div><div id="bdBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
 <div id="bdFoot" class="to-foot" hidden></div>
 </div>
@@ -1362,7 +1398,7 @@ body{position:fixed;inset:0}
 <g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
 </g>
 </svg></template>
-<script>window.AUTOHUB_BUILD = "0.9";</script>
+<script>window.AUTOHUB_BUILD = "0.10";</script>
 <script src="ui.js"></script>
 <script src="device.js"></script>
 <script src="api.js"></script>
@@ -1377,6 +1413,8 @@ body{position:fixed;inset:0}
 <script src="mechanic.js"></script>
 <script src="wallet.js"></script>
 <script src="fuel.js"></script>
+<script src="docs.js"></script>
+<script src="season.js"></script>
 <script src="auth.js"></script>
 <script src="hub.js"></script>
 <script>
@@ -1411,7 +1449,7 @@ body{position:fixed;inset:0}
   window.addEventListener("resize",function(){ setTimeout(resetScroll,50); });
   document.addEventListener("focusout",function(){ setTimeout(resetScroll,300); });
   window.addEventListener("hashchange",show);
-  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubAuth","AutoHubHub"].forEach(function(m){
+  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubAuth","AutoHubHub"].forEach(function(m){
     try{ if(window[m]) window[m].init(); }catch(err){ if(window.console) console.error(m,err); }
   });
   show();

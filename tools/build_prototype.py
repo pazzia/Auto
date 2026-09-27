@@ -11,10 +11,10 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "design")
 if not os.path.isabs(SRC):
     SRC = os.path.join(ROOT, SRC) if not os.path.isdir(SRC) else SRC
 WEB = os.path.join(ROOT, "web")
-JS_FILES = ["ui.js", "device.js", "api.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "auth.js", "hub.js"]
-OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html", "Welcome": "welcome.html", "Profile": "profile.html", "TO": "to.html", "Icons": "icons.html", "Parking": "parking.html", "Mechanic": "mechanic.html", "Fuel": "fuel.html", "Budget": "budget.html", "Wallet": "wallet.html"}  # экраны, свёрстанные вручную
+JS_FILES = ["ui.js", "device.js", "api.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "auth.js", "hub.js"]
+OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html", "Welcome": "welcome.html", "Profile": "profile.html", "TO": "to.html", "Icons": "icons.html", "Parking": "parking.html", "Mechanic": "mechanic.html", "Fuel": "fuel.html", "Budget": "budget.html", "Wallet": "wallet.html", "Docs": "docs.html", "Season": "season.html"}  # экраны, свёрстанные вручную
 OUT = os.path.join(ROOT, "app/src/main/assets/www")
-NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Garage", "AddCar", "Reminders", "History", "OneTapTO", "Main", "Results", "Offers",
+NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Garage", "AddCar", "Reminders", "History", "OneTapTO", "Main", "Results", "Offers",
          "Compare", "Cart", "Services", "ServiceBooking", "BookingDone",
          "Fines", "Tires", "Insurance", "SOS", "Subscription", "Wallet", "Budget",
          "RepairLive", "Warranty", "CarPassport", "Family", "Community"]

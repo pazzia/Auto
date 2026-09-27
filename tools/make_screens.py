@@ -28,7 +28,7 @@ def page(name, title, sub, body_id, foot, extra):
     footer = "" if foot is None else f'<div id="{body_id[:2]}Foot" class="to-foot"{" hidden" if foot == "" else ""}>{foot}</div>'
     return f'''<section class="screen" id="s-{name}" data-name="{name}">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: 56px 16px 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0">{BACK}<div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="{body_id[:2]}Title" style="{H1}">{title}</h1><span id="{sub_id}" style="font-size: 13px; color: #5B5F66">{sub}</span></div></div>
+<div style="padding: 56px 16px 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0">{BACK}<div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="{body_id[:2]}H1" style="{H1}">{title}</h1><span id="{sub_id}" style="font-size: 13px; color: #5B5F66">{sub}</span></div></div>
 {extra}<div id="{body_id}" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
 {footer}
 </div>
