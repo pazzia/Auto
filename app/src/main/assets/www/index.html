@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
-<meta name="autohub-build" content="0.8">
+<meta name="autohub-build" content="0.9">
 <title>АвтоХаб</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -372,6 +372,40 @@ body{position:fixed;inset:0}
 .mc-row{display:flex;gap:8px}
 .mc-row input{flex:1;min-width:0;height:48px;border:1px solid #E2DED6;border-radius:14px;padding:0 14px;font-size:16px;font-family:inherit;background:#F3F1EC;color:#17191C}
 .mc-row button{width:48px;height:48px;border:none;border-radius:14px;background:#C2410C;color:#fff;display:flex;align-items:center;justify-content:center;padding:0}
+/* Гараж: раздел «Всё для машины», уровень, ближайший срок */
+.hub-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.hub-tile{position:relative;min-height:80px;background:#fff;border:1px solid #E2DED6;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px 2px;text-decoration:none;color:#17191C;font-size:11px;font-weight:700;text-align:center;line-height:1.2}
+.hub-new{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:99px;background:#C2410C}
+.hub-badge{position:absolute;top:5px;right:5px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#C2410C;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+.lvl-chip{height:40px;padding:0 12px 0 6px;border-radius:999px;background:#17191C;color:#fff;display:flex;align-items:center;gap:8px;text-decoration:none;font-size:13px;font-weight:700;margin-left:auto;margin-right:8px}
+.lvl-n{width:28px;height:28px;border-radius:99px;background:#C2410C;display:flex;align-items:center;justify-content:center;font-family:Unbounded,'Arial Black',sans-serif;font-size:13px}
+.dl-card{display:flex;gap:12px;align-items:center;background:#FCEBDF;border-radius:16px;padding:12px 14px;color:#17191C;text-decoration:none}
+.dl-card.over{background:#FEE4E2}
+.dl-ic{width:40px;height:40px;flex-shrink:0;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center}
+.dl-t{flex:1;display:flex;flex-direction:column;gap:2px}.dl-t b{font-size:14px}.dl-t span{font-size:12px;color:#7A2E0E}
+/* AUTO-29 Бюджет и баллы */
+.bd-hero{background:#17191C;color:#fff;border-radius:18px;padding:16px}
+.bd-hero>div{display:flex;flex-direction:column;gap:3px}.bd-hero span{font-size:12px;color:#C9CCD1}.bd-hero b{font-family:Unbounded,'Arial Black',sans-serif;font-size:26px}
+.bd-cat{display:grid!important;grid-template-columns:1fr auto;gap:6px 12px!important}
+.bd-cat>div:first-child{display:flex;flex-direction:column;gap:1px}.bd-cat>div:first-child b{font-size:14px}.bd-cat>div:first-child span{font-size:12px;color:#5B5F66}
+.bd-bar{grid-column:1/-1;height:6px;border-radius:9px;background:#EFECE6}.bd-bar i{display:block;height:100%;border-radius:9px;background:#C2410C}
+.kv small{display:block;font-size:12px;color:#5B5F66;margin-top:1px}
+.wl-earn{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.wl-earn a{flex-shrink:0;width:128px;background:#fff;border:1px solid #E2DED6;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;text-decoration:none;color:#17191C}
+.wl-earn b{font-size:16px;color:#0F6B3A}.wl-earn span{font-size:12px;line-height:1.3}
+/* AUTO-14 Заправки */
+.fu-hero{background:#17191C;color:#fff;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.fu-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fu-stats div{display:flex;flex-direction:column;gap:2px}.fu-stats span,.fu-stats small{font-size:12px;color:#C9CCD1}
+.fu-stats b{font-family:Unbounded,'Arial Black',sans-serif;font-size:19px}.fu-stats b.acc{color:#FDBA8C}
+.fu-chart{height:110px;display:flex;align-items:flex-end;gap:8px}
+.fu-chart div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px}
+.fu-chart i{display:block;width:100%;border-radius:6px 6px 3px 3px;background:#3A3D42}.fu-chart i.cur{background:#C2410C}
+.fu-chart span{font-size:11px;color:#C9CCD1}
+.fu-row>span{display:flex;flex-direction:column;gap:2px}.fu-row .r{align-items:flex-end;text-align:right}
+.fu-row small{font-size:12px;color:#5B5F66}.fu-row small.ok{color:#0F6B3A;font-weight:700}
+.fu-row .linkbtn{min-height:28px;padding:0;font-size:12px;color:#9A958B}
+.fu-hint{font-size:12px;font-weight:600;color:#0F6B3A;min-height:16px}
 
 </style>
 </head>
@@ -464,6 +498,14 @@ body{position:fixed;inset:0}
 <div id="mcChips" class="mc-chips"></div>
 <div class="mc-row"><input id="mcQ" autocomplete="off" enterkeyhint="send" placeholder="Опишите, что с машиной" aria-label="Вопрос механику"><button id="mcSend" data-action="send" aria-label="Отправить"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
 </div>
+</div>
+</section>
+
+<section class="screen" id="s-Fuel" data-name="Fuel">
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="fuTitle" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Заправки</h1><span id="fuSub" style="font-size: 13px; color: #5B5F66"></span></div></div>
+<div id="fuBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
+<div id="fuFoot" class="to-foot"><button class="btn-accent" data-action="add">Добавить заправку</button></div>
 </div>
 </section>
 
@@ -1135,28 +1177,20 @@ body{position:fixed;inset:0}
 </section>
 <section class="screen" id="s-Wallet" data-name="Wallet">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
-<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
-<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Баллы и копилка</h1><div style="font-size: 12px; color: #5B5F66">1 балл = 1 ₽ при оплате в приложении</div></div>
-</div>
-<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
-<div style="background: #17191C; border: none; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; color: #FFFFFF;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 14px"><span style="font-weight:600;font-size:14px;color:#C9CCD1">Баллы</span></span><span style="font-weight: 700; font-size: 14px; white-space: nowrap"><span style="font-size:13px;color:#FDBA8C">сгорят 0</span></span></div><div style="font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 34px">1 240</div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4"><span style="color:#C9CCD1">Можно оплатить до 30% любого заказа</span></span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">КАК НАКОПИЛИСЬ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">ТО в сервисе, 12 марта</span><span style="color: #5B5F66; text-align: right">+315</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Колодки у Магазина А</span><span style="color: #5B5F66; text-align: right">+124</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Оплата штрафа</span><span style="color: #5B5F66; text-align: right">+15</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Отзыв о сервисе с фото</span><span style="color: #5B5F66; text-align: right">+100</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Приглашённый друг</span><span style="color: #5B5F66; text-align: right">+500</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Бонус за первый заказ</span><span style="color: #5B5F66; text-align: right">+186</span></div></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">КОПИЛКА НА ТО-60 000</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 16px">8 500 ₽</span><span style="font-weight: 700; font-size: 16px; white-space: nowrap">из 11 380 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6; overflow: hidden"><div style="width: 75%; height: 8px; background: #C2410C"></div></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Автопополнение 1 000 ₽ каждую пятницу · успеете к 3 октября</span></div>
-</div>
-<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><a href="#OneTapTO" style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Потратить баллы на ТО</a></div>
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="wlTitle" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Баллы и копилка</h1><span id="wlSub" style="font-size: 13px; color: #5B5F66">1 балл = 1 ₽ при оплате в приложении</span></div></div>
+<div id="wlBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
+
 </div>
 </section>
+
 <section class="screen" id="s-Budget" data-name="Budget">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
-<div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
-<a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></a>
-<div style="flex-grow: 1"><h1 style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 22px">Бюджет владения</h1><div style="font-size: 12px; color: #5B5F66"><span data-car="name">Kia Rio IV</span> · последние 12 месяцев</div></div>
-</div>
-<div style="flex-grow: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px">
-<div style="background: #17191C; border: none; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; color: #FFFFFF;"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><div><div style="font-size: 12px; color: #C9CCD1">Потрачено за год</div><div style="font-size: 19px; font-weight: 700; color: #FFFFFF">19 770 ₽</div></div><div><div style="font-size: 12px; color: #C9CCD1">Сэкономлено с АвтоХабом</div><div style="font-size: 19px; font-weight: 700; color: #FDBA8C">1 940 ₽</div></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4"><span style="color:#C9CCD1">≈ 1,0 ₽ за километр без учёта топлива · 19 500 км за год</span></span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">НА ЧТО УХОДЯТ ДЕНЬГИ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px;"><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">Обслуживание</span><span>8 700 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6"><div style="width: 44%; height: 8px; border-radius: 999px; background: #17191C"></div></div></div><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">ОСАГО</span><span>7 840 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6"><div style="width: 40%; height: 8px; border-radius: 999px; background: #17191C"></div></div></div><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">Запчасти</span><span>2 480 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6"><div style="width: 13%; height: 8px; border-radius: 999px; background: #17191C"></div></div></div><div style="display: flex; flex-direction: column; gap: 4px"><div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 600">Штрафы</span><span>750 ₽</span></div><div style="height: 8px; border-radius: 999px; background: #EFECE6"><div style="width: 4%; height: 8px; border-radius: 999px; background: #C2410C"></div></div></div><span style="font-size: 12px; color: #5B5F66; line-height: 1.4">Топливо можно добавить вручную или по чекам</span></div><div style="font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: #5B5F66; padding: 4px 0 0 4px">ПРОГНОЗ НА 12 МЕСЯЦЕВ</div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; overflow: hidden"><div style="padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">ТО-60 000, октябрь</span><span style="color: #5B5F66; text-align: right">11 380 ₽</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">ОСАГО, октябрь</span><span style="color: #5B5F66; text-align: right">~7 840 ₽</span></div><div style="border-top: 1px solid #EFECE6; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px"><span style="font-weight: 600">Шиномонтаж ×2</span><span style="color: #5B5F66; text-align: right">4 800 ₽</span></div></div><div style="background: #FFFFFF; border: 1px solid #E2DED6; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 10px"><span style="font-weight: 700; font-size: 16px">Итого прогноз</span><span style="font-weight: 700; font-size: 16px; white-space: nowrap">от 24 020 ₽</span></div><span style="font-size: 13px; color: #5B5F66; line-height: 1.4">Откладывайте ~2 000 ₽ в месяц — копилка сделает это сама</span></div>
-</div>
-<div style="padding: 12px 16px 30px; background: #FFFFFF; border-top: 1px solid #E2DED6; display: flex; flex-direction: column; gap: 10px"><a href="#Wallet" style="height: 48px; border-radius: 14px; background: #C2410C; color: #FFFFFF; border: none; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 14px">Настроить копилку</a></div>
+<div style="padding: calc(var(--sb) + 16px) 16px 10px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0"><a href="#Garage" aria-label="Назад" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2DED6; display: flex; align-items: center; justify-content: center; color: #17191C"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a><div style="min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px"><h1 id="bdTitle" style="margin: 0; font-family: Unbounded, 'Arial Black', sans-serif; font-weight: 700; font-size: 20px; line-height: 1.2">Бюджет владения</h1><span id="bdSub" style="font-size: 13px; color: #5B5F66">по вашим данным</span></div></div>
+<div class="seg3" style="margin: 0 16px 8px"><button data-period="month" data-action="p">Месяц</button><button data-period="year" data-action="p" class="on">Год</button><button data-period="all" data-action="p">Всё время</button></div><div id="bdBody" style="flex-grow: 1; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px"></div>
+<div id="bdFoot" class="to-foot" hidden></div>
 </div>
 </section>
+
 <section class="screen" id="s-RepairLive" data-name="RepairLive">
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F3F1EC; display: flex; flex-direction: column">
 <div style="padding: calc(var(--sb) + 12px) 16px 0 16px; display: flex; align-items: center; gap: 8px">
@@ -1328,7 +1362,7 @@ body{position:fixed;inset:0}
 <g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
 </g>
 </svg></template>
-<script>window.AUTOHUB_BUILD = "0.8";</script>
+<script>window.AUTOHUB_BUILD = "0.9";</script>
 <script src="ui.js"></script>
 <script src="device.js"></script>
 <script src="api.js"></script>
@@ -1341,7 +1375,10 @@ body{position:fixed;inset:0}
 <script src="icons.js"></script>
 <script src="parking.js"></script>
 <script src="mechanic.js"></script>
+<script src="wallet.js"></script>
+<script src="fuel.js"></script>
 <script src="auth.js"></script>
+<script src="hub.js"></script>
 <script>
 (function(){
   // Показ экрана по адресу (#Экран или #Экран/доп). Без входа доступно только приветствие.
@@ -1374,7 +1411,7 @@ body{position:fixed;inset:0}
   window.addEventListener("resize",function(){ setTimeout(resetScroll,50); });
   document.addEventListener("focusout",function(){ setTimeout(resetScroll,300); });
   window.addEventListener("hashchange",show);
-  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubAuth"].forEach(function(m){
+  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubAuth","AutoHubHub"].forEach(function(m){
     try{ if(window[m]) window[m].init(); }catch(err){ if(window.console) console.error(m,err); }
   });
   show();

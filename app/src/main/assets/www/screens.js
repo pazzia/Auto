@@ -241,7 +241,7 @@
         '<button class="btn-accent" data-action="pay" style="height:52px">Оплатить ' + rub(sum) + "</button>",
         onMount: function (b) {
           b.querySelector("[data-action=pay]").addEventListener("click", function () {
-            var p = paid(); ids.forEach(function (id) { p[id] = true; }); save("fines.v1", p);
+            var p = paid(); ids.forEach(function (id) { p[id] = Date.now(); }); save("fines.v1", p);
             UI.close(function () { draw(); UI.toast("Оплачено. Квитанция сохранена в истории"); });
           });
         } });
@@ -316,7 +316,7 @@
       UI.sheet({ title: "Продление ОСАГО", html: '<div class="kv"><div><span>Страховая</span><b>' + name + '</b></div><div><span>Срок</span><b>25.10.2026 – 24.10.2027</b></div><div><span>Водители</span><b>2</b></div><div class="kv-total"><span>К оплате</span><b>' + rub(prices[sel]) + "</b></div></div>" +
         '<p class="sheet-text" style="font-size:13px;color:#5B5F66">Прототип: полис не оформляется, деньги не списываются.</p><button class="btn-accent" data-action="buy" style="height:52px">Оформить е-ОСАГО</button>',
         onMount: function (b) { b.querySelector("[data-action=buy]").addEventListener("click", function () {
-          save("osago.v1", { insurer: name, price: prices[sel] }); UI.close(function () { draw(); UI.toast("Полис отправлен на почту (демо)"); });
+          save("osago.v1", { insurer: name, price: prices[sel], at: Date.now() }); UI.close(function () { draw(); UI.toast("Полис отправлен на почту (демо)"); });
         }); } });
     });
     draw();

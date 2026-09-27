@@ -362,3 +362,37 @@ body{position:fixed;inset:0}
 .mc-row{display:flex;gap:8px}
 .mc-row input{flex:1;min-width:0;height:48px;border:1px solid #E2DED6;border-radius:14px;padding:0 14px;font-size:16px;font-family:inherit;background:#F3F1EC;color:#17191C}
 .mc-row button{width:48px;height:48px;border:none;border-radius:14px;background:#C2410C;color:#fff;display:flex;align-items:center;justify-content:center;padding:0}
+/* Гараж: раздел «Всё для машины», уровень, ближайший срок */
+.hub-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.hub-tile{position:relative;min-height:80px;background:#fff;border:1px solid #E2DED6;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px 2px;text-decoration:none;color:#17191C;font-size:11px;font-weight:700;text-align:center;line-height:1.2}
+.hub-new{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:99px;background:#C2410C}
+.hub-badge{position:absolute;top:5px;right:5px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#C2410C;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+.lvl-chip{height:40px;padding:0 12px 0 6px;border-radius:999px;background:#17191C;color:#fff;display:flex;align-items:center;gap:8px;text-decoration:none;font-size:13px;font-weight:700;margin-left:auto;margin-right:8px}
+.lvl-n{width:28px;height:28px;border-radius:99px;background:#C2410C;display:flex;align-items:center;justify-content:center;font-family:Unbounded,'Arial Black',sans-serif;font-size:13px}
+.dl-card{display:flex;gap:12px;align-items:center;background:#FCEBDF;border-radius:16px;padding:12px 14px;color:#17191C;text-decoration:none}
+.dl-card.over{background:#FEE4E2}
+.dl-ic{width:40px;height:40px;flex-shrink:0;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center}
+.dl-t{flex:1;display:flex;flex-direction:column;gap:2px}.dl-t b{font-size:14px}.dl-t span{font-size:12px;color:#7A2E0E}
+/* AUTO-29 Бюджет и баллы */
+.bd-hero{background:#17191C;color:#fff;border-radius:18px;padding:16px}
+.bd-hero>div{display:flex;flex-direction:column;gap:3px}.bd-hero span{font-size:12px;color:#C9CCD1}.bd-hero b{font-family:Unbounded,'Arial Black',sans-serif;font-size:26px}
+.bd-cat{display:grid!important;grid-template-columns:1fr auto;gap:6px 12px!important}
+.bd-cat>div:first-child{display:flex;flex-direction:column;gap:1px}.bd-cat>div:first-child b{font-size:14px}.bd-cat>div:first-child span{font-size:12px;color:#5B5F66}
+.bd-bar{grid-column:1/-1;height:6px;border-radius:9px;background:#EFECE6}.bd-bar i{display:block;height:100%;border-radius:9px;background:#C2410C}
+.kv small{display:block;font-size:12px;color:#5B5F66;margin-top:1px}
+.wl-earn{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.wl-earn a{flex-shrink:0;width:128px;background:#fff;border:1px solid #E2DED6;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;text-decoration:none;color:#17191C}
+.wl-earn b{font-size:16px;color:#0F6B3A}.wl-earn span{font-size:12px;line-height:1.3}
+/* AUTO-14 Заправки */
+.fu-hero{background:#17191C;color:#fff;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.fu-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fu-stats div{display:flex;flex-direction:column;gap:2px}.fu-stats span,.fu-stats small{font-size:12px;color:#C9CCD1}
+.fu-stats b{font-family:Unbounded,'Arial Black',sans-serif;font-size:19px}.fu-stats b.acc{color:#FDBA8C}
+.fu-chart{height:110px;display:flex;align-items:flex-end;gap:8px}
+.fu-chart div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px}
+.fu-chart i{display:block;width:100%;border-radius:6px 6px 3px 3px;background:#3A3D42}.fu-chart i.cur{background:#C2410C}
+.fu-chart span{font-size:11px;color:#C9CCD1}
+.fu-row>span{display:flex;flex-direction:column;gap:2px}.fu-row .r{align-items:flex-end;text-align:right}
+.fu-row small{font-size:12px;color:#5B5F66}.fu-row small.ok{color:#0F6B3A;font-weight:700}
+.fu-row .linkbtn{min-height:28px;padding:0;font-size:12px;color:#9A958B}
+.fu-hint{font-size:12px;font-weight:600;color:#0F6B3A;min-height:16px}

@@ -295,7 +295,7 @@
               service: svc ? { id: svc.id, name: svc.name, town: svc.town, address: svc.address, rating: svc.ratingGis } : null,
               visit: { date: d.date, time: d.time }, stage: 0, rated: 0 };
             saveOrder(o);
-            if (p.points) save("points.v1", points() - p.points);
+            if (p.points) window.AutoHubPoints.add(-p.points, "Оплата запчастей ТО-" + t.km.toLocaleString("ru-RU"));
             var all = drafts(); delete all[c.id]; save("todraft.v1", all);
             UI.close(function () { location.hash = "#TO/order"; UI.toast("Оплачено. Заказ " + o.id + " передан в магазины"); });
           }, 600);
@@ -351,7 +351,7 @@
       date: o.visit.date, km: c.mileage || null, kind: "visit", title: "ТО-" + o.km.toLocaleString("ru-RU") + " км",
       place: (o.service ? o.service.name : "Автосервис") + " · заказ " + o.id, cost: o.worksPrice + o.partsTotal + o.delivery, order: lines
     }, o.carId);
-    save("points.v1", points() + Math.round((o.partsTotal + o.worksPrice) * 0.03));
+    window.AutoHubPoints.add((o.partsTotal + o.worksPrice) * 0.03, "ТО-" + o.km.toLocaleString("ru-RU") + " · 3% от заказа");
   }
 
   /* ---------- Действия ---------- */
@@ -364,7 +364,7 @@
     if (b.dataset.date) { d.date = b.dataset.date; d.time = null; saveDraft(d); render(); return; }
     if (b.dataset.time) { if (!b.disabled) { d.time = b.dataset.time; saveDraft(d); render(); } return; }
     if (b.dataset.deliv) { d.delivery = b.dataset.deliv; saveDraft(d); render(); return; }
-    if (b.dataset.star) { o.rated = +b.dataset.star; saveOrder(o); save("points.v1", points() + 100); UI.toast("Спасибо за оценку! +100 баллов"); render(); return; }
+    if (b.dataset.star) { o.rated = +b.dataset.star; saveOrder(o); window.AutoHubPoints.add(100, "Оценка сервиса после ТО"); UI.toast("Спасибо за оценку! +100 баллов"); render(); return; }
     switch (b.dataset.to) {
       case "mileage":
         var n = parseInt(($("toMil").value || "").replace(/\D/g, ""), 10);
@@ -395,7 +395,7 @@
       case "cancel":
         if (window.confirm("Отменить заказ? Деньги за запчасти вернутся на карту.")) {
           var all = orders(); delete all[o.carId]; save("orders.v1", all);
-          if (o.pointsUsed) save("points.v1", points() + o.pointsUsed);
+          if (o.pointsUsed) window.AutoHubPoints.add(o.pointsUsed, "Возврат баллов за отменённый заказ");
           UI.toast("Заказ отменён, " + rub(o.paid) + " вернутся за 1–3 дня"); location.hash = "#Garage";
         }
         break;
