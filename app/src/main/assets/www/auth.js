@@ -201,7 +201,7 @@
       var st = settings(); st[t.dataset.set] = t.checked; saveSettings(st);
       UI.toast(t.checked ? "Включено" : "Выключено");
     });
-    scr.addEventListener("click", function (e) {
+    scr.addEventListener("click", async function (e) {
       var m = e.target.closest("[data-car-menu]"); if (m) { carMenu(m.getAttribute("data-car-menu")); return; }
       var b = e.target.closest("button[data-action]"); if (!b) return;
       var a = b.dataset.action;
@@ -218,6 +218,7 @@
         localStorage.removeItem(KEY); location.hash = "#Welcome"; UI.toast("Вы вышли из аккаунта");
       }
       if (a === "delete" && window.confirm("Удалить аккаунт и все данные на этом телефоне? Отменить нельзя.")) {
+        try { if (window.AutoHubDocuments) await window.AutoHubDocuments.clear(); } catch (e) { UI.toast("Не удалось удалить документы. Повторите удаление."); return; }
         Object.keys(localStorage).filter(function (k) { return k.indexOf("autohub.") === 0; }).forEach(function (k) { localStorage.removeItem(k); });
         location.hash = "#Welcome"; setTimeout(function () { location.reload(); }, 50);
       }
