@@ -18,6 +18,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
+import android.webkit.ValueCallback
+import androidx.core.content.FileProvider
+import java.io.File
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -61,6 +64,19 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    // Document capture is separate from the low-resolution parking preview.
+    private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private var documentCameraUri: Uri? = null
+    private val documentPicker = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        fileCallback?.onReceiveValue(uris.takeIf { it.isNotEmpty() }?.toTypedArray())
+        fileCallback = null
+    }
+    private val documentCamera = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        fileCallback?.onReceiveValue(if (ok) documentCameraUri?.let { arrayOf(it) } else null)
+        fileCallback = null
+        documentCameraUri = null
+    }
+
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -86,7 +102,27 @@ class MainActivity : ComponentActivity() {
             settings.allowFileAccess = true
             overScrollMode = WebView.OVER_SCROLL_NEVER
             // Диалоги JS (подтверждения, ввод пробега)
-            webChromeClient = WebChromeClient()
+            webChromeClient = object : WebChromeClient() {
+                override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
+                    fileCallback?.onReceiveValue(null)
+                    fileCallback = callback
+                    try {
+                        if (params.isCaptureEnabled) {
+                            val folder = File(cacheDir, "documents").apply { mkdirs() }
+                            folder.listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 86400000 }?.forEach { it.delete() }
+                            val photo = File.createTempFile("capture-", ".jpg", folder)
+                            documentCameraUri = FileProvider.getUriForFile(this@MainActivity, "$packageName.files", photo)
+                            documentCamera.launch(documentCameraUri!!)
+                        } else {
+                            documentPicker.launch(arrayOf("image/jpeg", "image/png", "image/webp", "application/pdf"))
+                        }
+                    } catch (_: Exception) {
+                        fileCallback?.onReceiveValue(null)
+                        fileCallback = null
+                    }
+                    return true
+                }
+            }
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     val url = request.url
@@ -114,6 +150,7 @@ class MainActivity : ComponentActivity() {
         }
         // Доступ к открытым API (NHTSA vPIC) и к возможностям телефона из веб-интерфейса
         webView.addJavascriptInterface(NativeHttp(webView), "NativeHttp")
+        webView.addJavascriptInterface(NativeOcr(webView), "NativeOcr")
         webView.addJavascriptInterface(NativeDevice(this), "NativeDevice")
         setContentView(webView)
 

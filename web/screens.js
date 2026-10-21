@@ -37,13 +37,14 @@
   function fmtDate(iso) { var d = new Date(iso + "T12:00:00"); return d.getDate() + " " + MONTHS[d.getMonth()]; }
   function history() {
     var all = load("history.v1", {}), id = car().id || "demo";
-    if (!all[id]) { all[id] = HIST_DEMO; save("history.v1", all); }
+    if (!all[id]) { all[id] = car().demo || id === "demo" ? HIST_DEMO.slice() : []; save("history.v1", all); }
     return all[id];
   }
   function addHistory(rec, carId) {
     var all = load("history.v1", {}), id = carId || car().id || "demo";
-    if (!all[id]) all[id] = HIST_DEMO.slice();
-    rec.id = "h" + Date.now(); all[id].unshift(rec); save("history.v1", all);
+    if (!all[id]) all[id] = id === "demo" ? HIST_DEMO.slice() : [];
+    rec.id = "h" + Date.now() + Math.random().toString(36).slice(2, 8); all[id].unshift(rec);
+    localStorage.setItem("autohub.history.v1", JSON.stringify(all));
     drawHistory();
   }
   var hist = { filter: "all" };
@@ -55,16 +56,21 @@
     hist.sum = top.children[1];
     var keys = ["all", "service", "visits"];
     hist.tabs.forEach(function (b, i) { on(b, function () { hist.filter = keys[i]; drawHistory(); }); });
-    on(head.querySelector('button[aria-label="Добавить запись"]'), addRecordSheet);
+    on(head.querySelector('button[aria-label="Добавить запись"]'), function () {
+      UI.sheet({ title: "Добавить в историю", html: '<button id="historyScan" class="btn-accent">Сканировать наряд-заказ</button><button id="historyManual" class="btn-light">Ввести вручную</button>', onMount: function (b) {
+        b.querySelector('#historyScan').onclick = function () { window.AutoHubDocuments.open(); };
+        b.querySelector('#historyManual').onclick = addRecordSheet;
+      } });
+    });
     hist.list.addEventListener("click", function (e) {
       var a = e.target.closest("[data-order]"); if (!a) return;
       e.preventDefault();
       var rec = history().filter(function (h) { return h.id === a.dataset.order; })[0]; if (!rec) return;
-      UI.sheet({ title: "Заказ-наряд", html: '<div class="kv">' + (rec.order || [[rec.title, rec.cost]]).map(function (x) {
-        return '<div><span>' + esc(x[0]) + "</span><b>" + rub(x[1]) + "</b></div>"; }).join("") +
-        '<div class="kv-total"><span>Итого</span><b>' + rub(rec.cost) + "</b></div></div>" +
+      UI.sheet({ title: "Заказ-наряд", onMount: function (b) { var btn = b.querySelector("#viewOriginal"); if (btn) btn.onclick = function () { window.AutoHubDocuments.view(rec.documentId); }; }, html: '<div class="kv">' + (rec.order || [[rec.title, rec.cost]]).map(function (x) {
+        return '<div><span>' + esc(x[0]) + "</span><b>" + (x[1] == null ? "не указано" : rub(x[1])) + "</b></div>"; }).join("") +
+        '<div class="kv-total"><span>Итого</span><b>' + (rec.cost == null ? "не указано" : rub(rec.cost)) + "</b></div></div>" +
         '<p class="sheet-text" style="font-size:13px;color:#5B5F66">' + esc(rec.place) + " · " + fmtDate(rec.date) + "</p>" +
-        '<button class="btn-dark" data-close="1" data-action="close">Закрыть</button>' });
+        (rec.documentId ? '<button id="viewOriginal" class="btn-light">Оригинал документа</button>' : '') + '<button class="btn-dark" data-close="1" data-action="close">Закрыть</button>' });
     });
     drawHistory();
     window.addEventListener("autohub:car", drawHistory);

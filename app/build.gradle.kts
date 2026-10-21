@@ -14,7 +14,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "ru.autohub.app"
+        applicationId = "ru.autohub.app.ocr"
         minSdk = 26
         targetSdk = 34
         versionCode = 100 + verMajor * 1000 + verMinor

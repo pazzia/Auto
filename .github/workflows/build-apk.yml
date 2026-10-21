@@ -2,10 +2,21 @@ name: Build APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/document-ocr]
   workflow_dispatch:
 
 jobs:
+  ocr-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-rus tesseract-ocr-eng fonts-dejavu-core
+      - run: pip install -r server/requirements.txt pytest httpx
+      - run: python -m pytest server/tests -q
+      - run: node --check web/documents.js && node --check web/screens.js && node --check web/auth.js
   build:
     runs-on: ubuntu-latest
     steps:
@@ -28,5 +39,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: autohub-debug-apk
+          name: autohub-ocr-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk

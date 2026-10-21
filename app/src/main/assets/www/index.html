@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
-<meta name="autohub-build" content="0.8">
+<meta name="autohub-build" content="0.9">
 <title>АвтоХаб</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -372,6 +372,21 @@ body{position:fixed;inset:0}
 .mc-row{display:flex;gap:8px}
 .mc-row input{flex:1;min-width:0;height:48px;border:1px solid #E2DED6;border-radius:14px;padding:0 14px;font-size:16px;font-family:inherit;background:#F3F1EC;color:#17191C}
 .mc-row button{width:48px;height:48px;border:none;border-radius:14px;background:#C2410C;color:#fff;display:flex;align-items:center;justify-content:center;padding:0}
+
+/* AUTO-31 document capture/review */
+.ocr-pick { position:relative; display:flex; align-items:center; justify-content:center; min-height:48px; margin:8px 0; overflow:hidden; }
+.ocr-pick input { position:absolute; inset:0; opacity:0; width:100%; cursor:pointer; }
+.ocr-file { overflow-wrap:anywhere; padding:8px 0; }
+.ocr-row { border:1px solid #E2DED6; border-radius:12px; padding:12px; margin:12px 0; min-width:0; }
+.ocr-row select { min-height:44px; width:100%; }
+.ocr-originals img { width:100%; height:auto; }
+.ocr-pdf { width:100%; height:420px; border:0; }
+.ocr-text { white-space:pre-wrap; overflow-wrap:anywhere; max-height:350px; overflow:auto; font-size:13px; }
+.ocr-warnings { color:#85400c; font-size:13px; }
+.ocr-confirm { display:flex; gap:12px; align-items:flex-start; margin:20px 0; }
+#ocrStatus, #docError { overflow-wrap:anywhere; color:#9A3412; }
+.sheet-body details { margin:16px 0; overflow-wrap:anywhere; }
+.sheet-body summary { min-height:44px; cursor:pointer; }
 
 </style>
 </head>
@@ -1328,7 +1343,7 @@ body{position:fixed;inset:0}
 <g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
 </g>
 </svg></template>
-<script>window.AUTOHUB_BUILD = "0.8";</script>
+<script>window.AUTOHUB_BUILD = "0.9";</script>
 <script src="ui.js"></script>
 <script src="device.js"></script>
 <script src="api.js"></script>
@@ -1337,6 +1352,7 @@ body{position:fixed;inset:0}
 <script src="cart.js"></script>
 <script src="parts.js"></script>
 <script src="screens.js"></script>
+<script src="documents.js"></script>
 <script src="to.js"></script>
 <script src="icons.js"></script>
 <script src="parking.js"></script>
