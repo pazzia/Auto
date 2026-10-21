@@ -36,6 +36,7 @@ import java.io.ByteArrayOutputStream
 class MainActivity : ComponentActivity() {
 
     private lateinit var webView: WebView
+    private lateinit var offlineOcr: NativeOcr
     private val main = Handler(Looper.getMainLooper())
 
     // Ожидающие ответа запросы из веб-интерфейса
@@ -150,7 +151,8 @@ class MainActivity : ComponentActivity() {
         }
         // Доступ к открытым API (NHTSA vPIC) и к возможностям телефона из веб-интерфейса
         webView.addJavascriptInterface(NativeHttp(webView), "NativeHttp")
-        webView.addJavascriptInterface(NativeOcr(webView), "NativeOcr")
+        offlineOcr = NativeOcr(webView)
+        webView.addJavascriptInterface(offlineOcr, "NativeOcr")
         webView.addJavascriptInterface(NativeDevice(this), "NativeDevice")
         setContentView(webView)
 
@@ -166,6 +168,11 @@ class MainActivity : ComponentActivity() {
                 if (webView.canGoBack()) webView.goBack() else finish()
             }
         })
+    }
+
+    override fun onDestroy() {
+        if (::offlineOcr.isInitialized) offlineOcr.close()
+        super.onDestroy()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

@@ -1,8 +1,8 @@
 /* AUTO-31: imports are drafts until explicitly confirmed. Originals live in IndexedDB. */
 (function () {
   'use strict';
-  var UI = window.AutoHubUI, esc = UI.esc, key = 'autohub.ocr.url', nativeSeq = 0, callbacks = {};
-  var token = ''; // Session memory only: never export or persist the server token.
+  var UI = window.AutoHubUI, esc = UI.esc, nativeSeq = 0, callbacks = {};
+  try { localStorage.removeItem('autohub.ocr.url'); } catch (e) {} // remove obsolete server setting
   function database() {
     return new Promise(function (resolve, reject) {
       var r = indexedDB.open('autohub.documents', 1);
@@ -21,30 +21,23 @@
   function field(id, label, value, type) {
     return '<label class="fld">' + label + '<input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(value == null ? '' : value) + '"></label>';
   }
-  function endpoint(value) {
-    var u = new URL(value);
-    if (u.username || u.password || u.search || u.hash || (u.protocol !== 'https:' && !(u.protocol === 'http:' && /^(localhost|127\.0\.0\.1)$/.test(u.hostname) && !window.NativeOcr))) throw new Error('Укажите HTTPS-адрес своего OCR-сервера.');
-    return u.href.replace(/\/$/, '') + '/v1/documents/recognize';
+  window.__nativeOcrCb = function (id, status, body) { if (callbacks[id]) callbacks[id].finish(status, body); };
+  window.__nativeOcrProgress = function (id, page) { if (callbacks[id]) callbacks[id].progress(page); };
+  function cancelPending() {
+    if (window.NativeOcr) window.NativeOcr.cancel();
+    Object.keys(callbacks).forEach(function (id) { callbacks[id].finish(499, JSON.stringify({detail: 'Распознавание отменено. Данные не сохранены.'})); });
   }
-  window.__nativeOcrCb = function (id, status, body) { if (callbacks[id]) { callbacks[id](status, body); delete callbacks[id]; } };
-  async function request(url, body) {
-    var response;
-    if (window.NativeOcr) {
-      response = await new Promise(function (resolve, reject) {
-        var id = 'ocr' + (++nativeSeq), timer = setTimeout(function () { delete callbacks[id]; reject(new Error('Время ожидания истекло. Попробуйте меньше страниц.')); }, 780000);
-        callbacks[id] = function (status, text) { clearTimeout(timer); resolve({ status: status, text: text }); };
-        window.NativeOcr.recognize(url, token, JSON.stringify(body), id);
-      });
-    } else {
-      var controller = new AbortController(), timer = setTimeout(function () { controller.abort(); }, 780000);
-      try {
-        var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(body), signal: controller.signal });
-        response = { status: r.status, text: await r.text() };
-      } finally { clearTimeout(timer); }
-    }
-    var result; try { result = JSON.parse(response.text); } catch (e) { throw new Error('Нет корректного ответа OCR-сервера. Проверьте адрес и подключение.'); }
-    if (response.status !== 200) throw new Error(typeof result.detail === 'string' ? result.detail : 'OCR временно недоступен.');
-    return result;
+  async function request(body, progress) {
+    if (!window.NativeOcr || !window.NativeOcr.isOffline) throw new Error('Распознавание на устройстве доступно в Android-приложении «АвтоХаб OCR» версии 0.10 и выше.');
+    var response = await new Promise(function (resolve) {
+      var id = 'ocr' + (++nativeSeq), timer = setTimeout(cancelPending, 900000);
+      callbacks[id] = {progress: progress, finish: function (status, text) { clearTimeout(timer); delete callbacks[id]; resolve({status: status, text: text}); }};
+      try { window.NativeOcr.recognize(JSON.stringify(body), id); }
+      catch (e) { callbacks[id].finish(500, JSON.stringify({detail: 'Не удалось запустить локальное распознавание.'})); }
+    });
+    var result; try { result = JSON.parse(response.text); } catch (e) { throw new Error('Ошибка локального распознавания. Попробуйте меньше страниц.'); }
+    if (response.status !== 200) throw new Error(typeof result.detail === 'string' ? result.detail : 'Не удалось распознать документ.');
+    return Object.assign(result, window.AutoHubDocumentParser.extract(result.lines));
   }
   function base64(file) {
     return new Promise(function (resolve, reject) {
@@ -61,10 +54,11 @@
       '<label class="btn-light ocr-pick">Сфотографировать<input id="ocrCamera" type="file" accept="image/*" capture="environment"></label>' +
       '<label class="btn-light ocr-pick">Выбрать фото или PDF<input id="ocrFiles" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple></label>' +
       '<div id="ocrSelected" aria-live="polite"></div>' +
-      '<details><summary>Подключение к своему OCR-серверу</summary><p class="sheet-text">Файлы отправляются на указанный сервер для обработки. На сервере оригиналы не сохраняются.</p>' +
-      field('ocrUrl', 'Адрес сервера', localStorage.getItem(key) || '', 'url') + field('ocrToken', 'Ключ доступа (на эту сессию)', token, 'password') + '</details>' +
-      '<p id="ocrStatus" role="status" aria-live="polite"></p><button id="ocrRun" class="btn-accent">Распознать</button><button class="btn-light" data-close="1">Закрыть</button>',
+      '<p class="sheet-text">Распознавание выполняется на телефоне. Документы никуда не отправляются. Интернет не нужен.</p>' +
+      '<label class="fld">Поворот страниц перед распознаванием<select id="ocrRotation"><option value="0">Без поворота</option><option value="90">90° по часовой</option><option value="180">180°</option><option value="270">90° против часовой</option></select></label>' +
+      '<p id="ocrStatus" role="status" aria-live="polite"></p><button id="ocrRun" class="btn-accent">Распознать на устройстве</button><button id="ocrCancel" class="btn-light" hidden>Отменить распознавание</button><button class="btn-light" data-close="1">Закрыть</button>',
       onMount: function (b) {
+        var stopped = false;
         function draw() {
           b.querySelector('#ocrSelected').innerHTML = files.map(function (f, i) { return '<div class="ocr-file">' + esc(f.name) + ' <button data-remove="' + i + '">Убрать</button></div>'; }).join('');
         }
@@ -74,24 +68,25 @@
           files = next; draw();
         }; });
         b.addEventListener('click', function (e) { var el = e.target.closest('[data-remove]'); if (el) { files.splice(+el.dataset.remove, 1); draw(); } });
+        b.querySelector('#ocrCancel').onclick = function () { stopped = true; cancelPending(); };
+        var observer = new MutationObserver(function () { if (!b.isConnected) { stopped = true; cancelPending(); observer.disconnect(); } });
+        observer.observe(document.body, {childList: true, subtree: true});
         b.querySelector('#ocrRun').onclick = async function () {
           var status = b.querySelector('#ocrStatus'), button = this;
+          stopped = false;
           try {
             if (!files.length) throw new Error('Добавьте фото или PDF.');
-            var urlValue = b.querySelector('#ocrUrl').value.trim(), url = endpoint(urlValue);
-            token = b.querySelector('#ocrToken').value.trim();
-            if (token.length < 24) { b.querySelector('details').open = true; throw new Error('Введите ключ доступа своего сервера (минимум 24 символа).'); }
-            localStorage.setItem(key, urlValue);
             var selected = files.slice();
             button.disabled = true;
-            b.querySelectorAll('input, [data-remove]').forEach(function (x) { x.disabled = true; });
-            status.textContent = 'Распознаём… Несколько страниц могут занять несколько минут.';
-            var payload = []; for (var f of selected) payload.push(await base64(f));
-            var result = await request(url, { files: payload });
+            b.querySelectorAll('input, select, [data-remove]').forEach(function (x) { x.disabled = true; });
+            b.querySelector('#ocrCancel').hidden = false;
+            status.textContent = 'Распознаём на устройстве… Не закрывайте приложение.';
+            var payload = []; for (var f of selected) { var file = await base64(f); if (stopped) throw new Error('Распознавание отменено.'); file.rotation = +b.querySelector('#ocrRotation').value; payload.push(file); }
+            var result = await request({ files: payload }, function (page) { status.textContent = 'Распознаём страницу ' + page + ' на устройстве…'; });
             // Closing the sheet abandons the result; it must not reopen over another screen.
-            if (b.isConnected && /\/sheet$/.test(location.hash)) review(car, selected, result);
-          } catch (e) { status.textContent = e.message || 'Ошибка соединения с OCR-сервером.'; }
-          finally { button.disabled = false; b.querySelectorAll('input, [data-remove]').forEach(function (x) { x.disabled = false; }); }
+            if (!stopped && b.isConnected && b.closest('.sheet-wrap').classList.contains('show') && /\/sheet$/.test(location.hash)) review(car, selected, result);
+          } catch (e) { status.textContent = e.message || 'Ошибка локального распознавания.'; }
+          finally { b.querySelector('#ocrCancel').hidden = true; button.disabled = false; b.querySelectorAll('input, select, [data-remove]').forEach(function (x) { x.disabled = false; }); }
         };
       }
     });
@@ -192,5 +187,5 @@
       UI.sheet({ title: 'Оригинал наряд-заказа', html: '<div class="ocr-originals"></div><button data-close="1" class="btn-light">Закрыть</button>', onMount: function (b) { originals(b, saved.files, saved.ocr.previews); } });
     } catch (e) { UI.toast(e.message); }
   }
-  window.AutoHubDocuments = { open: open, view: view, clear: function () { token = ''; return storage('readwrite', function (s) { return s.clear(); }); } };
+  window.AutoHubDocuments = { open: open, view: view, clear: function () { cancelPending(); return storage('readwrite', function (s) { return s.clear(); }); } };
 })();

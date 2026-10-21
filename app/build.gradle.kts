@@ -17,6 +17,7 @@ android {
         applicationId = "ru.autohub.app.ocr"
         minSdk = 26
         targetSdk = 34
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         versionCode = 100 + verMajor * 1000 + verMinor
         versionName = appVersion
     }
@@ -50,6 +51,17 @@ android {
 }
 
 dependencies {
+    implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-ktx:1.9.1")
 }
+
+// Download and verify at BUILD time only. Both languages are included in every APK.
+val prepareOcrModels by tasks.registering(Exec::class) {
+    workingDir(rootProject.projectDir)
+    commandLine("python3", "tools/prepare_ocr_models.py")
+}
+tasks.named("preBuild") { dependsOn(prepareOcrModels) }

@@ -10,34 +10,60 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
-      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-rus tesseract-ocr-eng fonts-dejavu-core
-      - run: pip install -r server/requirements.txt pytest httpx
-      - run: python -m pytest server/tests -q
+          node-version: '22'
+      - run: node --test tests/document-parser.test.cjs
       - run: node --check web/documents.js && node --check web/screens.js && node --check web/auth.js
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Собрать веб-прототип
         run: python3 tools/build_prototype.py
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
-
+          java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.9"
-
-      - name: Собрать debug APK
-        run: gradle :app:assembleDebug
-
+          gradle-version: '8.9'
+      - name: Собрать APK с языками OCR
+        run: gradle :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Проверить модели внутри APK
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, zipfile
+          with zipfile.ZipFile('app/build/outputs/apk/debug/app-debug.apk') as apk:
+              manifest = json.loads(apk.read('assets/ocr-models.json'))
+              for lang in ('rus', 'eng'):
+                  assert hashlib.sha256(apk.read(f'assets/tessdata/{lang}.traineddata')).hexdigest() == manifest[lang]
+          print('Both OCR models are bundled and verified')
+          PY
       - uses: actions/upload-artifact@v4
         with:
-          name: autohub-ocr-debug-apk
+          name: autohub-offline-ocr-0.10-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test OCR with airplane mode enabled
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb shell settings put global airplane_mode_on 1
+            adb shell svc wifi disable
+            adb shell svc data disable
+            gradle :app:connectedDebugAndroidTest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-ocr-test-results
+          path: app/build/reports/androidTests/connected/
