@@ -1,9 +1,17 @@
 name: Build APK
 
+# Каждая сборка называется по номеру из файла VERSION:
+#   артефакт и файл — AutoHub-<номер>.apk, релиз — «АвтоХаб <номер>» с тегом v<номер>.
+# Релиз создаётся (или обновляется) при каждом пуше в main.
+
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -11,7 +19,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Собрать веб-прототип
+      - name: Номер сборки
+        run: echo "BUILD=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_ENV"
+
+      - name: Собрать веб-прототип из design/ и web/
         run: python3 tools/build_prototype.py
 
       - uses: actions/setup-java@v4
@@ -23,10 +34,29 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Собрать debug APK
-        run: gradle :app:assembleDebug
+      - name: Собрать APK
+        run: |
+          gradle :app:assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk "AutoHub-${BUILD}.apk"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: autohub-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: AutoHub-${{ env.BUILD }}
+          path: AutoHub-${{ env.BUILD }}.apk
+
+      - name: Описание релиза из CHANGELOG.md
+        if: github.event_name != 'pull_request'
+        run: |
+          awk -v v="## Сборка ${BUILD} " 'index($0, v)==1 {on=1; next} on && /^## / {exit} on {print}' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "Сборка ${BUILD}" > notes.md
+          printf '\nФайл для Android: AutoHub-%s.apk. Установка поверх предыдущей версии.\n' "$BUILD" >> notes.md
+
+      - name: Релиз «АвтоХаб <номер>»
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.BUILD }}
+          name: АвтоХаб ${{ env.BUILD }}
+          body_path: notes.md
+          files: AutoHub-${{ env.BUILD }}.apk
+          make_latest: true

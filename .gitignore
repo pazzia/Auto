@@ -1,0 +1,22 @@
+# Gradle / Android Studio
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Ключи подписи — никогда не коммитить
+*.jks
+*.keystore
+keystore.properties
+# кроме ключа тестовых сборок прототипа (нужен, чтобы обновления ставились поверх)
+!app/autohub-prototype.keystore
+
+# Система
+.DS_Store
+Thumbs.db
+__pycache__/
