@@ -25,3 +25,45 @@ test('offline UI and native bridge contain no network transports or server setti
  assert.doesNotMatch(native,/HttpURLConnection|java\.net|okhttp|https?:\/\//);
  assert.match(ui,/AutoHubDocumentParser\.extract/);
 });
+
+test('table form: completion date, adjacent mileage/VIN, typed columns, grand total', () => {
+ const input = [
+  'Заказ-наряд № TEST-42',
+  'Дата, время приема 14.04.2024 18:42 Дата выполнения работ 15.04.2024 18:43',
+  'Поставщик ИНН: 0000000000, ООО «Тестовый сервис»',
+  'VIN:', 'XWEFC41ABKC001234', 'Пробег', '123456',
+  'Выполнены работы, использованы запчасти и материалы:',
+  'Список работ Кол-во Сумма',
+  'Диагностика блоков управления 1 800,00',
+  'Свечи зажигания с/у 1 800,00',
+  'Масло в АКПП проверка, корректировка 1 500,00',
+  'Итого: 2 100,00',
+  'Запчасти и материалы Кол Цена Сумма',
+  'Свеча накаливания 4 180,00 720,00',
+  'Масло трансмиссионное DEXRON бочковое 1 850,00 850,00',
+  'Итого: 1 570,00',
+  'Стоимость без скидки: 3 670,00 Скидка: 0,00 Итого: 3 670,00',
+  'Рекомендации', 'Список работ Кол-во Сумма', 'Замена сальника 1 12 484,00', 'Итого: 12 484,00'
+ ].map(text=>({text,page:1,confidence:95}));
+ const d=extract(input);
+ assert.equal(d.fields.number.value,'TEST-42');
+ assert.equal(d.fields.date.value,'2024-04-15');
+ assert.equal(d.fields.mileage.value,123456);
+ assert.equal(d.fields.vin.value,'XWEFC41ABKC001234');
+ assert.equal(d.fields.service.value,'ООО «Тестовый сервис»');
+ assert.equal(d.fields.total.value,3670);
+ assert.deepEqual(d.items.map(r=>[r.kind,r.quantity,r.price,r.total]),[
+  ['work',1,null,800],['work',1,null,800],['work',1,null,500],['part',4,180,720],['part',1,850,850]
+ ]);
+ assert.ok(!d.items.some(r=>/сальник/.test(r.name)));
+});
+test('adjacent fields never cross pages and bare subtotals are not grand totals',()=>{
+ const d=extract([{text:'Пробег',page:1,confidence:95},{text:'123456',page:2,confidence:95},
+  {text:'VIN:',page:2,confidence:95},{text:'XWEFC41ABKC001234',page:3,confidence:95},
+  {text:'Итого: 800,00',page:3,confidence:95}]);
+ assert.equal(d.fields.mileage.value,null);assert.equal(d.fields.vin.value,null);assert.equal(d.fields.total.value,null);
+});
+test('unrecognized numeric columns remain editable source text',()=>{
+ const d=extract(lines('Список работ Кол-во Сумма','Замена фильтра 1 ???','Итого: 100,00'));
+ assert.equal(d.items[0].name,'Замена фильтра 1 ???');assert.equal(d.items[0].total,null);
+});
