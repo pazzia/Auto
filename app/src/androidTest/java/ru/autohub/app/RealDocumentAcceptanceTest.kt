@@ -76,7 +76,7 @@ class RealDocumentAcceptanceTest {
                 val parsed = parseInWebView(ocr)
                 doc.put("fields", parsed.getJSONObject("fields")).put("items", parsed.getJSONArray("items")).put("warnings", parsed.getJSONArray("warnings"))
             } catch (e: Throwable) { doc.put("error", e.toString()) }
-            Log.i("OcrAcceptance", doc.toString())
+            Log.i("OcrAcceptance", JSONObject(doc.toString()).apply { remove("text") }.toString())
             docs.put(doc)
         }
         report.put("documents", docs)
