@@ -39,6 +39,12 @@
     if (response.status !== 200) throw new Error(typeof result.detail === 'string' ? result.detail : 'Не удалось распознать документ.');
     // Несколько проходов OCR (масштаб/разметка) — поля и строки выбираются голосованием
     var parsed = window.AutoHubDocumentParser.extractBest(result.passes && result.passes.length ? result.passes : [result.lines]);
+    // Диагностика для разбора случаев по скриншоту: сборка, проходы и размер снимка
+    result.diagnostics = 'Сборка ' + (window.AUTOHUB_BUILD || '?') + ' · ' + (result.engine || '') + ' · проходы: ' +
+      (result.passes || []).map(function (p) { return p.name + ' (' + p.lines.length + ' стр., ' + Math.round(p.confidence) + '%)'; }).join(', ') +
+      ' · снимок ' + ((result.lines[0] || {}).imageSize || []).join('×');
+    var small = result.lines.some(function (l) { return l.imageSize && Math.max(l.imageSize[0], l.imageSize[1]) < 800; });
+    if (small) parsed.warnings.unshift('Снимок очень мелкий: цифры и буквы могут быть прочитаны неверно. Сверьте поля или переснимите документ ближе.');
     delete result.passes;
     return Object.assign(result, parsed);
   }
@@ -128,7 +134,7 @@
       field('docService', 'Автосервис', f.service.value) + field('docTotal', 'Итого, ₽ (пусто — неизвестно)', f.total.value, 'number') +
       field('docTitle', 'Название записи *', 'Обслуживание по наряд-заказу') +
       '<div id="docRows"></div><button id="docAdd" class="btn-light">Добавить строку</button>' +
-      '<details><summary>Распознанный текст и источники полей</summary><pre class="ocr-text">' + esc(data.lines.map(function (l) { return '[Стр. ' + l.page + '] ' + l.text; }).join('\n')) + '</pre>' +
+      '<details><summary>Распознанный текст и источники полей</summary><p class="sheet-text">' + esc(data.diagnostics || '') + '</p><pre class="ocr-text">' + esc(data.lines.map(function (l) { return '[Стр. ' + l.page + '] ' + l.text; }).join('\n')) + '</pre>' +
       Object.keys(f).map(function (k) { return '<p><b>' + esc(k) + '</b>: ' + f[k].evidence.map(function (e) { return esc('стр. ' + e.page + ': ' + e.text); }).join('; ') + '</p>'; }).join('') + '</details>' +
       '<details><summary>Оригиналы документов</summary><div class="ocr-originals"></div></details>' +
       '<label class="ocr-confirm"><input id="docConfirm" type="checkbox"> Я проверил данные и подтверждаю, что указанные работы выполнены</label>' +

@@ -77,16 +77,16 @@ class OfflineOcrEngine(private val context: Context) {
         } finally { decoded.recycle() }
     }
 
-    private data class Pass(val longSide: Int, val removeLines: Boolean, val mode: Int) {
-        val name: String get() = if (longSide == 0) "original-psm$mode" else "clean-$longSide-psm$mode"
+    private data class Pass(val longSide: Int, val removeLines: Boolean, val binarize: Boolean, val mode: Int) {
+        val name: String get() = if (longSide == 0) "original-psm$mode" else (if (binarize) "bw" else "gray") + "-$longSide-psm$mode"
     }
 
     /** Масштаб, бинаризация и удаление линий таблицы — алгоритм в OcrPreprocess.java. */
-    private fun prepare(source: Bitmap, longSide: Int, removeLines: Boolean): Bitmap {
+    private fun prepare(source: Bitmap, longSide: Int, removeLines: Boolean, binarize: Boolean): Bitmap {
         val w = source.width; val h = source.height
         val pixels = IntArray(w * h); source.getPixels(pixels, 0, w, 0, 0, w, h)
         val size = OcrPreprocess.targetSize(w, h, longSide, 8_000_000L)
-        val out = OcrPreprocess.process(pixels, w, h, size[0], size[1], removeLines)
+        val out = OcrPreprocess.process(pixels, w, h, size[0], size[1], removeLines, binarize)
         return Bitmap.createBitmap(out, size[0], size[1], Bitmap.Config.ARGB_8888)
     }
 
@@ -99,11 +99,13 @@ class OfflineOcrEngine(private val context: Context) {
         try {
             check(api.init(dataPath.absolutePath, "rus+eng", TessBaseAPI.OEM_LSTM_ONLY)) { "Не удалось запустить OCR. Переустановите приложение." }
             synchronized(engineLock) { tess = api }
-            /* Проходы: снимок увеличен (мелкие фото — до 2400/3000 px), бинаризован и очищен от линий таблицы;
-               разметка «колонка» (PSM 4) в двух масштабах и «блок» (PSM 6).
-               Парсер голосует между проходами (AutoHubDocumentParser.extractBest). */
-            val passes = listOf(Pass(2400, true, TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN), Pass(3000, true, TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN),
-                Pass(2400, true, TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK))
+            /* Проходы (подобраны прогоном tools/ocr_replay на вариантах фото: масштаб, сжатие, наклон, тени):
+               снимок увеличен до 2400/3000 px, фон выровнен, наклон исправлен, линии таблицы стёрты;
+               серый (LSTM видит детали мелкого текста) в разметке «колонка» и «блок» + чёрно-белый 3000 px.
+               Парсер голосует между проходами (AutoHubDocumentParser.extractBest). Первый проход — лучший одиночный. */
+            val passes = listOf(Pass(2400, true, false, TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN),
+                Pass(2400, true, false, TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK),
+                Pass(3000, true, true, TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN))
             val passLines = List(passes.size) { JSONArray() }; val passConf = MutableList(passes.size) { 0.0 }
             fun recognize(bitmap: Bitmap, pass: Int, mode: Int, sourceSize: JSONArray, keep: Boolean) {
                 checkCancelled()
@@ -130,12 +132,17 @@ class OfflineOcrEngine(private val context: Context) {
                     val size = JSONArray(listOf(bitmap.width, bitmap.height))
                     // На многостраничных документах один подготовленный проход, чтобы не ждать минутами.
                     val active = if (files.length() > 3) listOf(0) else passes.indices.toList()
-                    for (index in active) {
-                        val pass = passes[index]
-                        if (pass.longSide == 0) { recognize(bitmap, index, pass.mode, size, index == 0); continue }
-                        val prepared = prepare(bitmap, pass.longSide, pass.removeLines)
-                        try { recognize(prepared, index, pass.mode, size, index == 0) } finally { prepared.recycle() }
-                    }
+                    // Одинаковая подготовка (масштаб/режим) делается один раз на страницу
+                    var cachedKey: String? = null; var cached: Bitmap? = null
+                    try {
+                        for (index in active) {
+                            val pass = passes[index]
+                            if (pass.longSide == 0) { recognize(bitmap, index, pass.mode, size, index == 0); continue }
+                            val key = "${pass.longSide}/${pass.removeLines}/${pass.binarize}"
+                            if (key != cachedKey) { cached?.recycle(); cached = null; cached = prepare(bitmap, pass.longSide, pass.removeLines, pass.binarize); cachedKey = key }
+                            recognize(cached!!, index, pass.mode, size, index == 0)
+                        }
+                    } finally { cached?.recycle() }
                     val scale = minOf(1.0, 1400.0 / maxOf(bitmap.width, bitmap.height))
                     val preview = Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt().coerceAtLeast(1), (bitmap.height * scale).toInt().coerceAtLeast(1), true)
                     try {

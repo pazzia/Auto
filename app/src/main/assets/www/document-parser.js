@@ -44,10 +44,16 @@
   }
   /** VIN-кандидаты в строке: кириллические двойники → латиница, O/Q → 0 (в VIN этих букв нет). */
   function vinTokens(text) {
-    var up = String(text).toUpperCase().replace(/[А-ЯЁ]/g, function (c) { return CYR2LAT[c] || c; });
+    var up = String(text).toUpperCase().replace(/[А-ЯЁ]/g, function (c) { return CYR2LAT[c] || c; })
+      .replace(/([A-Z0-9])[(€¢©]([A-Z0-9])/g, '$1C$2'); // «C(»/«0€» — так OCR читает C внутри VIN
     return (up.match(/[A-Z0-9]{17}/g) || []).map(function (t) { return t.replace(/[OQ]/g, '0'); })
       .filter(function (t) { return /^[A-HJ-NPR-Z0-9]{17}$/.test(t) && /\d.*\d.*\d/.test(t) && /[A-Z].*[A-Z]/.test(t); });
   }
+
+  /** Структура VIN (ISO 3779): буква в коде изготовителя, 10-й знак — код модельного года (нет 0, U, Z). */
+  function vinShape(v) { return /^[A-HJ-NPR-Z0-9]{2}[A-HJ-NPR-Z]/.test(v) && /^[A-HJ-NPR-TV-Y1-9]$/.test(v[9]); }
+  /** Вес кандидата VIN: метка + верная контрольная цифра + правильный код года; без кода года — штраф (OCR «C» → «0»). */
+  function vinWeight(v, base) { return base + (vinCheck(v) ? 1 : 0) + (vinShape(v) ? 1 : -2); }
 
   /* ---------- Строка таблицы: «название  [кол-во]  [цена]  сумма» ---------- */
   function parseRow(text, cols) {
@@ -82,6 +88,11 @@
       if (P == null && Q === 1) score += 1;
       if (!best || score > best.score) best = { score: score, quantity: Q, price: P, total: T };
     });
+    if (best && best.price != null && Math.abs(best.quantity * best.price - best.total) >= 0.005) {
+      // Цена прочитана с ошибкой в копейках («180,06» при 4 × … = 720,00): цена = сумма / количество, если отличие < 1 ₽
+      var fixed = Math.round(best.total / best.quantity * 100) / 100;
+      if (Math.abs(fixed - best.price) < 1) best.price = fixed;
+    }
     return best ? { name: name, quantity: best.quantity, price: best.price, total: best.total } : null;
   }
 
@@ -123,12 +134,26 @@
       // VIN: в строке или ниже метки VIN; без метки — тоже кандидат, но с меньшим весом
       var labeled = /vin|вин/i.test(low);
       // без метки VIN — только с верной контрольной цифрой (иначе это может быть любой 17-значный номер)
-      vinTokens(raw).forEach(function (v) { if (labeled || vinCheck(v)) add('vin', v, (labeled ? 3 : 1) + (vinCheck(v) ? 1 : 0)); });
-      if (labeled) for (var vo = 1; vo <= 2; vo++) { var vl = near(vo); if (!vl) break; vinTokens(vl.text).forEach(function (v) { add('vin', v, 3 + (vinCheck(v) ? 1 : 0)); }); }
+      vinTokens(raw).forEach(function (v) { if (labeled || vinCheck(v) || vinShape(v)) add('vin', v, vinWeight(v, labeled ? 3 : 1)); });
+      if (labeled) for (var vo = 1; vo <= 2; vo++) {
+        var vl = near(vo); if (!vl) break;
+        var vt = vinTokens(vl.text); vt.forEach(function (v) { add('vin', v, vinWeight(v, 3)); });
+        // Таблица «… VIN: | Пробег»: под ней «VIN  число» — число после VIN и есть пробег, даже если заголовок «Пробег» прочитан с ошибкой
+        if (vt.length && /vin\s*[:.]?\s*\S/i.test(low.replace(/[|\]\[]/g, ' '))) {
+          var after = clean(vl.text).split(/[A-Za-z0-9(€¢©]{17}/).pop().match(/^\s*(\d{1,3}(?: \d{3})+|\d{2,7})\s*(?:км|km)?\s*$/i);
+          if (after) { var av = num(after[1]); if (av >= 10 && av <= 3000000) add('mileage', av, 1); }
+        }
+        if (vt.length) break;
+      }
 
       // Исполнитель: «ООО «Название»», в том числе «OOO»/«000» и без закрывающей кавычки
-      var org = text.replace(/(^|[^A-Za-zА-Яа-я0-9])(?:OOO|0OO|O0O|00O|000|ООО|0ОО|О0О)(?=\s*[«"“])/g, '$1ООО').match(/(?:^|[^A-Za-zА-Яа-я0-9])(ООО|ОАО|ЗАО|ПАО|АО|ИП)\s*[«"“]\s*([^»"”,]{2,60})/);
-      if (org && !/банк/i.test(org[2])) add('service', org[1] + ' «' + org[2].trim() + '»', /поставщ|исполнит|инн/.test(low) ? 3 : 1);
+      var org = text.replace(/(^|[^A-Za-zА-Яа-я0-9])[OО0CС][OО0][OО0](?=\s*[«"“])/g, '$1ООО').match(/(?:^|[^A-Za-zА-Яа-я0-9])(ООО|ОАО|ЗАО|ПАО|АО|ИП)\s*[«"“]\s*([^»"”,]{2,60})([»"”]?)/);
+      if (org && !/банк/i.test(org[2])) {
+        var oname = org[2].trim();
+        // нет закрывающей кавычки, а слово кончается «согласная + в/з/я/ъ» — это «»», прочитанная как буква («Групв» → «Груп»)
+        if (!org[3]) oname = oname.replace(/([бвгджзйклмнпрстфхцчшщ])[взяъ3]$/i, '$1');
+        add('service', org[1] + ' «' + oname + '»', /поставщ|исполнит|инн/.test(low) ? 3 : 1);
+      }
       m = text.match(/^(?:автосервис|исполнитель|сервис)\s*:\s*(.+)$/i); if (m) add('service', m[1].trim(), 2);
 
       // Итог документа

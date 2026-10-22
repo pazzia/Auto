@@ -59,7 +59,7 @@ test('table form: completion date, adjacent mileage/VIN, typed columns, grand to
 });
 test('adjacent fields never cross pages and bare subtotals are not grand totals',()=>{
  const d=extract([{text:'Пробег',page:1,confidence:95},{text:'123456',page:2,confidence:95},
-  {text:'VIN:',page:2,confidence:95},{text:'XWEFC41ABKC001234',page:3,confidence:95},
+  {text:'VIN:',page:2,confidence:95},{text:'XWEFC41AB0C001234',page:3,confidence:95},
   {text:'Итого: 800,00',page:3,confidence:95}]);
  assert.equal(d.fields.mileage.value,null);assert.equal(d.fields.vin.value,null);assert.equal(d.fields.total.value,null);
 });
@@ -85,4 +85,12 @@ test('real table order (anonymized OCR): all fields, rows by section, recommenda
  const noisy = text.map(s=>s.replace(/(\d),(\d\d)/g,'$1.$2 |').replace('156000',''));
  check(extractBest([pass(text), pass(misread), pass(noisy)]));
  check(extractBest([pass(misread), pass(text)]));
+});
+
+test('VIN without label: accepted only with valid VIN structure; OCR price kopeck error fixed by arithmetic', () => {
+ assert.equal(extract(lines('Автомобиль JHMCU2680CC100001 156000')).fields.vin.value,'JHMCU2680CC100001');
+ assert.equal(extract(lines('Счёт 40702810ABCD00012')).fields.vin.value,null);       // нет буквы в коде изготовителя — это не VIN
+ assert.equal(extract(lines('Номер JHMCU26800C100001')).fields.vin.value,null);      // 10-й знак «0» — не код года
+ const d=extract(lines('Запчасти и материалы Кол Цена Сумма','Свеча накаливания 4 180,06 720,00','Итого: 720,00'));
+ assert.equal(d.items[0].price,180);assert.equal(d.items[0].total,720);
 });
