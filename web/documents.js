@@ -37,7 +37,10 @@
     });
     var result; try { result = JSON.parse(response.text); } catch (e) { throw new Error('Ошибка локального распознавания. Попробуйте меньше страниц.'); }
     if (response.status !== 200) throw new Error(typeof result.detail === 'string' ? result.detail : 'Не удалось распознать документ.');
-    return Object.assign(result, window.AutoHubDocumentParser.extract(result.lines));
+    // Несколько проходов OCR (масштаб/разметка) — поля и строки выбираются голосованием
+    var parsed = window.AutoHubDocumentParser.extractBest(result.passes && result.passes.length ? result.passes : [result.lines]);
+    delete result.passes;
+    return Object.assign(result, parsed);
   }
   function base64(file) {
     return new Promise(function (resolve, reject) {

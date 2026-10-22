@@ -24,6 +24,11 @@ jobs:
       - run: node --test tests/document-parser.test.cjs
       - name: Проверить синтаксис веб-модулей
         run: for f in web/*.js; do node --check "$f"; done
+      - name: Проверить предобработку OCR (тот же Java-код, что в APK)
+        run: |
+          mkdir -p build/ocr-check
+          javac -encoding UTF-8 -d build/ocr-check app/src/main/java/ru/autohub/app/OcrPreprocess.java tests/OcrPreprocessCheck.java
+          java -cp build/ocr-check OcrPreprocessCheck
 
   build:
     needs: ocr-tests

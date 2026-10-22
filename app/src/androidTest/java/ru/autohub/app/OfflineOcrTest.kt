@@ -40,6 +40,7 @@ class OfflineOcrTest {
         assertTrue(text, text.contains("125400")); assertTrue(text, text.contains("02.10.2026")); assertTrue(text, text.contains("Замена"))
         assertEquals(1, result.getInt("pages")); assertEquals(1, result.getJSONArray("previews").length())
         assertEquals("tesseract-android-rus-eng-offline", result.getString("engine"))
+        assertEquals("три прохода OCR: 2400/3000 колонка + 2400 блок", 3, result.getJSONArray("passes").length())
     }
     @Test fun rasterPdfTwoPagesWithoutNetwork() {
         val b = bitmap(); val pdf = PdfDocument()

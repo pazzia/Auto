@@ -77,6 +77,19 @@ class OfflineOcrEngine(private val context: Context) {
         } finally { decoded.recycle() }
     }
 
+    private data class Pass(val longSide: Int, val removeLines: Boolean, val mode: Int) {
+        val name: String get() = if (longSide == 0) "original-psm$mode" else "clean-$longSide-psm$mode"
+    }
+
+    /** Масштаб, бинаризация и удаление линий таблицы — алгоритм в OcrPreprocess.java. */
+    private fun prepare(source: Bitmap, longSide: Int, removeLines: Boolean): Bitmap {
+        val w = source.width; val h = source.height
+        val pixels = IntArray(w * h); source.getPixels(pixels, 0, w, 0, 0, w, h)
+        val size = OcrPreprocess.targetSize(w, h, longSide, 8_000_000L)
+        val out = OcrPreprocess.process(pixels, w, h, size[0], size[1], removeLines)
+        return Bitmap.createBitmap(out, size[0], size[1], Bitmap.Config.ARGB_8888)
+    }
+
     fun process(files: JSONArray, progress: (Int) -> Unit = {}): JSONObject {
         require(files.length() in 1..10) { "Выберите от 1 до 10 файлов." }
         val dataPath = installModels()
@@ -86,21 +99,42 @@ class OfflineOcrEngine(private val context: Context) {
         try {
             check(api.init(dataPath.absolutePath, "rus+eng", TessBaseAPI.OEM_LSTM_ONLY)) { "Не удалось запустить OCR. Переустановите приложение." }
             synchronized(engineLock) { tess = api }
-            api.setPageSegMode(TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK)
+            /* Проходы: снимок увеличен (мелкие фото — до 2400/3000 px), бинаризован и очищен от линий таблицы;
+               разметка «колонка» (PSM 4) в двух масштабах и «блок» (PSM 6).
+               Парсер голосует между проходами (AutoHubDocumentParser.extractBest). */
+            val passes = listOf(Pass(2400, true, TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN), Pass(3000, true, TessBaseAPI.PageSegMode.PSM_SINGLE_COLUMN),
+                Pass(2400, true, TessBaseAPI.PageSegMode.PSM_SINGLE_BLOCK))
+            val passLines = List(passes.size) { JSONArray() }; val passConf = MutableList(passes.size) { 0.0 }
+            fun recognize(bitmap: Bitmap, pass: Int, mode: Int, sourceSize: JSONArray, keep: Boolean) {
+                checkCancelled()
+                api.setPageSegMode(mode)
+                api.setImage(bitmap)
+                api.getHOCRText(pageCount - 1) // interruptible pass; UTF8 below reads its cached result
+                checkCancelled()
+                val text = api.getUTF8Text().orEmpty()
+                val confidence = api.meanConfidence()
+                passConf[pass] += confidence.toDouble()
+                text.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.forEach { line ->
+                    val item = JSONObject().put("page", pageCount).put("text", line).put("confidence", confidence)
+                        .put("box", JSONObject.NULL).put("imageSize", sourceSize)
+                    passLines[pass].put(item); if (keep) lines.put(item)
+                }
+                api.clear()
+            }
             fun page(bitmap: Bitmap) {
                 try {
                     checkCancelled()
                     require(++pageCount <= 10) { "Не больше 10 страниц в одном документе." }
                     require(minOf(bitmap.width, bitmap.height) >= 300) { "Слишком маленькое изображение. Используйте полный снимок." }
                     progress(pageCount)
-                    api.setImage(bitmap)
-                    api.getHOCRText(pageCount - 1) // interruptible pass; UTF8 below reads its cached result
-                    checkCancelled()
-                    val text = api.getUTF8Text().orEmpty()
-                    val confidence = api.meanConfidence()
-                    text.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.forEach { line ->
-                        lines.put(JSONObject().put("page", pageCount).put("text", line).put("confidence", confidence)
-                            .put("box", JSONObject.NULL).put("imageSize", JSONArray(listOf(bitmap.width, bitmap.height))))
+                    val size = JSONArray(listOf(bitmap.width, bitmap.height))
+                    // На многостраничных документах один подготовленный проход, чтобы не ждать минутами.
+                    val active = if (files.length() > 3) listOf(0) else passes.indices.toList()
+                    for (index in active) {
+                        val pass = passes[index]
+                        if (pass.longSide == 0) { recognize(bitmap, index, pass.mode, size, index == 0); continue }
+                        val prepared = prepare(bitmap, pass.longSide, pass.removeLines)
+                        try { recognize(prepared, index, pass.mode, size, index == 0) } finally { prepared.recycle() }
                     }
                     val scale = minOf(1.0, 1400.0 / maxOf(bitmap.width, bitmap.height))
                     val preview = Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt().coerceAtLeast(1), (bitmap.height * scale).toInt().coerceAtLeast(1), true)
@@ -108,7 +142,6 @@ class OfflineOcrEngine(private val context: Context) {
                         val out = ByteArrayOutputStream(); preview.compress(Bitmap.CompressFormat.JPEG, 70, out)
                         previews.put("data:image/jpeg;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP))
                     } finally { if (preview !== bitmap) preview.recycle() }
-                    api.clear()
                 } finally { bitmap.recycle() }
             }
             for (i in 0 until files.length()) {
@@ -151,8 +184,12 @@ class OfflineOcrEngine(private val context: Context) {
                 } else page(image(bytes, rotation))
             }
             checkCancelled()
+            if (lines.length() == 0) passLines.firstOrNull { it.length() > 0 }?.let { for (i in 0 until it.length()) lines.put(it.get(i)) }
             require(lines.length() > 0) { "Текст не найден. Снимите документ чётче, без бликов." }
-            return JSONObject().put("lines", lines).put("previews", previews).put("pages", pageCount)
+            val passList = JSONArray()
+            passes.indices.filter { passLines[it].length() > 0 }.forEach { passList.put(JSONObject().put("name", passes[it].name)
+                .put("confidence", passConf[it] / pageCount).put("lines", passLines[it])) }
+            return JSONObject().put("lines", lines).put("passes", passList).put("previews", previews).put("pages", pageCount)
                 .put("fileHashes", JSONArray(hashes)).put("documentHash", hash(hashes.sorted().joinToString("|").toByteArray()))
                 .put("engine", "tesseract-android-rus-eng-offline")
         } finally {

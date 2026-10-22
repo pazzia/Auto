@@ -67,3 +67,22 @@ test('unrecognized numeric columns remain editable source text',()=>{
  const d=extract(lines('Список работ Кол-во Сумма','Замена фильтра 1 ???','Итого: 100,00'));
  assert.equal(d.items[0].name,'Замена фильтра 1 ???');assert.equal(d.items[0].total,null);
 });
+
+test('real table order (anonymized OCR): all fields, rows by section, recommendations excluded', () => {
+ const {extractBest} = require('../web/document-parser.js');
+ const text = require('node:fs').readFileSync('tests/fixtures/order-table-ocr.txt','utf8').split('\n').filter(s=>s.trim()&&!s.startsWith('#'));
+ const pass = t => ({lines: t.map(s=>({text:s.trim(),page:1,confidence:80}))});
+ const want = {number:'41760',date:'2021-05-25',vin:'JHMCU2680CC100001',mileage:156000,service:'ООО «СТО Бастион Груп»',total:3670};
+ const rows = [['work',1,null,800],['work',1,null,800],['work',1,null,500],['part',4,180,720],['part',1,850,850]];
+ const check = d => {
+  for (const k in want) assert.equal(d.fields[k].value, want[k], k);
+  assert.deepEqual(d.items.map(i=>[i.kind,i.quantity,i.price,i.total]), rows);
+  assert.ok(d.items.every(i=>!/Сальник/.test(i.name)));
+ };
+ check(extract(pass(text).lines));
+ // второй проход прочитал закрывающую кавычку как букву, третий — мусор от таблицы: голосование даёт верный результат
+ const misread = text.map(s=>s.replace('Груп»','Групз'));
+ const noisy = text.map(s=>s.replace(/(\d),(\d\d)/g,'$1.$2 |').replace('156000',''));
+ check(extractBest([pass(text), pass(misread), pass(noisy)]));
+ check(extractBest([pass(misread), pass(text)]));
+});
