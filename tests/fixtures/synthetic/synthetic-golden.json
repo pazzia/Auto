@@ -1,0 +1,57 @@
+{
+ "fields": {
+  "number": "58214",
+  "date": "2024-03-15",
+  "vin": "XTAGFK330KY123456",
+  "mileage": 87450,
+  "service": "ООО «Автотехцентр Север»",
+  "total": 6250
+ },
+ "lines": [
+  {
+   "section": "work",
+   "name": "Замена масла в двигателе",
+   "qty": 1,
+   "price": null,
+   "sum": 900
+  },
+  {
+   "section": "work",
+   "name": "Замена воздушного фильтра",
+   "qty": 1,
+   "price": null,
+   "sum": 350
+  },
+  {
+   "section": "work",
+   "name": "Диагностика подвески",
+   "qty": 1,
+   "price": null,
+   "sum": 1200
+  },
+  {
+   "section": "part",
+   "name": "Масло моторное 5W-40",
+   "qty": 4,
+   "price": 650,
+   "sum": 2600
+  },
+  {
+   "section": "part",
+   "name": "Фильтр масляный",
+   "qty": 1,
+   "price": 420,
+   "sum": 420
+  },
+  {
+   "section": "part",
+   "name": "Фильтр воздушный",
+   "qty": 1,
+   "price": 780,
+   "sum": 780
+  }
+ ],
+ "must_not_appear_as_lines": [
+  "Замена тормозных колодок передних (износ 80%)"
+ ]
+}

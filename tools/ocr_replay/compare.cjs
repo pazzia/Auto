@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /*
  * Сверка отчёта приёмки (ocr-acceptance.json с эмулятора или JSON replay.cjs) с эталоном.
- * node tools/ocr_replay/compare.cjs <отчёт.json> <эталон.json> [--required имя1,имя2]
+ * node tools/ocr_replay/compare.cjs <отчёт.json> <эталон.json> [--required имя1,имя2] [--only префикс] [--annotate]
+ *   --only — сверять только документы, чьё имя начинается с префикса; --annotate — итог строкой ::notice для GitHub Actions
+ *   (аннотации читаются через REST API, когда логи и артефакты недоступны).
  * Эталон: { fields: {...}, lines: [{section, name, qty, price, sum}], must_not_appear_as_lines: [...] }.
  * Код выхода 1 — если не совпал хотя бы один документ из --required (по умолчанию все).
  */
@@ -9,7 +11,10 @@ const fs = require('fs');
 const [reportFile, goldenFile] = process.argv.slice(2);
 const reqArg = process.argv.indexOf('--required'); const required = reqArg > 0 ? process.argv[reqArg + 1].split(',') : null;
 const report = JSON.parse(fs.readFileSync(reportFile, 'utf8')); const g = JSON.parse(fs.readFileSync(goldenFile, 'utf8'));
-const docs = report.documents || [report];
+const onlyArg = process.argv.indexOf('--only'); const only = onlyArg > 0 ? process.argv[onlyArg + 1] : null;
+const annotate = process.argv.includes('--annotate');
+const docs = (report.documents || [report]).filter(d => !only || String(d.image || '').startsWith(only));
+const sha = s => require('crypto').createHash('sha256').update(s).digest('hex').slice(0, 12);
 function lev(a, b) { const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
   for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
 let failed = 0;
@@ -29,6 +34,11 @@ for (const d of docs) {
   if (errs.length && must) failed++;
   console.log(`${errs.length ? '✗' : '✓'} ${name}${must ? '' : ' (для отчёта)'}${d.ocrMs ? ' · ' + Math.round(d.ocrMs / 1000) + ' с' : ''}`);
   errs.forEach(e => console.log('    ' + e)); notes.forEach(n => console.log('    · ' + n));
+  if (annotate) {
+    const texts = (d.text || []).map(t => sha(t)).join(',');
+    const msg = JSON.stringify({ ok: !errs.length, errs, fields: d.fields, items: (d.items || []).map(i => [i.kind, i.quantity, i.price, i.total]), passes: d.passes, textSha: texts, ms: d.ocrMs });
+    console.log(`::notice title=OCR ${name}::${msg.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
+  }
 }
 if (report.parserSha256) console.log('document-parser.js sha256: ' + report.parserSha256 + (report.build ? ' · сборка ' + report.build : ''));
 process.exit(failed ? 1 : 0);

@@ -50,15 +50,43 @@
       .filter(function (t) { return /^[A-HJ-NPR-Z0-9]{17}$/.test(t) && /\d.*\d.*\d/.test(t) && /[A-Z].*[A-Z]/.test(t); });
   }
 
+  function oneDigitOff(a, b) {
+    if (a.length !== b.length) return false;
+    var diff = 0; for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) diff++;
+    return diff === 1;
+  }
+
   /** Структура VIN (ISO 3779): буква в коде изготовителя, 10-й знак — код модельного года (нет 0, U, Z). */
   function vinShape(v) { return /^[A-HJ-NPR-Z0-9]{2}[A-HJ-NPR-Z]/.test(v) && /^[A-HJ-NPR-TV-Y1-9]$/.test(v[9]); }
   /** Вес кандидата VIN: метка + верная контрольная цифра + правильный код года; без кода года — штраф (OCR «C» → «0»). */
   function vinWeight(v, base) { return base + (vinCheck(v) ? 1 : 0) + (vinShape(v) ? 1 : -2); }
 
   /* ---------- Строка таблицы: «название  [кол-во]  [цена]  сумма» ---------- */
+  /** Строка таблицы с учётом заголовка: пробуем 3 и 2 колонки, заголовок даёт небольшой бонус (он мог прочитаться с ошибкой). */
   function parseRow(text, cols) {
-    var t = clean(text).replace(/(\d)\.$/, '$1'), toks = t.split(' '), nums = [];
-    while (toks.length && /^\d+(?:[.,]\d+)?$/.test(toks[toks.length - 1])) nums.unshift(toks.pop());
+    var best = null;
+    [3, 2].forEach(function (c) {
+      var r = parseRowCols(text, c);
+      if (!r) return;
+      r.score += c === cols ? 1 : 0;
+      if (!best || r.score > best.score) best = r;
+    });
+    if (!best) return null;
+    // Без распознанного заголовка таблицы «1 900,00» неоднозначно (1 × 900 или 1 900) — берём только то, что доказывает арифметика
+    if (!cols && !(best.price != null && Math.abs(best.quantity * best.price - best.total) < 0.01)) return null;
+    return { name: best.name, quantity: best.quantity, price: best.price, total: best.total };
+  }
+
+  function parseRowCols(text, cols) {
+    var t = clean(text).replace(/(\d)\.$/, '$1'), toks = t.split(' ').map(function (x) { return x.replace(/^[‘'’"`]+(?=\d)/, ''); }), nums = [];
+    while (toks.length) {
+      var last = toks[toks.length - 1];
+      if (/^\d+(?:[.,]\d+)?$/.test(last)) nums.unshift(toks.pop());
+      else if (nums.length && /^[iIlL|!]$/.test(last)) { toks.pop(); nums.unshift('1'); } // «i 350,00» — единица в колонке «Кол-во»
+      else break;
+    }
+    // хвост из одного символа перед числами — остаток нечитаемой колонки «Кол-во» («Фильтр воздушный %»)
+    while (nums.length && toks.length > 2 && /^[^\dА-Яа-яЁё]$|^[a-zA-Z]$/.test(toks[toks.length - 1])) toks.pop();
     var name = toks.join(' ').replace(/[\s.,:;\-]+$/, '');
     if (!nums.length || !/[A-Za-zА-Яа-яЁё]{3}/.test(name)) return null;
     // Склейка тысяч: «1 250,00» — целое из 1–3 цифр перед «ddd,dd».
@@ -77,8 +105,19 @@
       var k = s.length, q = null, p = null, tot = null, score = 0;
       if (cols === 3 && k === 3) { q = s[0]; p = s[1]; tot = s[2]; }
       else if (cols === 2 && k === 2) { q = s[0]; tot = s[1]; }
-      else if (cols === 3 && k === 2) { q = s[0]; tot = s[1]; score -= 1; }
+      else if (cols === 3 && k === 2) {
+        // «Фильтр % 780,00 780,00»: количество не прочитано — цена и сумма есть, количество = сумма / цена
+        if (/[.,]\d{2}$/.test(s[0]) && /[.,]\d{2}$/.test(s[1])) {
+          var pp = num(s[0]), tt = num(s[1]), qq = pp > 0 ? tt / pp : 0;
+          if (qq >= 1 && qq <= 1000 && Math.abs(qq - Math.round(qq)) < 0.001) {
+            var c = { score: 4, quantity: Math.round(qq), price: pp, total: tt };
+            if (!best || c.score > best.score) best = c;
+          }
+        }
+        q = s[0]; tot = s[1]; score -= 1;
+      }
       else return;
+      if (/[.,](?!00$)\d{2}$/.test(q) || (/[.,]\d{2}$/.test(q) && p == null && cols === 3)) score -= 3; // «780,00» — это не количество
       if (!/^\d+(?:[.,]\d+)?$/.test(q.replace(/ /g, '')) || / /.test(q)) return;
       var Q = num(q), P = p == null ? null : num(p), T = num(tot);
       if (!(Q > 0 && Q <= 1000)) return;
@@ -91,9 +130,10 @@
     if (best && best.price != null && Math.abs(best.quantity * best.price - best.total) >= 0.005) {
       // Цена прочитана с ошибкой в копейках («180,06» при 4 × … = 720,00): цена = сумма / количество, если отличие < 1 ₽
       var fixed = Math.round(best.total / best.quantity * 100) / 100;
-      if (Math.abs(fixed - best.price) < 1) best.price = fixed;
+      // либо ошибка в копейках, либо одна неверная цифра («130,00» вместо «180,00» при 4 × 180 = 720)
+      if (Math.abs(fixed - best.price) < 1 || oneDigitOff(fixed.toFixed(2), best.price.toFixed(2))) { best.price = fixed; best.score += 3; }
     }
-    return best ? { name: name, quantity: best.quantity, price: best.price, total: best.total } : null;
+    return best ? { name: name, quantity: best.quantity, price: best.price, total: best.total, score: best.score } : null;
   }
 
   function extract(lines) {
@@ -111,8 +151,8 @@
       function near(offset) { var l = lines[index + offset]; return l && l.page === line.page ? l : null; }
 
       // Номер документа
-      m = low.match(/(?:заказ[ -]*наряд|наряд[ -]*заказ|наряд)[^№#\d]{0,6}(?:№|n[еo°]?|#|номер)\s*([0-9a-zа-я][\w\/.-]*)/i);
-      if (m) { var nm = text.match(new RegExp('(?:№|N[eoо°]?|#|номер)\\s*([0-9A-Za-zА-Яа-я][\\w/.-]*)', 'i')); add('number', (nm ? nm[1] : m[1]).replace(/[.,]$/, '')); }
+      m = low.match(/(?:заказ[ -]*наряд|наряд[ -]*заказ|наряд)[^№#\d]{0,6}(?:№|n[еo°]?|#|номер)\s*([0-9a-zа-яё][0-9a-zа-яё_\/.-]*)/i);
+      if (m) { var nm = text.match(new RegExp('(?:№|N[eoо°]?|#|номер)\\s*([0-9A-Za-zА-Яа-яЁё][0-9A-Za-zА-Яа-яЁё_/.-]*)', 'i')); add('number', (nm ? nm[1] : m[1]).replace(/[.,]$/, '')); }
 
       // Дата выполнения: «Дата выполнения работ», «Дата закрытия», «Работы выполнены»; слово «Дата» может быть испорчено
       m = low.match(/(?:выполнени[яе](?:\s+работ)?|закрыти[яе](?:\s+заказа)?|обслуживани[яе]|работы выполнены|окончани[яе] работ|дата выдачи)[^\d]{0,12}(\d{2})[./-](\d{2})[./-](\d{4})/);
@@ -147,7 +187,7 @@
       }
 
       // Исполнитель: «ООО «Название»», в том числе «OOO»/«000» и без закрывающей кавычки
-      var org = text.replace(/(^|[^A-Za-zА-Яа-я0-9])[OО0CС][OО0][OО0](?=\s*[«"“])/g, '$1ООО').match(/(?:^|[^A-Za-zА-Яа-я0-9])(ООО|ОАО|ЗАО|ПАО|АО|ИП)\s*[«"“]\s*([^»"”,]{2,60})([»"”]?)/);
+      var org = text.replace(/(^|[^A-Za-zА-Яа-я0-9])([OО0CС]{3})(?=\s*[«"“])/g, function (all, pre, w) { return (w.match(/[CС]/g) || []).length <= 1 ? pre + 'ООО' : all; }).match(/(?:^|[^A-Za-zА-Яа-я0-9])(ООО|ОАО|ЗАО|ПАО|АО|ИП)\s*[«"“]\s*([^»"”,]{2,60})([»"”]?)/);
       if (org && !/банк/i.test(org[2])) {
         var oname = org[2].trim();
         // нет закрывающей кавычки, а слово кончается «согласная + в/з/я/ъ» — это «»», прочитанная как буква («Групв» → «Груп»)
@@ -185,7 +225,7 @@
       }
       if (section && !/^(?:наименование|кол-во|количество|цена|сумма)(?![а-яa-z0-9])/.test(head)) {
         var row = { kind: section, name: text, quantity: null, price: null, total: null, page: line.page, sourceText: raw.trim() };
-        var parsed = columns ? parseRow(raw, columns) : null;
+        var parsed = parseRow(raw, columns);
         if (parsed) { row.name = parsed.name; row.quantity = parsed.quantity; row.price = parsed.price; row.total = parsed.total; }
         else if (!/[A-Za-zА-Яа-яЁё]{3}/.test(text)) return; // мусор из линий таблицы
         items.push(row); if (cur) cur.rows.push(row);
@@ -227,7 +267,52 @@
     if (!fields.date.value) warnings.push('Дата выполнения не определена. Дата открытия/печати не считается датой обслуживания.');
     warnings.push(items.length ? 'Строки работ и материалов — черновик OCR. Проверьте названия по оригиналу.' : 'Разделы работ и материалов не выделены. Добавьте строки вручную по распознанному тексту.');
     if (lines.some(function (l) { return l.confidence < 65; })) warnings.push('Есть текст с низкой уверенностью распознавания. Проверьте оригинал.');
-    return { fields: fields, items: items, warnings: Array.from(new Set(warnings)), lines: lines, check: { sections: checked, ok: ok } };
+    var subtotals = {}; sections.forEach(function (sec) { if (sec.subtotal != null && subtotals[sec.kind] == null) subtotals[sec.kind] = sec.subtotal; });
+    return { fields: fields, items: items, warnings: Array.from(new Set(warnings)), lines: lines, check: { sections: checked, ok: ok }, subtotals: subtotals };
+  }
+
+  function lev(a, b) {
+    var prev = [], cur, i, j; for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) { cur = [i]; for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+    return prev[b.length];
+  }
+
+  /**
+   * Строки по проходам: в каждом разделе берётся самое частое число строк, затем по каждой строке —
+   * голосование за (кол-во, цена, сумма) с приоритетом арифметики (кол-во × цена = сумма) и название-«медиана».
+   * Если итог раздела не сходится, а у какого-то прохода сходится — берутся строки этого прохода.
+   */
+  function reconcileRows(results, base) {
+    var kinds = []; base.r.items.concat.apply(base.r.items, results.map(function (x) { return x.r.items; })).forEach(function (i) { if (kinds.indexOf(i.kind) < 0) kinds.push(i.kind); });
+    var out = [];
+    kinds.forEach(function (kind) {
+      var lists = results.map(function (x) { return x.r.items.filter(function (i) { return i.kind === kind; }); });
+      var counts = {}; lists.forEach(function (l) { if (l.length) counts[l.length] = (counts[l.length] || 0) + 1; });
+      var n = Number(Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || b - a; })[0] || 0);
+      var same = lists.filter(function (l) { return l.length === n; });
+      var subs = {}; results.forEach(function (x) { var v = x.r.subtotals && x.r.subtotals[kind]; if (v != null) subs[v] = (subs[v] || 0) + 1; });
+      var subtotal = Object.keys(subs).sort(function (a, b) { return subs[b] - subs[a]; })[0]; subtotal = subtotal == null ? null : Number(subtotal);
+      var rows = [];
+      for (var i = 0; i < n; i++) {
+        var cand = same.map(function (l) { return l[i]; }), votes = {}, firstOf = {};
+        cand.forEach(function (r) {
+          var k = [r.quantity, r.price, r.total].join('|');
+          var consistent = r.total != null && r.quantity != null && (r.price == null || Math.abs(r.quantity * r.price - r.total) < 0.01);
+          votes[k] = (votes[k] || 0) + 1 + (consistent ? 2 : 0) + (r.total != null ? 0.5 : 0); if (!firstOf[k]) firstOf[k] = r;
+        });
+        var bestKey = Object.keys(votes).sort(function (a, b) { return votes[b] - votes[a]; })[0], chosen = firstOf[bestKey];
+        var name = cand.map(function (r) { return r.name; }).sort(function (a, b) {
+          var da = cand.reduce(function (acc, r) { return acc + lev(a, r.name); }, 0), db = cand.reduce(function (acc, r) { return acc + lev(b, r.name); }, 0); return da - db; })[0];
+        rows.push(Object.assign({}, chosen, { name: name }));
+      }
+      var sum = function (rs) { return rs.reduce(function (a, r) { return a + (r.total || 0); }, 0); };
+      if (subtotal != null && Math.abs(sum(rows) - subtotal) >= 0.6) {
+        var good = lists.filter(function (l) { return l.length && Math.abs(sum(l) - subtotal) < 0.6; })[0];
+        if (good) rows = good;
+      }
+      out = out.concat(rows);
+    });
+    return out;
   }
 
   /** Название с лишней буквой перед кавычкой («…Групв» — так OCR читает «»») сливается с правильным «…Груп». */
@@ -250,7 +335,7 @@
     }
     // Строки и текст — из прохода, где суммы сходятся с «Итого» лучше всего
     var base = results.slice().sort(function (a, b) { return rowQuality(b) - rowQuality(a); })[0];
-    var out = { fields: {}, items: base.r.items, lines: base.pass.lines, warnings: [], passes: passes.length, check: base.r.check };
+    var out = { fields: {}, items: reconcileRows(results, base), lines: base.pass.lines, warnings: [], passes: passes.length, check: base.r.check };
     FIELDS.forEach(function (k) {
       // Голосование: значение каждого прохода (решённое) + слабый вес его кандидатов
       var votes = {}, ev = [];

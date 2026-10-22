@@ -94,3 +94,9 @@ test('VIN without label: accepted only with valid VIN structure; OCR price kopec
  const d=extract(lines('Запчасти и материалы Кол Цена Сумма','Свеча накаливания 4 180,06 720,00','Итого: 720,00'));
  assert.equal(d.items[0].price,180);assert.equal(d.items[0].total,720);
 });
+
+test('Cyrillic document numbers and quantity from arithmetic when the column is unreadable', () => {
+ assert.equal(extract(lines('Заказ-наряд № ЗН-00731 от 02.09.2025')).fields.number.value,'ЗН-00731');
+ const d=extract(lines('Запчасти и материалы Кол Цена Сумма','Фильтр воздушный % 780,00 780,00','Замена фильтра i 350,00','Итого: 1 130,00'));
+ assert.deepEqual(d.items.map(i=>[i.quantity,i.price,i.total]),[[1,780,780],[1,null,350]]);
+});
