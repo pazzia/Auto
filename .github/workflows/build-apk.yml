@@ -52,7 +52,12 @@ jobs:
           gradle-version: '8.9'
 
       - name: Собрать APK с языками OCR
-        run: gradle :app:assembleDebug :app:assembleDebugAndroidTest
+        run: |
+          # хвост ошибок — аннотациями: они читаются через REST API, даже когда логи недоступны
+          set -o pipefail
+          gradle :app:assembleDebug :app:assembleDebugAndroidTest 2>&1 | tee gradle-build.log || {
+            grep -E "^e: |error:|FAILURE|What went wrong|> " gradle-build.log | head -40 | while IFS= read -r l; do echo "::error title=gradle::$l"; done
+            exit 1; }
 
       - name: Проверить модели OCR внутри APK
         run: |
