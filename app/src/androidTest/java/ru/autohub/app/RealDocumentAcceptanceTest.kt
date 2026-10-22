@@ -17,11 +17,12 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
- * Приёмочный прогон на реальных документах: тот же движок OfflineOcrEngine (Tesseract4Android),
- * затем document-parser.js ИЗ ASSETS ЭТОГО APK выполняется в Android WebView так же, как в web/documents.js.
- * Документы лежат в репозитории только в зашифрованном виде (tests/acceptance/*.enc) и расшифровываются в CI
- * в androidTest/assets/acceptance/, если задан секрет. Тест ничего не сравнивает сам: он пишет отчёт
- * ocr-acceptance.json, а сравнение с эталоном делает отдельный шаг CI (tools/ocr_replay/compare.cjs).
+ * Приёмочный прогон документов: тот же движок OfflineOcrEngine (Tesseract4Android), затем document-parser.js
+ * ИЗ ASSETS ЭТОГО APK выполняется в Android WebView так же, как в web/documents.js.
+ * Документы — androidTest/assets/acceptance (синтетические наряды с вымышленными данными; реальные документы
+ * пользователей в открытый репозиторий не кладутся). Тест пишет отчёт ocr-acceptance.json (поля, строки,
+ * текст каждого прохода), сверку с эталоном делает шаг CI (tools/ocr_replay/compare.cjs). По тексту проходов
+ * проверяется равенство локального повтора tools/ocr_replay и устройства.
  */
 @RunWith(AndroidJUnit4::class)
 class RealDocumentAcceptanceTest {
