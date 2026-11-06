@@ -130,13 +130,15 @@
 
   /* ================= 1. Что за ТО ================= */
   function renderPlan(c, t, d) {
-    head("ТО-" + t.km.toLocaleString("ru-RU") + " км", carName(c) + " · по регламенту производителя");
     if (t.noMileage) {
+      // Номер ТО зависит от пробега — пока его нет, не показываем «ТО-15 000»
+      head("Техобслуживание", carName(c) + " · по регламенту производителя");
       body('<div class="to-card"><b class="to-h">Сколько сейчас на одометре?</b><p class="to-p">По пробегу рассчитаем, какое ТО следующее и что в него входит.</p>' +
-        '<label class="fld">Пробег, км<input id="toMil" inputmode="numeric" placeholder="58 400" autocomplete="off"></label><span id="toMilErr" class="err" hidden></span></div>');
+        '<label class="fld">Пробег, км<input id="toMil" inputmode="numeric" placeholder="Например, 58 400" autocomplete="off"></label><span id="toMilErr" class="err" hidden></span></div>');
       foot('<button class="btn-accent" data-to="mileage">Рассчитать ТО</button>');
       return;
     }
+    head("ТО-" + t.km.toLocaleString("ru-RU") + " км", carName(c) + " · по регламенту производителя");
     var perDay = 45, when = addDays(today(), Math.max(0, Math.round(t.left / perDay)));
     var sinceLast = c.lastTOkm ? c.mileage - c.lastTOkm : c.mileage - (t.km - API.maintenance.step);
     var pct = Math.max(4, Math.min(100, Math.round(sinceLast / API.maintenance.step * 100)));

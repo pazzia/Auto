@@ -8,6 +8,8 @@
 html.native{--sb:0px}
 html,body{overscroll-behavior:none;margin:0;height:100%;background:#E7E3DB;font-family:Manrope,'Segoe UI',Roboto,sans-serif;color:#17191C;-webkit-tap-highlight-color:transparent}
 button,input,select{font-family:inherit}
+/* Подсказка в поле не должна выглядеть введённым значением */
+input::placeholder,textarea::placeholder{color:#5B5F66;opacity:1;font-weight:400}
 a{color:#C2410C}
 .screen{display:none;height:100%;max-width:480px;margin:0 auto;background:#F3F1EC}
 .screen.active{display:block}

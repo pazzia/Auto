@@ -68,7 +68,7 @@
     card.classList.toggle("over", d.first.days < 0);
     var when = d.first.days < 0 ? " — срок истёк" : d.first.days === 0 ? " — истекает сегодня" : " — истекает через " + d.first.days + " " + plural(d.first.days);
     card.innerHTML = '<span class="dl-ic">' + icon("bell", "#C2410C") + "</span><span class=\"dl-t\"><b>" + UI().esc(d.first.title) + when + "</b>" +
-      (d.more ? "<span>и ещё " + d.more + " " + (d.more === 1 ? "срок" : "срока") + " в этом месяце</span>" : "<span>напомним заранее</span>") + '</span><span class="prow-go">›</span>';
+      (d.more ? "<span>и ещё " + d.more + " " + window.AutoHubKit.plural(d.more, "срок", "срока", "сроков") + " в этом месяце</span>" : "<span>" + (d.first.days < 0 ? "продлите и обновите дату в документах" : d.first.days === 0 ? "продлите сегодня" : "напомним ещё раз накануне") + "</span>") + '</span><span class="prow-go">›</span>';
   }
   function plural(n) { n = Math.abs(n); var m = n % 10, h = n % 100; return m === 1 && h !== 11 ? "день" : m >= 2 && m <= 4 && (h < 10 || h >= 20) ? "дня" : "дней"; }
   function UI() { return window.AutoHubUI; }

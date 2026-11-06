@@ -57,8 +57,17 @@
     var keys = ["all", "service", "visits"];
     hist.tabs.forEach(function (b, i) { on(b, function () { hist.filter = keys[i]; drawHistory(); }); });
     on(head.querySelector('button[aria-label="Добавить запись"]'), function () {
-      UI.sheet({ title: "Добавить в историю", html: '<button id="historyScan" class="btn-accent">Сканировать наряд-заказ</button><button id="historyManual" class="btn-light">Ввести вручную</button>', onMount: function (b) {
-        b.querySelector('#historyScan').onclick = function () { window.AutoHubDocuments.open(); };
+      UI.sheet({ title: "Добавить в историю", html: '<button id="historyScan" class="btn-accent">Сканировать заказ-наряд</button><button id="historyManual" class="btn-light">Ввести вручную</button>', onMount: function (b) {
+        b.querySelector('#historyScan').onclick = function () {
+          // На демо-машине документ привязать не к чему — сразу предлагаем добавить свою
+          if (car().demo || !car().id || car().id === "demo") {
+            UI.sheet({ title: "Добавьте свой автомобиль", html: '<p class="sheet-text">Заказ-наряд привязывается к машине. Добавьте свою — и загрузите документ в её историю.</p>' +
+              '<button class="btn-accent" data-action="add-car">Добавить авто</button><button class="btn-light" data-close="1" data-action="close">Понятно</button>',
+              onMount: function (d) { d.querySelector("[data-action=add-car]").addEventListener("click", function () { UI.close(function () { location.hash = "#AddCar"; }); }); } });
+            return;
+          }
+          window.AutoHubDocuments.open();
+        };
         b.querySelector('#historyManual').onclick = addRecordSheet;
       } });
     });

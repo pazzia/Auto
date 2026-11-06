@@ -97,6 +97,7 @@
   }
   function load() {
     res.list.innerHTML = '<div class="loading">Ищем в каталогах магазинов…</div>';
+    res.count.textContent = ""; res.bar.hidden = true; // пока ищем — ни «ничего не нашлось», ни панели сравнения
     return API.parts.search({ query: st.query, cat: st.cat, kit: st.kit }).then(function (d) { st.items = d.items; drawResults(); });
   }
   function renderResults() {
@@ -114,7 +115,8 @@
     var offers = items.reduce(function (n, p) { return n + p.sellers; }, 0);
     res.count.innerHTML = items.length
       ? '<b style="color: #17191C">' + items.length + " " + plural(items.length, "деталь", "детали", "деталей") + "</b> " + plural(items.length, "подходит", "подходят", "подходят") + " к " + esc(carName()) + " · " + offers + " " + plural(offers, "предложение", "предложения", "предложений")
-      : "Ничего не нашлось";
+      : ""; // при пустой выдаче заголовок один — в блоке ниже
+    res.count.hidden = !items.length; res.bar.hidden = !items.length;
     if (!items.length) {
       res.list.innerHTML = '<div class="empty"><b>По запросу ничего нет</b><span>Попробуйте другое название или артикул, либо снимите фильтры.</span><a href="#Main" class="btn-light" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Изменить поиск</a></div>';
     } else {
