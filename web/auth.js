@@ -107,7 +107,7 @@
     var body = $("profileBody"); if (!body) return;
     var s = session() || {}, st = settings(), C = window.AutoHubCar;
     var cars = C ? C.cars() : [], active = C ? C.active() : null, own = cars.filter(function (c) { return !c.demo; });
-    var hist = 0; try { var h = JSON.parse(localStorage.getItem("autohub.history.v1") || "{}"); Object.keys(h).forEach(function (k) { hist += h[k].length; }); } catch (e) {}
+    var S = window.AutoHubScreens, hist = cars.reduce(function (n, c) { return n + (S && S.historyCount ? S.historyCount(c.id) : 0); }, 0); // только машины гаража
     var plus = null; try { plus = JSON.parse(localStorage.getItem("autohub.plus.v1") || "null"); } catch (e) {}
     var pts = window.AutoHubTO ? window.AutoHubTO.points() : 1240;
     var since = s.since ? new Date(s.since + "T12:00:00").toLocaleDateString("ru-RU", { month: "long", year: "numeric" }) : "";
@@ -149,6 +149,9 @@
 
       '<div class="buildinfo">АвтоХаб · сборка ' + esc(BUILD) + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? " · демо-данные" : "") + "<br>© 2026 АвтоХаб</div>";
     body.innerHTML = html;
+    // Машин в гараже — фактически, вместе с демо-машиной, пока своей нет
+    var stat = body.querySelector(".pstats > div"), n = cars.length;
+    if (stat) { stat.firstElementChild.textContent = n; stat.lastElementChild.textContent = n % 10 === 1 && n % 100 !== 11 ? "машина" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "машины" : "машин"; }
   }
 
   function carMenu(id) {
@@ -219,7 +222,10 @@
       }
       if (a === "delete" && window.confirm("Удалить аккаунт и все данные на этом телефоне? Отменить нельзя.")) {
         try { if (window.AutoHubDocuments) await window.AutoHubDocuments.clear(); } catch (e) { UI.toast("Не удалось удалить документы. Повторите удаление."); return; }
+        // Напоминания на телефоне (сроки документов, парковка) не должны приходить после удаления
+        try { if (window.AutoHubDocs && window.AutoHubDocs.cancelAll) window.AutoHubDocs.cancelAll(); if (window.AutoHubParking && window.AutoHubParking.cancelReminders) window.AutoHubParking.cancelReminders(); } catch (x) {}
         Object.keys(localStorage).filter(function (k) { return k.indexOf("autohub.") === 0; }).forEach(function (k) { localStorage.removeItem(k); });
+        try { Object.keys(sessionStorage).filter(function (k) { return k.indexOf("autohub.") === 0; }).forEach(function (k) { sessionStorage.removeItem(k); }); } catch (x) {}
         location.hash = "#Welcome"; setTimeout(function () { location.reload(); }, 50);
       }
     });
