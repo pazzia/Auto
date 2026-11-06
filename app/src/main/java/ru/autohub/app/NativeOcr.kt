@@ -15,13 +15,17 @@ class NativeOcr(private val webView: WebView) {
     private val main = Handler(Looper.getMainLooper())
     private val busy = AtomicBoolean(false)
     @Volatile private var current: OfflineOcrEngine? = null
+    /** После onDestroy активности ответы в уничтоженный WebView не отправляются. */
+    @Volatile private var closed = false
 
     @JavascriptInterface fun isOffline(): Boolean = true
     @JavascriptInterface fun cancel() { current?.cancel() }
-    fun close() { cancel(); pool.shutdown() }
+    fun close() { closed = true; cancel(); pool.shutdown() }
+
+    private fun js(script: String) { main.post { if (!closed) webView.evaluateJavascript(script, null) } }
 
     private fun reply(id: String, status: Int, result: JSONObject) {
-        main.post { webView.evaluateJavascript("window.__nativeOcrCb(${JSONObject.quote(id)}, $status, ${JSONObject.quote(result.toString())})", null) }
+        js("window.__nativeOcrCb(${JSONObject.quote(id)}, $status, ${JSONObject.quote(result.toString())})")
     }
 
     @JavascriptInterface
@@ -35,7 +39,7 @@ class NativeOcr(private val webView: WebView) {
             try {
                 require(body.length <= 24 * 1024 * 1024) { "Общий размер файлов — до 16 МБ." }
                 val result = engine.process(JSONObject(body).getJSONArray("files")) { page ->
-                    main.post { webView.evaluateJavascript("window.__nativeOcrProgress(${JSONObject.quote(callbackId)}, $page)", null) }
+                    js("window.__nativeOcrProgress(${JSONObject.quote(callbackId)}, $page)")
                 }
                 reply(callbackId, 200, result)
             } catch (_: CancellationException) {
