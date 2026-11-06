@@ -183,7 +183,7 @@
     var totals = o.map(function (x) { return x.total; }), best = Math.min.apply(null, totals), worst = Math.max.apply(null, totals);
     var vals = off.sum.firstElementChild.children;
     vals[0].lastElementChild.textContent = rub(best); vals[1].lastElementChild.textContent = rub(worst); vals[2].lastElementChild.textContent = rub(worst - best);
-    off.sum.lastElementChild.textContent = "Цены с доставкой до: Красногорск, [адрес] · демо";
+    off.sum.lastElementChild.textContent = "Цены с доставкой до: " + (window.AutoHubAuth && window.AutoHubAuth.location ? [window.AutoHubAuth.location().city, window.AutoHubAuth.location().address].filter(Boolean).join(", ") : "Красногорск") + " · демо";
     var modes = ["total", "fast", "rel"];
     off.sorts.forEach(function (b, i) {
       var on = modes[i] === st.offerSort;

@@ -156,7 +156,7 @@
   /* ================= 2. Запчасти ================= */
   function renderParts(c, t, d) {
     head("Запчасти к ТО-" + t.km.toLocaleString("ru-RU"), carName(c) + " · подходят по VIN");
-    body('<div class="loading">Сравниваем цены на Exist, Emex, Автопитер, ZZap и Autodoc…</div>'); foot("");
+    body('<div class="loading">Сравниваем цены в магазинах-партнёрах…</div>'); foot("");
     loadOptions(t).then(function () {
       if (stepOf() !== "parts") return;
       ensurePicks(d, t); saveDraft(d);
@@ -172,7 +172,7 @@
             (l.tier.length ? '<span class="to-badge">' + esc(l.tier.join(" · ")) + "</span>" : '<span class="to-badge own">ваш выбор</span>') + "</div>" +
             '<button class="to-more" data-slot="' + r.part + '" data-action="alt">Другие варианты и магазины ›</button></div>';
         }).join("") +
-        '<div class="to-note">Цены и наличие — с площадок Exist, Emex, Автопитер, ZZap и Autodoc (демо-интеграции). Все детали подходят к ' + esc(carName(c)) + ".</div>");
+        '<div class="to-note">Цены и наличие — из магазинов-партнёров (демо-данные). Все детали подходят к ' + esc(carName(c)) + ".</div>");
       foot('<div class="to-sum"><span>Запчасти · ' + t.parts.length + " поз.</span><b>" + rub(tot.parts) + '</b></div><div class="to-sum sub"><span>Все приедут к ' + dShort(tot.eta) + "</span><span>" + Object.keys(tot.markets).length + " " + plural(Object.keys(tot.markets).length, "магазин", "магазина", "магазинов") + "</span></div>" +
         '<button class="btn-accent" data-to="next-service">Выбрать автосервис</button>');
     });
