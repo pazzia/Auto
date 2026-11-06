@@ -75,7 +75,7 @@
   function addSheet() {
     var c = car(), last = list()[0], type = (last && last.type) || "АИ-95";
     UI.sheet({ title: "Новая заправка",
-      html: '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fld">Сумма, ₽<input id="fuSum" inputmode="decimal" placeholder="2 450" autocomplete="off"></label>' +
+      html: '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label class="fld">Сумма, ₽<input id="fuSum" inputmode="decimal" placeholder="2 450" autocomplete="off"></label>' +
         '<label class="fld">Литры<input id="fuLit" inputmode="decimal" placeholder="42,5" autocomplete="off"><span id="fuPpl" class="fu-hint"></span></label></div>' +
         '<label class="fld">Пробег, км<input id="fuKm" inputmode="numeric" placeholder="' + (c.mileage || "") + '" autocomplete="off"><span id="fuKmHint" class="fu-hint"></span></label>' +
         '<div class="pk-timers">' + TYPES.map(function (t) { return '<button data-type="' + t + '" data-action="t" class="' + (t === type ? "on" : "") + '">' + t + "</button>"; }).join("") + "</div>" +

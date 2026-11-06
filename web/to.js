@@ -264,7 +264,7 @@
       var pts = Math.min(points(), Math.floor((tot.parts + tot.delivery) * 0.3)), pay = tot.parts + tot.delivery - (d.usePoints ? pts : 0);
       body('<div class="kv"><div><span>Автосервис</span><b>' + esc(svc ? svc.name : "") + '</b></div><div><span>Визит</span><b>' + dShort(d.date) + ", " + d.time + "</b></div>" +
           "<div><span>Работы</span><b>" + t.items.length + " " + plural(t.items.length, "работа", "работы", "работ") + "</b></div></div>" +
-        '<div class="to-sec">КУДА ПРИВЕЗТИ ЗАПЧАСТИ</div><div class="seg3" style="grid-template-columns:1fr 1fr">' +
+        '<div class="to-sec">КУДА ПРИВЕЗТИ ЗАПЧАСТИ</div><div class="seg3" style="grid-template-columns:repeat(2,minmax(0,1fr))">' +
           '<button class="' + (d.delivery === "service" ? "on" : "") + '" data-deliv="service" data-action="deliv">В автосервис</button><button class="' + (d.delivery === "home" ? "on" : "") + '" data-deliv="home" data-action="deliv">Ко мне</button></div>' +
         '<div class="to-note" style="margin-top:-4px">' + (d.delivery === "service" ? "Магазины привезут детали прямо в сервис — вам ничего не нужно забирать." : "Привезём по адресу: " + esc(w.city + (w.address ? ", " + w.address : "")) + ". Возьмите детали с собой на визит.") + "</div>" +
         '<div class="to-sec">ЗАПЧАСТИ ПО МАГАЗИНАМ</div><div class="kv">' + Object.keys(tot.markets).map(function (m) {

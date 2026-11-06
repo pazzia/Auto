@@ -107,7 +107,7 @@
     UI.sheet({ title: "Новая запись",
       html: '<div class="seg3" role="radiogroup"><button data-kind="visit" class="on" data-action="k">Сервис</button><button data-kind="purchase" data-action="k">Покупка</button><button data-kind="self" data-action="k">Сам</button></div>' +
         '<label class="fld">Что сделали<input id="hTitle" placeholder="Замена свечей зажигания" autocomplete="off"></label>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fld">Дата<input id="hDate" type="date" value="' + today + '"></label>' +
+        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label class="fld">Дата<input id="hDate" type="date" value="' + today + '"></label>' +
         '<label class="fld">Пробег, км<input id="hKm" inputmode="numeric" placeholder="' + (car().mileage || 58400) + '"></label></div>' +
         '<label class="fld">Где<input id="hPlace" placeholder="Сервис или магазин" autocomplete="off"></label>' +
         '<label class="fld">Сумма, ₽<input id="hCost" inputmode="numeric" placeholder="3 500"></label>' +

@@ -93,7 +93,7 @@
         : '<div class="pk-loc ok"><b>Место определено' + (st === "stale" ? " (последняя точка)" : "") + "</b><span>точность ±" + draft.accuracy + " м · " + clock(draft.at) + "</span></div>";
       body.innerHTML = where +
         '<button class="pk-photo" data-pk="photo" data-action="pk">' + (draft.photo ? '<img src="' + draft.photo + '" alt="Фото места"><span>Переснять</span>' : '<span class="pk-cam">📷</span><b>Сфотографировать место</b><span>номер места, колонну или вывеску рядом</span>') + "</button>" +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fld">Этаж / ряд<input id="pkFloor" placeholder="-2, ряд C" autocomplete="off" value="' + esc(draft.floor) + '"></label>' +
+        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label class="fld">Этаж / ряд<input id="pkFloor" placeholder="-2, ряд C" autocomplete="off" value="' + esc(draft.floor) + '"></label>' +
         '<label class="fld">Заметка<input id="pkNote" placeholder="у ТЦ, вход 3" autocomplete="off" value="' + esc(draft.note) + '"></label></div>' +
         '<div class="to-sec">ТАЙМЕР ПАРКОВКИ</div><div class="pk-timers">' + [[0, "Без таймера"], [30, "30 мин"], [60, "1 ч"], [120, "2 ч"], [180, "3 ч"]].map(function (t) {
           return '<button class="' + (draft.minutes === t[0] ? "on" : "") + '" data-min="' + t[0] + '" data-action="pk">' + t[1] + "</button>";
