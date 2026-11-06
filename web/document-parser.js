@@ -13,6 +13,7 @@
   'use strict';
 
   var FIELDS = ['date', 'mileage', 'vin', 'number', 'service', 'total'];
+  var FIELD_NAMES = { date: 'дата выполнения', mileage: 'пробег', vin: 'VIN', number: 'номер наряда', service: 'автосервис', total: 'итог' };
   var LAT2CYR = { a: 'а', b: 'в', c: 'с', e: 'е', h: 'н', k: 'к', m: 'м', o: 'о', p: 'р', t: 'т', x: 'х', y: 'у', '0': 'о' };
   var CYR2LAT = { 'А': 'A', 'В': 'B', 'С': 'C', 'Е': 'E', 'Н': 'H', 'К': 'K', 'М': 'M', 'О': 'O', 'Р': 'P', 'Т': 'T', 'Х': 'X', 'У': 'Y' };
   // Сумма с копейками; справа — не часть даты («01.10.2026») или длинного числа. Левая граница — в moneyAll()
@@ -323,7 +324,7 @@
       if (winner !== null) {
         var orig = candidates[k].filter(function (c) { return String(c.value) === winner; })[0];
         fields[k].value = orig.value;
-      } else warnings.push('Несколько значений поля «' + k + '»: выберите вручную.');
+      } else warnings.push('Несколько значений поля «' + FIELD_NAMES[k] + '»: выберите вручную.');
     });
 
     // Проверка строк по итогам разделов
@@ -425,7 +426,7 @@
         if (value === null) value = k === 'mileage' || k === 'total' ? Number(vals[0]) : vals[0];
       }
       out.fields[k] = { value: value, evidence: ev, votes: votes };
-      if (value === null && vals.length) out.warnings.push('Несколько значений поля «' + k + '»: выберите вручную.');
+      if (value === null && vals.length) out.warnings.push('Несколько значений поля «' + FIELD_NAMES[k] + '»: выберите вручную.');
     });
     var keep = base.r.warnings.filter(function (w) { return !/^Несколько значений/.test(w) && !(/Дата выполнения не определена/.test(w) && out.fields.date.value); });
     out.warnings = Array.from(new Set(out.warnings.concat(keep)));
