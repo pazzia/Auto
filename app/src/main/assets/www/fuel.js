@@ -53,7 +53,7 @@
     var l = list(), s = stats(), c = car();
     $("fuSub").textContent = window.AutoHubCar.name(c) + " · расход по вашим чекам";
     if (!l.length) {
-      body.innerHTML = '<div class="pk-empty"><span class="pk-big" aria-hidden="true">⛽</span><b>Записей пока нет</b><span>После заправки введите сумму, литры и пробег — это 10 секунд. Посчитаем реальный расход и цену километра, а пробег сам обновится для ТО.</span></div>';
+      body.innerHTML = '<div class="pk-empty"><span class="pk-big" aria-hidden="true">' + window.AutoHubKit.icon("fuel", 40, "#C2410C") + '</span><b>Записей пока нет</b><span>После заправки введите сумму, литры и пробег — это 10 секунд. Посчитаем реальный расход и цену километра, а пробег сам обновится для ТО.</span></div>';
       return;
     }
     var max = Math.max.apply(null, [1].concat(s.chart.map(function (x) { return x.sum; })));
@@ -75,7 +75,7 @@
   function addSheet() {
     var c = car(), last = list()[0], type = (last && last.type) || "АИ-95";
     UI.sheet({ title: "Новая заправка",
-      html: '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fld">Сумма, ₽<input id="fuSum" inputmode="decimal" placeholder="2 450" autocomplete="off"></label>' +
+      html: '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label class="fld">Сумма, ₽<input id="fuSum" inputmode="decimal" placeholder="2 450" autocomplete="off"></label>' +
         '<label class="fld">Литры<input id="fuLit" inputmode="decimal" placeholder="42,5" autocomplete="off"><span id="fuPpl" class="fu-hint"></span></label></div>' +
         '<label class="fld">Пробег, км<input id="fuKm" inputmode="numeric" placeholder="' + (c.mileage || "") + '" autocomplete="off"><span id="fuKmHint" class="fu-hint"></span></label>' +
         '<div class="pk-timers">' + TYPES.map(function (t) { return '<button data-type="' + t + '" data-action="t" class="' + (t === type ? "on" : "") + '">' + t + "</button>"; }).join("") + "</div>" +
@@ -118,7 +118,7 @@
     scr.addEventListener("click", function (e) {
       if (e.target.closest("[data-action=add]")) { addSheet(); return; }
       var d = e.target.closest("[data-del]");
-      if (d && window.confirm("Удалить эту заправку?")) { saveList(list().filter(function (x) { return x.id !== d.dataset.del; })); render(); }
+      if (d) window.AutoHubKit.confirm({ title: "Удалить эту заправку?", ok: "Удалить", danger: true }, function () { saveList(list().filter(function (x) { return x.id !== d.dataset.del; })); render(); });
     });
     window.addEventListener("hashchange", function () { if (location.hash === "#Fuel") render(); });
     window.addEventListener("autohub:car", function () { if (location.hash === "#Fuel") render(); });

@@ -67,10 +67,13 @@
   }
   function open() {
     var car = window.AutoHubCar.active();
-    if (!car || car.demo || car.id === 'demo') return UI.dialog('Добавьте автомобиль', 'Сначала добавьте свою машину в гараж. Документ будет привязан к ней.');
+    if (!car || car.demo || car.id === 'demo') return UI.sheet({ title: 'Добавьте автомобиль', html:
+      '<p class="sheet-text">Сначала добавьте свою машину в гараж. Документ будет привязан к ней.</p>' +
+      '<button class="btn-accent" data-action="add-car">Добавить авто</button><button class="btn-light" data-close="1">Понятно</button>',
+      onMount: function (b) { b.querySelector('[data-action=add-car]').onclick = function () { UI.close(function () { location.hash = '#AddCar'; }); }; } });
     var files = [];
-    UI.sheet({ title: 'Сканировать наряд-заказ', html:
-      '<p class="sheet-text">Автомобиль: ' + esc([car.make, car.model, car.plate].filter(Boolean).join(' ')) + '. Загружайте страницы одного наряд-заказа.</p>' +
+    UI.sheet({ title: 'Сканировать заказ-наряд', html:
+      '<p class="sheet-text">Автомобиль: ' + esc([car.make, car.model, car.plate].filter(Boolean).join(' ')) + '. Загружайте страницы одного заказ-наряда.</p>' +
       '<p class="sheet-text">Снимайте лист целиком, прямо сверху, без бликов. До 10 страниц и 16 МБ суммарно.</p>' +
       '<label class="btn-light ocr-pick">Сфотографировать<input id="ocrCamera" type="file" accept="image/*" capture="environment"></label>' +
       '<label class="btn-light ocr-pick">Выбрать фото или PDF<input id="ocrFiles" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple></label>' +
@@ -144,9 +147,9 @@
       '<p class="sheet-text">Запись для ' + esc(car.make + ' ' + car.model) + '. Это черновик: сверяйте все поля с оригиналом.</p>' +
       '<div class="ocr-warnings">' + (data.warnings || []).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' +
       field('docDate', 'Дата выполнения *', f.date.value, 'date', hint('date')) + field('docKm', 'Пробег, км', f.mileage.value, 'number', hint('mileage')) +
-      field('docVin', 'VIN из документа', f.vin.value, 'text', hint('vin')) + field('docNumber', 'Номер наряд-заказа', f.number.value, 'text', hint('number')) +
+      field('docVin', 'VIN из документа', f.vin.value, 'text', hint('vin')) + field('docNumber', 'Номер заказ-наряда', f.number.value, 'text', hint('number')) +
       field('docService', 'Автосервис', f.service.value, 'text', hint('service')) + field('docTotal', 'Итого, ₽ (пусто — неизвестно)', f.total.value, 'number', hint('total')) +
-      field('docTitle', 'Название записи *', 'Обслуживание по наряд-заказу') +
+      field('docTitle', 'Название записи *', 'Обслуживание по заказ-наряду') +
       '<div id="docRows"></div><button id="docAdd" class="btn-light">Добавить строку</button>' +
       '<details><summary>Распознанный текст и источники полей</summary><p class="sheet-text">' + esc(data.diagnostics || '') + '</p><pre class="ocr-text">' + esc((data.lines || []).map(function (l) { return '[Стр. ' + l.page + '] ' + l.text; }).join('\n')) + '</pre>' +
       Object.keys(f).map(function (k) { return '<p><b>' + esc(FIELD_NAMES[k] || k) + '</b>: ' + (f[k].evidence || []).map(function (e) { return esc((e.page == null ? 'вычислено' : 'стр. ' + e.page) + ': ' + e.text); }).join('; ') + '</p>'; }).join('') + '</details>' +
@@ -177,6 +180,8 @@
         b.addEventListener('click', function (e) { var del = e.target.closest('[data-delete-row]'); if (del) { rows.splice(+del.dataset.deleteRow, 1); renderRows(); } });
         b.querySelector('#docAdd').onclick = function () { rows.push({ kind: 'work', name: '', quantity: null, price: null, total: null }); renderRows(); };
         renderRows();
+        var totalChecked = false;
+        b.querySelector('#docTotal').addEventListener('input', function () { totalChecked = false; b.querySelector('#docSave').textContent = 'Сохранить в историю'; });
         b.querySelector('#docSave').onclick = async function () {
           var button = this;
           try {
@@ -193,7 +198,11 @@
             var km = number(value('docKm'), 3000000), total = number(value('docTotal'), 100000000);
             if (km !== null && !Number.isInteger(km)) throw new Error('Пробег должен быть целым числом.');
             var items = rows.map(function (r) { if (!r.name.trim()) throw new Error('Укажите наименование каждой строки или удалите пустую.'); return Object.assign({}, r, { name: r.name.trim(), quantity: number(r.quantity, 1000000), price: number(r.price, 100000000), total: number(r.total, 100000000) }); });
-            if (total !== null && items.length && items.every(function (r) { return r.total !== null; }) && Math.abs(items.reduce(function (s, r) { return s + r.total; }, 0) - total) > 0.02 && !window.confirm('Сумма строк отличается от итога. Возможны скидки или налоги. Сохранить проверенный итог?')) return;
+            if (total !== null && items.length && items.every(function (r) { return r.total !== null; }) && Math.abs(items.reduce(function (s, r) { return s + r.total; }, 0) - total) > 0.02 && !totalChecked) {
+              // Подтверждение внутри черновика: отдельная шторка закрыла бы черновик с правками
+              totalChecked = true; button.textContent = 'Сохранить с этим итогом';
+              throw new Error('Сумма строк отличается от итога. Возможны скидки или налоги. Проверьте итог и нажмите «Сохранить с этим итогом».');
+            }
             var all = JSON.parse(localStorage.getItem('autohub.history.v1') || '{}'), records = all[car.id] || [];
             if (records.some(function (r) { return r.documentHash === data.documentHash || (r.fileHashes || []).some(function (h) { return data.fileHashes.indexOf(h) >= 0; }); })) throw new Error('Этот файл уже есть в истории автомобиля.');
             button.disabled = true;
@@ -215,7 +224,7 @@
     try {
       var saved = await storage('readonly', function (s) { return s.get(id); });
       if (!saved) throw new Error('Оригинал не найден на этом устройстве.');
-      UI.sheet({ title: 'Оригинал наряд-заказа', html: '<div class="ocr-originals"></div><button data-close="1" class="btn-light">Закрыть</button>', onMount: function (b) { originals(b, saved.files, saved.ocr.previews); } });
+      UI.sheet({ title: 'Оригинал заказ-наряда', html: '<div class="ocr-originals"></div><button data-close="1" class="btn-light">Закрыть</button>', onMount: function (b) { originals(b, saved.files, saved.ocr.previews); } });
     } catch (e) { UI.toast(e.message); }
   }
   window.AutoHubDocuments = { open: open, view: view, clear: function () { cancelPending(); return storage('readwrite', function (s) { return s.clear(); }); } };

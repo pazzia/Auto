@@ -250,7 +250,7 @@
       if (full) { full.drawPins(); renderSheet(); }
     }, function (e) {
       state.items = []; ui.list.innerHTML = '<div style="padding: 24px 8px; text-align: center; color: #9A3412; font-size: 14px">' +
-        (e.code === "not_configured" ? "Бэкенд не подключён. Откройте прототип в демо-режиме." : "Не удалось загрузить сервисы. Попробуйте ещё раз.") + "</div>";
+        (e.code === "not_configured" ? "Сервер пока не подключён. Откройте приложение с демонстрационными данными." : "Не удалось загрузить сервисы. Попробуйте ещё раз.") + "</div>";
     });
   }
 
