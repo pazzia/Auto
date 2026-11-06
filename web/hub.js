@@ -32,7 +32,8 @@
   function icon(k, c) { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + (c || "currentColor") + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[k] + "</svg>"; }
   function seen() { try { return JSON.parse(localStorage.getItem("autohub.seen.v1") || "{}"); } catch (e) { return {}; } }
   function markSeen(n) { var s = seen(); if (!s[n]) { s[n] = 1; try { localStorage.setItem("autohub.seen.v1", JSON.stringify(s)); } catch (e) {} } }
-  function unpaidFines() { var p = {}; try { p = JSON.parse(localStorage.getItem("autohub.fines.v1") || "{}"); } catch (e) {} return ["f1", "f2"].filter(function (k) { return !p[k]; }).length; }
+  // Неоплаченные штрафы выбранной машины — из AutoHubApi.fines.list через экран «Штрафы»
+  function unpaidFines() { var S = window.AutoHubScreens; return (S && S.finesUnpaid && S.finesUnpaid()) || 0; }
 
   function renderGrid() {
     var g = document.getElementById("s-Garage"); if (!g) return;
