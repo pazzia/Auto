@@ -18,8 +18,20 @@
       tx.onerror = tx.onabort = function () { db.close(); reject(new Error('Не удалось сохранить оригинал. Проверьте свободное место.')); };
     });
   }
-  function field(id, label, value, type) {
-    return '<label class="fld">' + label + '<input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(value == null ? '' : value) + '"></label>';
+  var FIELD_NAMES = { date: 'Дата выполнения', mileage: 'Пробег', vin: 'VIN', number: 'Номер', service: 'Автосервис', total: 'Итог' };
+  /** Поле формы; hint — спорное значение: поле подсвечено, под ним варианты из документа (подсветка снимается при правке). */
+  function field(id, label, value, type, hint) {
+    var mark = hint ? ' aria-invalid="true" aria-describedby="' + id + 'Hint" style="border-color:#C2410C;background:#FFF7ED"' : '';
+    return '<label class="fld">' + label + '<input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(value == null ? '' : value) + '"' + mark + '>' +
+      (hint ? '<span id="' + id + 'Hint" style="font-weight:400;color:#85400c">' + esc(hint) + '</span>' : '') + '</label>';
+  }
+  /** Спорное поле: значение не выбрано, хотя в документе есть варианты, или итог вычислен, а не прочитан. */
+  function disputed(x) {
+    x = x || {};
+    var ev = x.evidence || [], cands = Object.keys(x.votes || x.scores || {}).filter(function (v) { return v !== '' && v !== 'null'; });
+    if (x.value == null && cands.length) return 'Спорно: в документе ' + cands.slice(0, 3).join(' · ') + (cands.length > 3 ? '…' : '') + ' — укажите по оригиналу.';
+    if (x.value != null && ev.length && ev.every(function (e) { return e && e.page == null; })) return 'Вычислено (' + ev[0].text + ') — сверьте с оригиналом.';
+    return '';
   }
   window.__nativeOcrCb = function (id, status, body) { if (callbacks[id]) callbacks[id].finish(status, body); };
   window.__nativeOcrProgress = function (id, page) { if (callbacks[id]) callbacks[id].progress(page); };
@@ -125,23 +137,29 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
   function review(car, files, data) {
-    var f = data.fields, rows = data.items || [];
+    var f = data.fields || {}, rows = data.items || [];
+    Object.keys(FIELD_NAMES).forEach(function (k) { if (!f[k]) f[k] = { value: null, evidence: [] }; });
+    var hint = function (k) { return disputed(f[k]); };
     UI.sheet({ title: 'Проверьте распознавание', html:
       '<p class="sheet-text">Запись для ' + esc(car.make + ' ' + car.model) + '. Это черновик: сверяйте все поля с оригиналом.</p>' +
-      '<div class="ocr-warnings">' + data.warnings.map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' +
-      field('docDate', 'Дата выполнения *', f.date.value, 'date') + field('docKm', 'Пробег, км', f.mileage.value, 'number') +
-      field('docVin', 'VIN из документа', f.vin.value) + field('docNumber', 'Номер наряд-заказа', f.number.value) +
-      field('docService', 'Автосервис', f.service.value) + field('docTotal', 'Итого, ₽ (пусто — неизвестно)', f.total.value, 'number') +
+      '<div class="ocr-warnings">' + (data.warnings || []).map(function (s) { return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' +
+      field('docDate', 'Дата выполнения *', f.date.value, 'date', hint('date')) + field('docKm', 'Пробег, км', f.mileage.value, 'number', hint('mileage')) +
+      field('docVin', 'VIN из документа', f.vin.value, 'text', hint('vin')) + field('docNumber', 'Номер наряд-заказа', f.number.value, 'text', hint('number')) +
+      field('docService', 'Автосервис', f.service.value, 'text', hint('service')) + field('docTotal', 'Итого, ₽ (пусто — неизвестно)', f.total.value, 'number', hint('total')) +
       field('docTitle', 'Название записи *', 'Обслуживание по наряд-заказу') +
       '<div id="docRows"></div><button id="docAdd" class="btn-light">Добавить строку</button>' +
-      '<details><summary>Распознанный текст и источники полей</summary><p class="sheet-text">' + esc(data.diagnostics || '') + '</p><pre class="ocr-text">' + esc(data.lines.map(function (l) { return '[Стр. ' + l.page + '] ' + l.text; }).join('\n')) + '</pre>' +
-      Object.keys(f).map(function (k) { return '<p><b>' + esc(k) + '</b>: ' + f[k].evidence.map(function (e) { return esc('стр. ' + e.page + ': ' + e.text); }).join('; ') + '</p>'; }).join('') + '</details>' +
+      '<details><summary>Распознанный текст и источники полей</summary><p class="sheet-text">' + esc(data.diagnostics || '') + '</p><pre class="ocr-text">' + esc((data.lines || []).map(function (l) { return '[Стр. ' + l.page + '] ' + l.text; }).join('\n')) + '</pre>' +
+      Object.keys(f).map(function (k) { return '<p><b>' + esc(FIELD_NAMES[k] || k) + '</b>: ' + (f[k].evidence || []).map(function (e) { return esc((e.page == null ? 'вычислено' : 'стр. ' + e.page) + ': ' + e.text); }).join('; ') + '</p>'; }).join('') + '</details>' +
       '<details><summary>Оригиналы документов</summary><div class="ocr-originals"></div></details>' +
       '<label class="ocr-confirm"><input id="docConfirm" type="checkbox"> Я проверил данные и подтверждаю, что указанные работы выполнены</label>' +
       '<p class="sheet-text">Текущий пробег и дата полного ТО не изменятся. Оригиналы сохранятся на этом устройстве.</p>' +
       '<p id="docError" role="alert"></p><button id="docSave" class="btn-accent">Сохранить в историю</button>',
       onMount: function (b) {
         originals(b, files, data.previews);
+        // Снимки камеры во временной папке телефона больше не нужны, когда черновик сохранён или закрыт
+        var release = function () { if (window.AutoHubDevice && AutoHubDevice.releaseDocumentCaptures) AutoHubDevice.releaseDocumentCaptures(); };
+        var gone = new MutationObserver(function () { if (!b.isConnected) { gone.disconnect(); release(); } });
+        gone.observe(document.body, {childList: true, subtree: true});
         b.querySelector('#docTotal').step = '0.01';
         function renderRows() {
           b.querySelector('#docRows').innerHTML = rows.map(function (row, i) {
@@ -151,6 +169,9 @@
               '<button data-delete-row="' + i + '" class="btn-light">Удалить строку</button></fieldset>';
           }).join('');
         }
+        b.addEventListener('input', function (e) {
+          if (e.target.getAttribute('aria-invalid')) { e.target.removeAttribute('aria-invalid'); e.target.style.borderColor = ''; e.target.style.background = ''; }
+        });
         b.addEventListener('input', function (e) { var row = e.target.closest('[data-row]'), prop = e.target.dataset.prop; if (row && prop) rows[+row.dataset.row][prop] = e.target.value; });
         b.addEventListener('change', function (e) { var row = e.target.closest('[data-row]'); if (row && e.target.dataset.prop) rows[+row.dataset.row][e.target.dataset.prop] = e.target.value; });
         b.addEventListener('click', function (e) { var del = e.target.closest('[data-delete-row]'); if (del) { rows.splice(+del.dataset.deleteRow, 1); renderRows(); } });
@@ -183,6 +204,7 @@
                 vin: vin, documentNumber: value('docNumber'), items: items, documentId: documentId, documentHash: data.documentHash, fileHashes: data.fileHashes,
                 source: 'ocr-confirmed', confirmedAt: new Date().toISOString(), order: items.map(function (r) { return [r.name, r.total]; }) }, car.id);
             } catch (e) { await storage('readwrite', function (s) { return s.delete(documentId); }); throw e; }
+            release();
             UI.close(function () { UI.toast('Документ сохранён в истории автомобиля'); });
           } catch (e) { b.querySelector('#docError').textContent = e.message; button.disabled = false; }
         };
