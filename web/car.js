@@ -429,7 +429,7 @@
               (c.plate ? '<span class="pick-plate">' + esc(fmtPlate(c.plate, c.region)) + "</span>" : "") +
               (on ? '<span class="pick-ok">✓</span>' : "") + "</button>";
           }).join("") : '<div class="allempty">Ничего не нашлось</div>';
-          listEl.innerHTML += '<button class="pick add" data-action="pick" data-pick="__add"><span class="pick-ic">⚙</span><span class="pick-txt"><b>Управлять машинами</b><span>добавить, удалить — в личном кабинете</span></span></button>';
+          listEl.innerHTML += '<button class="pick add" data-action="pick" data-pick="__add"><span class="pick-ic">' + window.AutoHubKit.icon("gear", 22) + '</span><span class="pick-txt"><b>Управлять машинами</b><span>добавить, удалить — в личном кабинете</span></span></button>';
         }
         q.addEventListener("input", draw);
         body.addEventListener("click", function (e) {
@@ -450,7 +450,7 @@
     window.AutoHubUI.sheet({
       title: shortName(c),
       html: '<button class="pick" data-act="mileage" data-action="m"><span class="pick-ic">км</span><span class="pick-txt"><b>Обновить пробег</b><span>сейчас: ' + esc(carView(c).mileage) + "</span></span></button>" +
-        '<button class="pick" data-act="profile" data-action="m"><span class="pick-ic" style="background:#FCEBDF;color:#C2410C">⚙</span><span class="pick-txt"><b>Управлять машинами</b><span>добавить, удалить — в личном кабинете</span></span></button>',
+        '<button class="pick" data-act="profile" data-action="m"><span class="pick-ic" style="background:#FCEBDF;color:#C2410C">' + window.AutoHubKit.icon("gear", 22) + '</span><span class="pick-txt"><b>Управлять машинами</b><span>добавить, удалить — в личном кабинете</span></span></button>',
       onMount: function (body) {
         body.addEventListener("click", function (e) {
           var b = e.target.closest("[data-act]"); if (!b) return;
@@ -458,9 +458,9 @@
           window.AutoHubUI.close(function () {
             if (act === "mileage") askMileage();
             if (act === "profile") location.hash = "#Profile";
-            if (act === "delete" && window.confirm("Убрать " + shortName(c) + " из гаража?")) {
+            if (act === "delete") window.AutoHubKit.confirm({ title: "Убрать " + shortName(c) + " из гаража?", ok: "Убрать", danger: true }, function () {
               removeCar(c.id); window.AutoHubUI.toast("Автомобиль убран из гаража");
-            }
+            });
           });
         });
       }

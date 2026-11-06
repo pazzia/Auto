@@ -213,7 +213,7 @@
       services = rankServices(r.items);
       if (!d.serviceId && services[0]) { d.serviceId = services[0].id; saveDraft(d); }
       var sel = services.filter(function (s) { return s.id === d.serviceId; })[0] || services[0];
-      body('<button class="to-addr" data-to="address"><span>📍</span><div><b>' + esc(w.city + (w.address ? ", " + w.address : "")) + "</b><span>подбираем сервисы от этого адреса</span></div><span class=\"linkbtn\">Изменить</span></button>" +
+      body('<button class="to-addr" data-to="address"><span style="color:#C2410C;display:flex">' + window.AutoHubKit.icon("pin", 22) + '</span><div><b>' + esc(w.city + (w.address ? ", " + w.address : "")) + "</b><span>подбираем сервисы от этого адреса</span></div><span class=\"linkbtn\">Изменить</span></button>" +
         services.slice(0, 6).map(function (s, i) {
           var price = API.maintenance.worksPrice(s, t.items), on = s.id === sel.id;
           return '<button class="to-svc' + (on ? " on" : "") + '" data-svc="' + s.id + '" data-action="svc" aria-pressed="' + on + '">' +
@@ -382,11 +382,11 @@
       case "address": window.AutoHubAuth.editAddress(function () { services = null; render(); }); break;
       case "later": UI.toast("Напомним за 1 000 км до ТО"); location.hash = "#Garage"; break;
       case "done-elsewhere":
-        if (window.confirm("Отметить ТО-" + t.km.toLocaleString("ru-RU") + " как пройденное? Следующее рассчитаем от него.")) {
+        window.AutoHubKit.confirm({ title: "Отметить ТО-" + t.km.toLocaleString("ru-RU") + " пройденным?", text: "Следующее ТО рассчитаем от него.", ok: "Отметить" }, function () {
           window.AutoHubCar.update(c.id, { lastTOkm: t.km, lastTOdate: iso(today()) });
           if (window.AutoHubScreens) window.AutoHubScreens.addHistory({ date: iso(today()), km: c.mileage, kind: "visit", title: "ТО-" + t.km.toLocaleString("ru-RU") + " км", place: "добавлено вручную", cost: 0 }, c.id);
           UI.toast("Готово. Следующее ТО рассчитано"); location.hash = "#Garage";
-        }
+        });
         break;
       case "advance":
         o.stage = Math.min(4, o.stage + 1);
@@ -396,11 +396,11 @@
         break;
       case "finish": o.archived = true; saveOrder(o); location.hash = "#Garage"; break;
       case "cancel":
-        if (window.confirm("Отменить заказ? Деньги за запчасти вернутся на карту.")) {
+        window.AutoHubKit.confirm({ title: "Отменить заказ?", text: "Деньги за запчасти вернутся на карту.", ok: "Отменить заказ", cancel: "Не отменять", danger: true }, function () {
           var all = orders(); delete all[o.carId]; save("orders.v1", all);
           if (o.pointsUsed) window.AutoHubPoints.add(o.pointsUsed, "Возврат баллов за отменённый заказ");
           UI.toast("Заказ отменён, " + rub(o.paid) + " вернутся за 1–3 дня"); location.hash = "#Garage";
-        }
+        });
         break;
       case "reschedule":
         var tmp = { date: o.visit.date, time: o.visit.time };
@@ -434,14 +434,14 @@
     var card = document.getElementById("toCard"); if (!card) return;
     var c = car(), t = API.maintenance.nextTO(c), o = order(c.id), html;
     if (o) {
-      html = '<div class="tc-top"><span class="tc-ic">🔧</span><div><b>ТО-' + o.km.toLocaleString("ru-RU") + " · " + STAGES[o.stage].toLowerCase() + "</b><span>" + dShort(o.visit.date) + ", " + o.visit.time + " · " + esc(o.service ? o.service.name : "") + "</span></div></div>" +
+      html = '<div class="tc-top"><span class="tc-ic">' + window.AutoHubKit.icon("wrench", 22) + '</span><div><b>ТО-' + o.km.toLocaleString("ru-RU") + " · " + STAGES[o.stage].toLowerCase() + "</b><span>" + dShort(o.visit.date) + ", " + o.visit.time + " · " + esc(o.service ? o.service.name : "") + "</span></div></div>" +
         '<div class="to-bar"><div style="width:' + (o.stage / 4 * 100 || 6) + '%"></div></div><a href="#TO/order" class="btn-dark tc-btn">Статус заказа</a>';
     } else if (t.noMileage) {
-      html = '<div class="tc-top"><span class="tc-ic">🔔</span><div><b>Когда следующее ТО?</b><span>Укажите пробег — рассчитаем и напомним</span></div></div><a href="#TO" class="btn-accent tc-btn">Указать пробег</a>';
+      html = '<div class="tc-top"><span class="tc-ic">' + window.AutoHubKit.icon("bell", 22) + '</span><div><b>Когда следующее ТО?</b><span>Укажите пробег — рассчитаем и напомним</span></div></div><a href="#TO" class="btn-accent tc-btn">Указать пробег</a>';
     } else {
       var since = c.lastTOkm ? c.mileage - c.lastTOkm : c.mileage - (t.km - API.maintenance.step);
       var pct = Math.max(4, Math.min(100, Math.round(since / API.maintenance.step * 100)));
-      html = '<div class="tc-top"><span class="tc-ic' + (t.soon || t.overdue ? " soon" : "") + '">🔔</span><div><b>ТО-' + t.km.toLocaleString("ru-RU") + " км</b><span>" +
+      html = '<div class="tc-top"><span class="tc-ic' + (t.soon || t.overdue ? " soon" : "") + '">' + window.AutoHubKit.icon("bell", 22) + '</span><div><b>ТО-' + t.km.toLocaleString("ru-RU") + " км</b><span>" +
         (t.overdue ? "пора пройти — пробег уже больше планового" : "через " + km(t.left) + " · " + t.items.length + " " + plural(t.items.length, "работа", "работы", "работ")) + "</span></div></div>" +
         '<div class="to-bar' + (t.soon || t.overdue ? " soon" : "") + '"><div style="width:' + pct + '%"></div></div>' +
         '<div class="tc-btns"><a href="#TO" class="btn-light tc-btn">Что входит</a><a href="#TO/parts" class="btn-accent tc-btn">Собрать ТО</a></div>';

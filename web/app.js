@@ -1,18 +1,30 @@
 (function(){
   // Показ экрана по адресу (#Экран или #Экран/доп). Без входа доступно только приветствие.
-  var last=null;
+  var last=null, trail=[];
   function show(){
     if(window.AutoHubAuth) window.AutoHubAuth.guard();
+    // Вернулись «Назад» на адрес шторки, которой уже нет, — убираем суффикс, чтобы следующий «Назад» не стоял на месте
+    if(/\/sheet$/.test(location.hash)&&!document.querySelector(".sheet-wrap")) history.replaceState(null,"",location.hash.replace(/\/sheet$/,""));
     var name=(location.hash||"#Garage").slice(1).split("/")[0];
     // Старые экраны ТО заменены единым сценарием
     if(name==="OneTapTO"||name==="Reminders"){ history.replaceState(null,"","#TO"); name="TO"; }
     var el=document.getElementById("s-"+name)||document.getElementById("s-Garage");
     document.querySelectorAll(".screen").forEach(function(s){s.classList.toggle("active",s===el)});
     if(el!==last){ var sc=el.querySelector('div[style*="flex-grow: 1"]'); if(sc) sc.scrollTop=0; last=el; }
+    // Путь по экранам внутри приложения: «Назад» в шапке возвращает на предыдущий
+    var cur=el.dataset.name;
+    if(trail[trail.length-2]===cur) trail.pop(); else if(trail[trail.length-1]!==cur) trail.push(cur);
     resetScroll();
   }
   // В Android-приложении системные панели не перекрывают страницу — убираем имитацию статус-бара
   if(window.NativeHttp) document.documentElement.classList.add("native");
+  // «Назад» в шапке экрана: на предыдущий экран приложения; если экран открыт первым — по ссылке кнопки (обычно Гараж)
+  document.addEventListener("click",function(e){
+    var a=e.target.closest('a[aria-label="Назад"]'); if(!a) return;
+    e.preventDefault();
+    if(trail.length>1) history.back();
+    else location.hash=(a.getAttribute("href")||"#Garage").replace(/^#?/,"#");
+  });
   // Страховка: если у кнопки нет обработчика, честно говорим, что это демо
   document.addEventListener("click",function(e){
     var btn=e.target.closest("button");
