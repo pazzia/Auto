@@ -1,7 +1,11 @@
 """Собирает веб-прототип в app/src/main/assets/www/ из экранов макета и кода в web/.
 
 Запуск: python3 tools/build_prototype.py [папка с .dc.html, по умолчанию design]
-Результат: index.html (39 экранов: 25 из design/ и 14 из web/*.html, см. NAMES) + все модули JS_FILES и map/podmoskovye.svg.
+Результат: index.html — 37 экранов (NAMES): 19 из design/*.dc.html и 18 из web/*.html (OVERRIDES;
+AddCar, Cart, Wallet и Budget заменяют одноимённые макеты), — плюс модули JS_FILES, map/podmoskovye.svg
+и fonts/OFL.txt. Шрифты из web/fonts встраиваются в CSS как data: (без запросов в сеть).
+Макеты Reminders и OneTapTO в сборку не входят: их заменил сценарий #TO, старые адреса app.js
+перенаправляет на #TO.
 Та же папка публикуется на GitHub Pages и упаковывается в APK.
 """
 import re, os, sys
@@ -14,7 +18,7 @@ WEB = os.path.join(ROOT, "web")
 JS_FILES = ["ui.js", "kit.js", "device.js", "api.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js"]
 OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html", "Welcome": "welcome.html", "Profile": "profile.html", "TO": "to.html", "Icons": "icons.html", "Parking": "parking.html", "Mechanic": "mechanic.html", "Fuel": "fuel.html", "Budget": "budget.html", "Wallet": "wallet.html", "Docs": "docs.html", "Season": "season.html", "Checklists": "checklists.html", "DIY": "diy.html", "BodyPhoto": "bodyphoto.html", "Calc": "calc.html", "Achievements": "achievements.html"}  # экраны, свёрстанные вручную
 OUT = os.path.join(ROOT, "app/src/main/assets/www")
-NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Checklists", "DIY", "BodyPhoto", "Calc", "Achievements", "Garage", "AddCar", "Reminders", "History", "OneTapTO", "Main", "Results", "Offers",
+NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Checklists", "DIY", "BodyPhoto", "Calc", "Achievements", "Garage", "AddCar", "History", "Main", "Results", "Offers",
          "Compare", "Cart", "Services", "ServiceBooking", "BookingDone",
          "Fines", "Tires", "Insurance", "SOS", "Subscription", "Wallet", "Budget",
          "RepairLive", "Warranty", "CarPassport", "Family", "Community"]
