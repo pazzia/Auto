@@ -110,19 +110,19 @@
   var USER_POS = { lat: 55.8215, lng: 37.3302, label: "Красногорск" };
   var MARKET_TO = 4600; // медиана цены ТО для демо-авто, ₽
   var M_SERVICES = [
-    { id: "s1", name: "Автосервис «[Название]»", town: "Красногорск", address: "[адрес]", lat: 55.8292, lng: 37.3151, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 312, ratingYa: 4.7, reviewsYa: 208, priceTO: 3900, online: true, tires: true, today: "16:30", next: "Сегодня, 16:30", brands: "все марки" },
-    { id: "s2", name: "Техцентр «[Название]»", town: "Нахабино", address: "[адрес]", lat: 55.8440, lng: 37.1795, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 184, ratingYa: 4.5, reviewsYa: 97, priceTO: 5200, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "работает с Kia" },
-    { id: "s3", name: "Автосервис «[Название]»", town: "Химки", address: "[адрес]", lat: 55.8960, lng: 37.4300, hours: "круглосуточно", ratingGis: 4.9, reviewsGis: 521, ratingYa: 4.8, reviewsYa: 344, priceTO: 4400, online: true, tires: true, today: "18:00", next: "Сегодня, 18:00", brands: "корейские марки" },
-    { id: "s4", name: "Шиномонтаж «[Название]»", town: "Опалиха", address: "[адрес]", lat: 55.8255, lng: 37.2360, hours: "до 22:00", ratingGis: 4.5, reviewsGis: 76, ratingYa: 4.4, reviewsYa: 41, priceTO: null, online: true, tires: true, today: "15:00", next: "Сегодня, 15:00", brands: "шиномонтаж и хранение" },
-    { id: "s5", kind: "body", name: "Кузовной центр «[Название]»", town: "Одинцово", address: "[адрес]", lat: 55.6830, lng: 37.2750, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 203, ratingYa: 4.6, reviewsYa: 150, priceTO: 4700, online: false, tires: false, today: null, next: "Пт, 12:00", brands: "все марки" },
-    { id: "s6", name: "Автосервис «[Название]»", town: "Дедовск", address: "[адрес]", lat: 55.8690, lng: 37.1250, hours: "до 19:00", ratingGis: 4.3, reviewsGis: 58, ratingYa: 4.2, reviewsYa: 33, priceTO: 3600, online: true, tires: true, today: null, next: "Завтра, 9:30", brands: "все марки" },
-    { id: "s7", name: "Техцентр «[Название]»", town: "Долгопрудный", address: "[адрес]", lat: 55.9380, lng: 37.5020, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 410, ratingYa: 4.7, reviewsYa: 265, priceTO: 4900, online: true, tires: false, today: "19:30", next: "Сегодня, 19:30", brands: "Kia, Hyundai" },
-    { id: "s8", name: "Автосервис «[Название]»", town: "Истра", address: "[адрес]", lat: 55.9120, lng: 36.8700, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 121, ratingYa: 4.6, reviewsYa: 88, priceTO: 4100, online: true, tires: true, today: null, next: "Завтра, 11:00", brands: "все марки" },
-    { id: "s9", name: "Сервис «[Название]»", town: "Лобня", address: "[адрес]", lat: 56.0100, lng: 37.4800, hours: "до 20:00", ratingGis: 4.4, reviewsGis: 95, ratingYa: 4.3, reviewsYa: 60, priceTO: 4300, online: false, tires: true, today: null, next: "Сб, 10:00", brands: "все марки" },
-    { id: "s10", name: "Техцентр «[Название]»", town: "Звенигород", address: "[адрес]", lat: 55.7300, lng: 36.8600, hours: "до 19:00", ratingGis: 4.7, reviewsGis: 132, ratingYa: 4.6, reviewsYa: 71, priceTO: 3800, online: true, tires: true, today: "17:00", next: "Сегодня, 17:00", brands: "все марки" },
-    { id: "s11", name: "Техцентр «[Название]»", town: "Одинцово", address: "[адрес]", lat: 55.6720, lng: 37.2900, hours: "до 21:00", ratingGis: 4.7, reviewsGis: 356, ratingYa: 4.7, reviewsYa: 190, priceTO: 4200, online: true, tires: true, today: "18:30", next: "Сегодня, 18:30", brands: "все марки" },
-    { id: "s12", name: "Автосервис «[Название]»", town: "Мытищи", address: "[адрес]", lat: 55.9050, lng: 37.7400, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 240, ratingYa: 4.5, reviewsYa: 130, priceTO: 4000, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "все марки" },
-    { id: "s13", name: "Техцентр «[Название]»", town: "Подольск", address: "[адрес]", lat: 55.4380, lng: 37.5500, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 198, ratingYa: 4.6, reviewsYa: 112, priceTO: 3950, online: true, tires: true, today: "16:00", next: "Сегодня, 16:00", brands: "все марки" }
+    { id: "s1", name: "Мотор-Профи", town: "Красногорск", address: "ул. Заводская, 14", lat: 55.8292, lng: 37.3151, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 312, ratingYa: 4.7, reviewsYa: 208, priceTO: 3900, online: true, tires: true, today: "16:30", next: "Сегодня, 16:30", brands: "все марки" },
+    { id: "s2", name: "Северный", town: "Нахабино", address: "ул. Институтская, 7", lat: 55.8440, lng: 37.1795, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 184, ratingYa: 4.5, reviewsYa: 97, priceTO: 5200, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "работает с Kia" },
+    { id: "s3", name: "Ключ на 10", town: "Химки", address: "Ленинградское ш., 41", lat: 55.8960, lng: 37.4300, hours: "круглосуточно", ratingGis: 4.9, reviewsGis: 521, ratingYa: 4.8, reviewsYa: 344, priceTO: 4400, online: true, tires: true, today: "18:00", next: "Сегодня, 18:00", brands: "корейские марки" },
+    { id: "s4", name: "Колесо 24", town: "Опалиха", address: "ул. Вокзальная, 3", lat: 55.8255, lng: 37.2360, hours: "до 22:00", ratingGis: 4.5, reviewsGis: 76, ratingYa: 4.4, reviewsYa: 41, priceTO: null, online: true, tires: true, today: "15:00", next: "Сегодня, 15:00", brands: "шиномонтаж и хранение" },
+    { id: "s5", kind: "body", name: "Ровный кузов", town: "Одинцово", address: "Транспортная ул., 9", lat: 55.6830, lng: 37.2750, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 203, ratingYa: 4.6, reviewsYa: 150, priceTO: 4700, online: false, tires: false, today: null, next: "Пт, 12:00", brands: "все марки" },
+    { id: "s6", name: "Гараж № 7", town: "Дедовск", address: "ул. Гагарина, 22", lat: 55.8690, lng: 37.1250, hours: "до 19:00", ratingGis: 4.3, reviewsGis: 58, ratingYa: 4.2, reviewsYa: 33, priceTO: 3600, online: true, tires: true, today: null, next: "Завтра, 9:30", brands: "все марки" },
+    { id: "s7", name: "Азимут-Авто", town: "Долгопрудный", address: "Лихачёвский пр-д, 12", lat: 55.9380, lng: 37.5020, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 410, ratingYa: 4.7, reviewsYa: 265, priceTO: 4900, online: true, tires: false, today: "19:30", next: "Сегодня, 19:30", brands: "Kia, Hyundai" },
+    { id: "s8", name: "Истринский двор", town: "Истра", address: "ул. Промышленная, 11", lat: 55.9120, lng: 36.8700, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 121, ratingYa: 4.6, reviewsYa: 88, priceTO: 4100, online: true, tires: true, today: null, next: "Завтра, 11:00", brands: "все марки" },
+    { id: "s9", name: "Поршень", town: "Лобня", address: "ул. Победы, 18", lat: 56.0100, lng: 37.4800, hours: "до 20:00", ratingGis: 4.4, reviewsGis: 95, ratingYa: 4.3, reviewsYa: 60, priceTO: 4300, online: false, tires: true, today: null, next: "Сб, 10:00", brands: "все марки" },
+    { id: "s10", name: "Тихий ход", town: "Звенигород", address: "ул. Московская, 30", lat: 55.7300, lng: 36.8600, hours: "до 19:00", ratingGis: 4.7, reviewsGis: 132, ratingYa: 4.6, reviewsYa: 71, priceTO: 3800, online: true, tires: true, today: "17:00", next: "Сегодня, 17:00", brands: "все марки" },
+    { id: "s11", name: "Западный", town: "Одинцово", address: "Можайское ш., 52", lat: 55.6720, lng: 37.2900, hours: "до 21:00", ratingGis: 4.7, reviewsGis: 356, ratingYa: 4.7, reviewsYa: 190, priceTO: 4200, online: true, tires: true, today: "18:30", next: "Сегодня, 18:30", brands: "все марки" },
+    { id: "s12", name: "Шестерня", town: "Мытищи", address: "ул. Силикатная, 8", lat: 55.9050, lng: 37.7400, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 240, ratingYa: 4.5, reviewsYa: 130, priceTO: 4000, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "все марки" },
+    { id: "s13", name: "Южный двор", town: "Подольск", address: "Домодедовское ш., 15", lat: 55.4380, lng: 37.5500, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 198, ratingYa: 4.6, reviewsYa: 112, priceTO: 3950, online: true, tires: true, today: "16:00", next: "Сегодня, 16:00", brands: "все марки" }
   ];
 
   // Каталог запчастей (демо). cat: filters, brakes, suspension, oils, electrics
@@ -150,10 +150,10 @@
   var CAT_NAMES = { filters: "Фильтры", brakes: "Тормоза", suspension: "Подвеска", oils: "Масла", electrics: "Электрика" };
   // Продавцы: задержка доставки (дней), стоимость доставки, наценка к минимальной цене
   var SELLERS = {
-    A: { name: "Магазин А", reliability: 98, delivery: 199, days: 1, when: "доставка завтра", stock: "12 шт", markup: 1.00 },
-    B: { name: "Магазин Б", reliability: 97, delivery: 249, days: 0, when: "доставка сегодня", stock: "в наличии 3 шт", markup: 1.07 },
-    C: { name: "Магазин В", reliability: 99, delivery: 150, days: 2, when: "доставка 2–3 дня", stock: "40 шт", markup: 1.20 },
-    D: { name: "Магазин Г", reliability: 71, delivery: 250, days: 6, when: "под заказ 5–7 дней", stock: "под заказ", markup: 0.95 }
+    A: { name: "Запчастино", reliability: 98, delivery: 199, days: 1, when: "доставка завтра", stock: "12 шт", markup: 1.00 },
+    B: { name: "МоторМаркет", reliability: 97, delivery: 249, days: 0, when: "доставка сегодня", stock: "в наличии 3 шт", markup: 1.07 },
+    C: { name: "Склад Деталей", reliability: 99, delivery: 150, days: 2, when: "доставка 2–3 дня", stock: "40 шт", markup: 1.20 },
+    D: { name: "Гаечка", reliability: 71, delivery: 250, days: 6, when: "под заказ 5–7 дней", stock: "под заказ", markup: 0.95 }
   };
   function sellerPrice(p, k) { return Math.round(p.priceMin * SELLERS[k].markup / 10) * 10 + (k === "A" ? p.priceMin - Math.round(p.priceMin / 10) * 10 : 0); }
 
@@ -178,13 +178,13 @@
     brake: [["Hyundai/Kia", "01100-00130", 1, 4.7, 180, 780], ["ATE SL.6", "03.9901-6402.2", 0, 4.9, 870, 890], ["Bosch", "1987479107", 0, 4.6, 640, 520], ["Rosdot 4", "430101H03", 0, 4.3, 1300, 330]],
     plugs: [["Hyundai/Kia", "18855-10060", 1, 4.7, 240, 690], ["NGK", "LZKR6B-10E", 0, 4.8, 1900, 520], ["Denso", "XU22TT", 0, 4.6, 400, 610], ["Bosch", "FR7DC+", 0, 4.3, 520, 260]]
   };
-  // Площадки-продавцы (мок-интеграции): наценка к базовой цене, срок доставки в днях, доставка в сервис
+  // Площадки-продавцы (мок-интеграции, названия демонстрационные; ключи — внутренние id): наценка к базовой цене, срок доставки в днях, доставка в сервис
   var MARKETS = {
-    exist: { name: "Exist", k: 1.04, days: 2, delivery: 199 },
-    emex: { name: "Emex", k: 0.97, days: 4, delivery: 249 },
-    autopiter: { name: "Автопитер", k: 1.00, days: 3, delivery: 0 },
-    zzap: { name: "ZZap", k: 0.94, days: 6, delivery: 290 },
-    autodoc: { name: "Autodoc", k: 1.03, days: 1, delivery: 150 }
+    exist: { name: "Запчастино", k: 1.04, days: 2, delivery: 199 },
+    emex: { name: "МоторМаркет", k: 0.97, days: 4, delivery: 249 },
+    autopiter: { name: "Склад Деталей", k: 1.00, days: 3, delivery: 0 },
+    zzap: { name: "Гаечка", k: 0.94, days: 6, delivery: 290 },
+    autodoc: { name: "ДетальЭкспресс", k: 1.03, days: 1, delivery: 150 }
   };
   function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
   function partOptions(slot) {
