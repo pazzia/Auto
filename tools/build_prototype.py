@@ -1,7 +1,7 @@
 """Собирает веб-прототип в app/src/main/assets/www/ из экранов макета и кода в web/.
 
 Запуск: python3 tools/build_prototype.py [папка с .dc.html, по умолчанию design]
-Результат: index.html (все 25 экранов) + api.js, car.js, services.js, map/podmoskovye.svg.
+Результат: index.html (39 экранов: 25 из design/ и 14 из web/*.html, см. NAMES) + все модули JS_FILES и map/podmoskovye.svg.
 Та же папка публикуется на GitHub Pages и упаковывается в APK.
 """
 import re, os, sys

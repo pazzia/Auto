@@ -28,7 +28,7 @@
     Object.keys(callbacks).forEach(function (id) { callbacks[id].finish(499, JSON.stringify({detail: 'Распознавание отменено. Данные не сохранены.'})); });
   }
   async function request(body, progress) {
-    if (!window.NativeOcr || !window.NativeOcr.isOffline) throw new Error('Распознавание на устройстве доступно в Android-приложении «АвтоХаб OCR» версии 0.10 и выше.');
+    if (!window.NativeOcr || !window.NativeOcr.isOffline) throw new Error('Распознавание на устройстве доступно только в Android-приложении «АвтоХаб» (APK из раздела Releases).');
     var response = await new Promise(function (resolve) {
       var id = 'ocr' + (++nativeSeq), timer = setTimeout(cancelPending, 900000);
       callbacks[id] = {progress: progress, finish: function (status, text) { clearTimeout(timer); delete callbacks[id]; resolve({status: status, text: text}); }};
