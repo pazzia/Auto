@@ -54,9 +54,19 @@
       method: method, headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: body ? JSON.stringify(body) : undefined
     }).then(function (r) {
-      if (!r.ok) throw apiError("http_" + r.status);
-      return r.json();
+      if (!r.ok) throw apiError("http_" + r.status, "Сервер ответил ошибкой " + r.status);
+      return r.json().catch(function () { throw apiError("bad_json", "Сервер прислал ответ не в формате JSON"); });
+    }, function (e) {
+      throw apiError("network", "Нет связи с сервером" + (e && e.message ? ": " + e.message : ""));
     });
+  }
+  /** Понятный текст ошибки для экрана (по полю code). */
+  function errorText(e) {
+    var c = e && e.code;
+    return c === "not_configured" ? "Бэкенд не подключён — откройте прототип в демо-режиме."
+      : c === "network" || c === "timeout" ? "Нет связи с сервером. Проверьте интернет и попробуйте ещё раз."
+      : c === "not_found" ? "Ничего не нашли."
+      : "Не удалось загрузить данные. Попробуйте ещё раз.";
   }
   function qs(o) {
     return Object.keys(o || {}).filter(function (k) { return o[k] != null && o[k] !== ""; })
@@ -201,19 +211,42 @@
   }
   function nextTO(car) {
     car = car || {};
-    var m = car.mileage || 0;
-    var km = car.lastTOkm ? car.lastTOkm + TO_STEP : (Math.floor(m / TO_STEP) + 1) * TO_STEP;
-    if (car.lastTOkm && m > km + TO_STEP) km = (Math.floor(m / TO_STEP) + 1) * TO_STEP; // пропущено несколько ТО
-    var items = REGULATION.filter(function (r) { return km % r.every === 0; });
+    var m = car.mileage || 0, last = car.lastTOkm || 0, km;
+    if (last) {
+      km = last + TO_STEP;
+      // Пропущено несколько ТО: ближайшее — последнее кратное шагу, которое уже пройдено (статус «пора» не пропадает)
+      if (m >= km + TO_STEP) km = Math.floor(m / TO_STEP) * TO_STEP;
+    } else {
+      // Без отметки о прошлом ТО: ровно 45 000 — это ТО-45 000, а не следующее
+      km = m > 0 && m % TO_STEP === 0 ? m : (Math.floor(m / TO_STEP) + 1) * TO_STEP;
+    }
+    // Состав работ — по номеру ТО в регламенте (последнее ТО могло быть не на круглом пробеге)
+    var slot = Math.max(1, Math.round(km / TO_STEP)) * TO_STEP;
+    var items = REGULATION.filter(function (r) { return slot % r.every === 0; });
     var left = km - m;
-    return { km: km, left: left, overdue: m > 0 && left < 0, soon: m > 0 && left <= 2000, noMileage: !m, items: items,
+    return { km: km, left: left, overdue: m > 0 && left <= 0, soon: m > 0 && left <= 2000, noMileage: !m, items: items,
       parts: items.filter(function (r) { return r.part; }) };
   }
+  // Вердикт цены работ относительно рынка: выше на 5% — дорого, ниже на 20% — подозрительно дёшево
+  function priceVerdict(price, market) {
+    var diff = Math.round((price / market - 1) * 100);
+    return { verdict: diff > 5 ? "high" : diff < -20 ? "low" : "ok", diffPct: diff };
+  }
+  function worksPrice(service, items) {
+    return ((service && service.priceTO) || 4000) + (items || []).reduce(function (s, r) { return s + (r.extra || 0); }, 0);
+  }
 
-  var M_FINES = [
-    { id: "f1", date: "2026-09-14", article: "12.9.2", text: "Превышение скорости на 20–40 км/ч", amount: 500, discountUntil: "2026-10-04", discountAmount: 250 },
-    { id: "f2", date: "2026-08-30", article: "12.16.4", text: "Остановка в запрещённом месте", amount: 3000, discountUntil: null, discountAmount: null }
-  ];
+  // Штрафы демо-машины. Даты — от сегодняшнего дня; скидка 50% действует 20 дней с даты постановления (КоАП 32.2)
+  function isoLocal(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function daysFromToday(n) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return isoLocal(d); }
+  function demoFines() {
+    return [
+      { id: "f1", date: daysFromToday(-4), time: "14:32", article: "12.9.2", text: "Превышение скорости на 20–40 км/ч", place: "[адрес камеры]", uin: "•••4821",
+        amount: 500, discountUntil: daysFromToday(16), discountAmount: 250 },
+      { id: "f2", date: daysFromToday(-17), time: "08:11", article: "12.12.1", text: "Проезд на запрещающий сигнал", place: "[адрес камеры]", uin: "•••1170",
+        amount: 1000, discountUntil: daysFromToday(3), discountAmount: 500 }
+    ];
+  }
 
   /* ---------- Утилиты заглушек ---------- */
   function normPlateKey(p, region) { return String(p || "").toUpperCase().replace(/\s+/g, "") + String(region || ""); }
@@ -235,7 +268,23 @@
     for (var i = 0; i < map.length; i++) if (map[i][0].test(b)) return map[i][1];
     return b;
   }
-  function titleCase(s) { return s ? s.charAt(0) + s.slice(1).toLowerCase() : s; }
+  // vPIC пишет марки заглавными: «BMW», «MERCEDES-BENZ», «KIA». Известные — по таблице, остальные — по правилу.
+  var MAKE_NAMES = { BMW: "BMW", "MERCEDES-BENZ": "Mercedes-Benz", KIA: "Kia", MINI: "MINI", GMC: "GMC", RAM: "Ram", BYD: "BYD", JAC: "JAC", FAW: "FAW", MG: "MG",
+    DS: "DS", SEAT: "SEAT", CUPRA: "Cupra", SKODA: "Škoda", CITROEN: "Citroën", LADA: "Lada", UAZ: "УАЗ", GAZ: "ГАЗ", KAMAZ: "КАМАЗ", MCLAREN: "McLaren",
+    SSANGYONG: "SsangYong", "ROLLS-ROYCE": "Rolls-Royce", "LAND ROVER": "Land Rover", "ALFA ROMEO": "Alfa Romeo", "ASTON MARTIN": "Aston Martin",
+    "GREAT WALL": "Great Wall", "HAVAL": "Haval", "CHERY": "Chery", "GEELY": "Geely", "EXEED": "Exeed", "VOLKSWAGEN": "Volkswagen", "HYUNDAI": "Hyundai" };
+  function titleCase(s) {
+    s = String(s || "").trim(); if (!s) return s;
+    var key = s.toUpperCase().replace(/\s+/g, " ");
+    if (MAKE_NAMES[key]) return MAKE_NAMES[key];
+    if (s !== s.toUpperCase()) return s; // уже написано как надо (McLaren, smart)
+    // Слово до 3 букв без гласных — аббревиатура (GMC, BMW); остальное — с заглавной, дефис и пробел сохраняются
+    return s.split(/([\s-]+)/).map(function (w) {
+      if (/^[\s-]+$/.test(w) || !w) return w;
+      if (w.length <= 3 && !/[AEIOUYАЕЁИОУЫЭЮЯ]/.test(w)) return w;
+      return w.charAt(0) + w.slice(1).toLowerCase();
+    }).join("");
+  }
   function vpicDecode(v) {
     return httpGetJson(VPIC + "DecodeVinValues/" + encodeURIComponent(v) + "?format=json").then(function (d) {
       var r = (d && d.Results && d.Results[0]) || {};
@@ -257,6 +306,8 @@
   var api = {
     mode: MOCK ? "mock" : "live",
     config: cfg,
+    /** Текст ошибки для пользователя по коду (синхронно). */
+    errorText: errorText,
     userPosition: function () { return MOCK ? ok(USER_POS) : backend("GET", "/v1/me/position"); },
 
     vehicle: {
@@ -290,20 +341,19 @@
 
     maintenance: {
       step: TO_STEP,
-      regulation: REGULATION,
-      markets: MARKETS,
       /** Очередное ТО по пробегу и последнему ТО (синхронно — расчёт на телефоне). */
       nextTO: nextTO,
+      /** Вердикт цены относительно рынка (синхронно): { verdict: ok | high | low, diffPct }. */
+      priceVerdict: priceVerdict,
       /** Варианты деталей для позиции ТО с предложениями площадок и тремя уровнями выбора. */
       options: function (slot) {
         if (!MOCK) return backend("GET", "/v1/maintenance/parts?" + qs({ slot: slot }));
         var opts = partOptions(slot);
         return ok({ slot: slot, title: PART_TITLES[slot], options: opts, tiers: pickTiers(opts), source: SRC_MOCK });
       },
-      /** Стоимость работ сервиса для набора работ ТО. */
-      worksPrice: function (service, items) {
-        return (service.priceTO || 4000) + items.reduce(function (s, r) { return s + (r.extra || 0); }, 0);
-      }
+      /** Стоимость работ сервиса для набора работ ТО (синхронно): базовая цена ТО сервиса + доплаты за работы регламента.
+       * Единственный источник цены работ: «Автосервисы», «Запись в сервис» и сценарий ТО. */
+      worksPrice: worksPrice
     },
 
     parts: {
@@ -325,12 +375,14 @@
         });
         return ok({ items: items, source: SRC_MOCK });
       },
+      /** Деталь из локального демо-каталога (синхронно; корзина). */
       find: function (partId) { return clone(M_PARTS.filter(function (x) { return x.id === partId; })[0] || null); },
       get: function (partId) {
+        if (!MOCK) return backend("GET", "/v1/parts/" + encodeURIComponent(partId));
         var p = M_PARTS.filter(function (x) { return x.id === partId; })[0];
         return p ? ok(p) : fail("not_found");
       },
-      /** Цена у каждого продавца (для корзины: «собрать у одного»). */
+      /** Цена у каждого продавца по локальному демо-каталогу (синхронно; корзина: «собрать у одного»). */
       priceTable: function (partId) {
         var p = M_PARTS.filter(function (x) { return x.id === partId; })[0], t = {};
         if (p) Object.keys(SELLERS).forEach(function (k) { t[k] = sellerPrice(p, k); });
@@ -362,9 +414,9 @@
           var o = clone(s);
           o.distanceKm = Math.round(distKm(from, s) * 10) / 10;
           if (s.priceTO) {
-            var diff = Math.round((s.priceTO / MARKET_TO - 1) * 100);
-            o.priceVerdict = diff > 5 ? "high" : diff < -20 ? "low" : "ok";
-            o.priceDiffPct = diff;
+            var v = priceVerdict(s.priceTO, MARKET_TO);
+            o.priceVerdict = v.verdict;
+            o.priceDiffPct = v.diffPct;
           }
           return o;
         }).sort(function (a, b) { return a.distanceKm - b.distanceKm; });
@@ -385,14 +437,18 @@
     },
 
     fines: {
-      /** Неоплаченные штрафы по СТС/госномеру (в рабочей версии — платёжный партнёр с доступом к ГИС ГМП). */
+      /** Неоплаченные штрафы по СТС/госномеру (в рабочей версии — платёжный партнёр с доступом к ГИС ГМП).
+       * Заглушка: штрафы есть только у демо-машины гаража; у добавленных пользователем машин — пусто. */
       list: function (car) {
         if (!MOCK) return backend("GET", "/v1/fines?" + qs({ plate: car && car.plate, region: car && car.region }));
-        return ok({ items: M_FINES, source: SRC_MOCK });
+        return ok({ items: car && car.demo ? demoFines() : [], source: SRC_MOCK });
       },
+      /** Оплата: в ответе — квитанции по каждому штрафу (в заглушке деньги не списываются). */
       pay: function (fineIds) {
         if (!MOCK) return backend("POST", "/v1/fines/pay", { ids: fineIds });
-        return ok({ paymentUrl: null, status: "demo", message: "Оплата в прототипе не подключена", source: SRC_MOCK });
+        var stamp = Date.now();
+        return ok({ status: "demo", message: "Оплата в прототипе не подключена: деньги не списываются",
+          receipts: (fineIds || []).map(function (id, i) { return { fineId: id, receipt: "ДЕМО-" + String(stamp + i).slice(-8), paidAt: stamp }; }), source: SRC_MOCK });
       }
     },
 
@@ -402,8 +458,8 @@
         if (!MOCK) return backend("GET", "/v1/insurance/quotes?" + qs({ vin: car && car.vin, kind: kind || "osago" }));
         return ok({ kind: kind || "osago", items: [
           { insurer: "Страховая А", price: 7840, rating: 4.6 },
-          { insurer: "Страховая Б", price: 8210, rating: 4.8 },
-          { insurer: "Страховая В", price: 8990, rating: 4.4 }
+          { insurer: "Страховая Б", price: 8120, rating: 4.8 },
+          { insurer: "Страховая В", price: 8900, rating: 4.4 }
         ], source: SRC_MOCK });
       }
     },
@@ -412,7 +468,7 @@
       /** Когда менять шины: прогноз погоды → рекомендация. */
       advice: function (pos) {
         if (!MOCK) return backend("GET", "/v1/tires/advice?" + qs(pos || {}));
-        return ok({ season: "winter", changeFrom: "2026-10-20", reason: "Среднесуточная ниже +5 °C пять дней подряд", source: SRC_MOCK });
+        return ok({ season: "winter", changeFrom: daysFromToday(5), reason: "Среднесуточная ниже +5 °C пять дней подряд", source: SRC_MOCK });
       }
     },
 
