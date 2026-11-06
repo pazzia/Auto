@@ -24,9 +24,9 @@ class NativeLayerTest {
         assertEquals(1, engine.sampleSize(1800, 1400))
         assertEquals(1, engine.sampleSize(4000, 3000))   // 12 Мп: уменьшение до 2000 px потеряло бы мелкий текст
         assertEquals(2, engine.sampleSize(6000, 4000))   // 24 Мп → 3000×2000
-        assertEquals(2, engine.sampleSize(8160, 6120))   // 50 Мп → 4080×3060
+        assertEquals(4, engine.sampleSize(8160, 6120))   // 50 Мп → 2040×1530 (не больше 12 Мп в памяти)
         assertEquals(4, engine.sampleSize(12000, 9000))  // 108 Мп → 3000×2250
-        assertEquals(4, engine.sampleSize(16320, 12240)) // 200 Мп → 4080×3060
+        assertEquals(8, engine.sampleSize(16320, 12240)) // 200 Мп → 2040×1530
     }
 
     /** Блоки 3×2 по 10 px разного цвета; после преобразования сверяются центры блоков (как PIL exif_transpose). */

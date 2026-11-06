@@ -156,6 +156,10 @@
       '<p id="docError" role="alert"></p><button id="docSave" class="btn-accent">Сохранить в историю</button>',
       onMount: function (b) {
         originals(b, files, data.previews);
+        // Снимки камеры во временной папке телефона больше не нужны, когда черновик сохранён или закрыт
+        var release = function () { if (window.AutoHubDevice && AutoHubDevice.releaseDocumentCaptures) AutoHubDevice.releaseDocumentCaptures(); };
+        var gone = new MutationObserver(function () { if (!b.isConnected) { gone.disconnect(); release(); } });
+        gone.observe(document.body, {childList: true, subtree: true});
         b.querySelector('#docTotal').step = '0.01';
         function renderRows() {
           b.querySelector('#docRows').innerHTML = rows.map(function (row, i) {
@@ -200,6 +204,7 @@
                 vin: vin, documentNumber: value('docNumber'), items: items, documentId: documentId, documentHash: data.documentHash, fileHashes: data.fileHashes,
                 source: 'ocr-confirmed', confirmedAt: new Date().toISOString(), order: items.map(function (r) { return [r.name, r.total]; }) }, car.id);
             } catch (e) { await storage('readwrite', function (s) { return s.delete(documentId); }); throw e; }
+            release();
             UI.close(function () { UI.toast('Документ сохранён в истории автомобиля'); });
           } catch (e) { b.querySelector('#docError').textContent = e.message; button.disabled = false; }
         };

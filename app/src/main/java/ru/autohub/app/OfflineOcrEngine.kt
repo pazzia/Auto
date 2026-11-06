@@ -70,8 +70,8 @@ class OfflineOcrEngine(private val context: Context) {
 
     /**
      * Выборка при декодировании: максимальная степень двойки, при которой длинная сторона остаётся не меньше
-     * 2400 px (первый проход OCR — 2400 px, мелкий текст не должен теряться), и не больше ~25 Мп в памяти.
-     * Фото 50/108 Мп принимаются: 8160×6120 → 4080×3060, 12000×9000 → 3000×2250.
+     * 2400 px (первый проход OCR — 2400 px, мелкий текст не должен теряться), и не больше ~12 Мп в памяти (ARGB ≈ 48 МБ, поворот удваивает).
+     * Фото 50/108 Мп принимаются: 4000×3000 → без уменьшения, 8160×6120 → 2040×1530, 12000×9000 → 3000×2250.
      */
     fun sampleSize(width: Int, height: Int): Int {
         val longSide = maxOf(width, height)
@@ -89,8 +89,8 @@ class OfflineOcrEngine(private val context: Context) {
         require(bounds.outWidth > 0 && bounds.outHeight > 0 && bounds.outWidth.toLong() * bounds.outHeight <= MAX_SOURCE_PIXELS) { "Изображение повреждено или больше 250 мегапикселей." }
         require(bounds.outMimeType in listOf("image/jpeg", "image/png", "image/webp")) { "Поддерживаются JPG, PNG, WEBP и PDF." }
         val sample = sampleSize(bounds.outWidth, bounds.outHeight)
-        // Лимит 25 Мп — для уже уменьшенного снимка (то, что реально окажется в памяти), а не для исходника
-        require(sampledPixels(bounds.outWidth, bounds.outHeight, sample) <= MAX_DECODED_PIXELS) { "Изображение больше 25 мегапикселей после уменьшения." }
+        // Лимит 12 Мп — для уже уменьшенного снимка (то, что реально окажется в памяти), а не для исходника
+        require(sampledPixels(bounds.outWidth, bounds.outHeight, sample) <= MAX_DECODED_PIXELS) { "Изображение слишком большое для памяти телефона." }
         checkCancelled()
         val options = BitmapFactory.Options().apply { inSampleSize = sample; inPreferredConfig = Bitmap.Config.ARGB_8888 }
         val decoded = requireNotNull(BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)) { "Не удалось прочитать фото." }
@@ -276,7 +276,7 @@ class OfflineOcrEngine(private val context: Context) {
     companion object {
         /** Длинная сторона после выборки — не меньше первого прохода OCR. */
         private const val MIN_LONG_SIDE = 2400
-        private const val MAX_DECODED_PIXELS = 25_000_000L
+        private const val MAX_DECODED_PIXELS = 12_000_000L // ARGB 12 Мп ≈ 48 МБ, при повороте ×2 — терпимо для бюджетных телефонов
         /** Защита от «бомб» с огромными размерами в заголовке; 200-Мп камеры проходят. */
         private const val MAX_SOURCE_PIXELS = 250_000_000L
 
