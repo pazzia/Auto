@@ -14,8 +14,6 @@ captures/
 *.keystore
 keystore.properties
 .env
-# кроме ключа тестовых сборок прототипа (нужен, чтобы обновления ставились поверх)
-!app/autohub-prototype.keystore
 
 # Модели OCR скачиваются и проверяются при сборке (tools/prepare_ocr_models.py)
 app/src/main/assets/tessdata/*.traineddata
