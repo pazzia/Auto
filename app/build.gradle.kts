@@ -22,25 +22,31 @@ android {
         versionName = appVersion
     }
 
-    // Постоянный ключ подписи прототипа. Без него GitHub Actions подписывает каждую сборку
-    // новым временным ключом, и Android не ставит обновление поверх («приложение не установлено»).
-    // Ключ только для тестовых сборок; для RuStore / Google Play нужен отдельный ключ в секретах репозитория.
+    // Подпись. Debug-сборка (тесты CI на эмуляторе) — стандартным debug-ключом Android.
+    // Release-сборка — ключом из переменных окружения (в CI их ставит задача release из секретов репозитория):
+    //   AUTOHUB_KEYSTORE_FILE, AUTOHUB_KEYSTORE_PASSWORD, AUTOHUB_KEY_ALIAS, AUTOHUB_KEY_PASSWORD.
+    // Если чего-то нет, release собирается без подписи (app-release-unsigned.apk) — настройка проекта не падает.
+    // Ключи и пароли в репозиторий не кладутся (.gitignore: *.jks, *.keystore).
+    val releaseSigning = listOf("AUTOHUB_KEYSTORE_FILE", "AUTOHUB_KEYSTORE_PASSWORD", "AUTOHUB_KEY_ALIAS", "AUTOHUB_KEY_PASSWORD")
+        .associateWith { System.getenv(it).orEmpty() }
+        .takeIf { env -> env.values.all { it.isNotBlank() } && java.io.File(env.getValue("AUTOHUB_KEYSTORE_FILE")).isFile }
     signingConfigs {
-        create("prototype") {
-            storeFile = file("autohub-prototype.keystore")
-            storePassword = "autohub-proto"
-            keyAlias = "autohub"
-            keyPassword = "autohub-proto"
+        if (releaseSigning != null) {
+            create("release") {
+                storeFile = java.io.File(releaseSigning.getValue("AUTOHUB_KEYSTORE_FILE"))
+                storePassword = releaseSigning.getValue("AUTOHUB_KEYSTORE_PASSWORD")
+                keyAlias = releaseSigning.getValue("AUTOHUB_KEY_ALIAS")
+                keyPassword = releaseSigning.getValue("AUTOHUB_KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
-        getByName("debug") {
-            signingConfig = signingConfigs.getByName("prototype")
-        }
         release {
+            isDebuggable = false
+            // R8 без keep-правил удалит методы @JavascriptInterface — минификация выключена намеренно
             isMinifyEnabled = false
-            // Для публикации в магазине подключите свой ключ подписи (signingConfig)
+            if (releaseSigning != null) signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

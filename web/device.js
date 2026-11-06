@@ -5,11 +5,12 @@
 (function () {
   "use strict";
 
-  var seq = 0, geoCbs = {}, photoCbs = {};
+  var seq = 0, geoCbs = {}, photoCbs = {}, notifyCbs = {};
   window.__nativeGeoCb = function (id, ok, lat, lng, acc, err) {
     var cb = geoCbs[id]; delete geoCbs[id]; if (cb) cb(ok, { lat: lat, lng: lng, accuracy: acc }, err);
   };
   window.__nativePhotoCb = function (id, dataUrl) { var cb = photoCbs[id]; delete photoCbs[id]; if (cb) cb(dataUrl); };
+  window.__nativeNotifyCb = function (id, enabled) { var cb = notifyCbs[id]; delete notifyCbs[id]; if (cb) cb(!!enabled); };
   var native = function () { return window.NativeDevice; };
 
   function err(code, msg) { var e = new Error(msg || code); e.code = code; return e; }
@@ -92,21 +93,84 @@
     });
   }
 
+  /* ---------- Уведомления-напоминания ---------- */
+
+  /** Покажет ли телефон напоминание (без вопросов пользователю) → Promise<boolean>.
+   *  В приложении: Android 13+ — выдано ли разрешение; везде — не выключены ли уведомления в настройках. */
+  function notificationsEnabled() {
+    var n = native();
+    if (n && n.notificationsEnabled) { try { return Promise.resolve(!!n.notificationsEnabled()); } catch (e) { return Promise.resolve(false); } }
+    return Promise.resolve(!!(window.Notification && Notification.permission === "granted"));
+  }
+
+  /** То же, но если разрешения нет и спросить можно — спрашивает (системный диалог) → Promise<boolean>. */
+  function requestNotifications() {
+    var n = native();
+    if (n && n.requestNotifications) {
+      return new Promise(function (resolve) {
+        var id = "n" + (++seq);
+        notifyCbs[id] = resolve;
+        try { n.requestNotifications(id); } catch (e) { delete notifyCbs[id]; resolve(false); }
+      });
+    }
+    if (n) return notificationsEnabled();
+    if (!window.Notification) return Promise.resolve(false);
+    if (Notification.permission !== "default") return Promise.resolve(Notification.permission === "granted");
+    return new Promise(function (resolve) {
+      var done = function (p) { resolve(p === "granted"); };
+      try { var r = Notification.requestPermission(done); if (r && r.then) r.then(done, function () { resolve(false); }); }
+      catch (e) { resolve(false); }
+    });
+  }
+
+  /** Точные будильники разрешены (Android 12+: «Будильники и напоминания»). Без них напоминание может опоздать на несколько минут. */
+  function exactAlarms() {
+    var n = native();
+    if (n && n.exactAlarmsAllowed) { try { return !!n.exactAlarmsAllowed(); } catch (e) { return false; } }
+    return true;
+  }
+
   var timers = {};
-  /** Напоминание в момент at (Date или мс). В приложении — системное уведомление, в браузере — пока вкладка открыта. */
-  function schedule(id, at, title, text) {
-    var ms = +at;
-    if (native() && native().schedule) { native().schedule(id, String(ms), title, text); return; }
-    clearTimeout(timers[id]);
+  // setTimeout дольше 2^31−1 мс (~24,8 дня) в браузере срабатывает сразу — длинное ожидание взводится частями
+  var MAX_DELAY = 2147483647;
+  function arm(id, ms, fire) {
+    var left = ms - Date.now();
     timers[id] = setTimeout(function () {
+      if (ms - Date.now() > 0) arm(id, ms, fire); else { delete timers[id]; fire(); }
+    }, Math.min(Math.max(0, left), MAX_DELAY));
+  }
+
+  /** Напоминание в момент at (Date или мс). В приложении — системное уведомление (переживает перезагрузку),
+   *  в браузере — пока вкладка открыта. Вызывающим можно не ждать результат; если нужно предупредить
+   *  пользователя — Promise<{scheduled, notifications, exact}>:
+   *    notifications=false — уведомления запрещены, напоминание не придёт;
+   *    exact=false — точные будильники запрещены, напоминание может прийти на несколько минут позже. */
+  function schedule(id, at, title, text) {
+    var ms = +at, n = native();
+    if (n && n.schedule) {
+      var mode = "";
+      try { mode = n.schedule(id, String(ms), title, text) || ""; } catch (e) { mode = ""; }
+      return requestNotifications().then(function (on) {
+        return { scheduled: !!mode, notifications: on, exact: mode === "exact" };
+      });
+    }
+    clearTimeout(timers[id]);
+    arm(id, ms, function () {
       if (window.Notification && Notification.permission === "granted") new Notification(title, { body: text });
       else if (window.AutoHubUI) window.AutoHubUI.dialog(title, text, "Понятно");
-    }, Math.max(0, ms - Date.now()));
-    if (window.Notification && Notification.permission === "default") Notification.requestPermission();
+    });
+    // В браузере диалог в странице показывается и без разрешения — напоминание «придёт», пока вкладка открыта
+    return requestNotifications().then(function (on) { return { scheduled: true, notifications: on, exact: true }; });
   }
   function cancel(id) {
     if (native() && native().cancel) { native().cancel(id); return; }
-    clearTimeout(timers[id]);
+    clearTimeout(timers[id]); delete timers[id];
+  }
+
+  /** Снимки документов с камеры больше не нужны (после сохранения наряда или закрытия окна сканирования). */
+  function releaseDocumentCaptures() {
+    var n = native();
+    if (n && n.releaseDocumentCaptures) { try { n.releaseDocumentCaptures(); } catch (e) {} }
   }
 
   /** Маршрут до точки в приложении карт телефона (в браузере — Яндекс Карты на сайте). */
@@ -140,5 +204,7 @@
   }
 
   window.AutoHubDevice = { getLocation: getLocation, watchLocation: watchLocation, takePhoto: takePhoto, schedule: schedule, cancel: cancel,
+    notificationsEnabled: notificationsEnabled, requestNotifications: requestNotifications, exactAlarms: exactAlarms,
+    releaseDocumentCaptures: releaseDocumentCaptures,
     openMap: openMap, distance: distance, bearing: bearing, watchHeading: watchHeading, native: function () { return !!native(); } };
 })();

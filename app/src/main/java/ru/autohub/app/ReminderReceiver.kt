@@ -13,13 +13,14 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 
-/** Показывает уведомление-напоминание (например, «парковка заканчивается через 10 минут»). */
+/** Показывает уведомление-напоминание (например, «парковка заканчивается через 10 минут»). Планирование — Reminders. */
 class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getIntExtra(EXTRA_ID, 1)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "АвтоХаб"
         val text = intent.getStringExtra(EXTRA_TEXT) ?: ""
+        Reminders.fired(context, id, intent.getLongExtra(EXTRA_AT, 0L))
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
@@ -53,6 +54,7 @@ class ReminderReceiver : BroadcastReceiver() {
     companion object {
         const val CHANNEL = "autohub_reminders"
         const val EXTRA_ID = "id"
+        const val EXTRA_AT = "at"
         const val EXTRA_TITLE = "title"
         const val EXTRA_TEXT = "text"
     }

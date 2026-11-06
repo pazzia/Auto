@@ -1,5 +1,8 @@
 package ru.autohub.app;
 
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
+
 /**
  * Подготовка снимка документа к OCR (чистая Java без Android API — проверяется на ПК тем же кодом).
  * Шаги: оттенки серого → масштаб Lanczos-3 (мелкие фото увеличиваются) → выравнивание фона (тени, неравномерный свет) →
@@ -23,15 +26,28 @@ public final class OcrPreprocess {
 
     /** binarize=false — оттенки серого после выравнивания фона и наклона (для мелкого текста порог теряет детали). */
     public static int[] process(int[] argb, int w, int h, int outW, int outH, boolean removeLines, boolean binarize) {
+        return process(argb, w, h, outW, outH, removeLines, binarize, null);
+    }
+
+    /**
+     * То же с проверкой отмены между этапами (cancelled может быть null). При отмене — CancellationException,
+     * чтобы отмена распознавания не ждала конца подготовки большого снимка.
+     */
+    public static int[] process(int[] argb, int w, int h, int outW, int outH, boolean removeLines, boolean binarize, BooleanSupplier cancelled) {
         float[] gray = new float[w * h];
         for (int i = 0; i < gray.length; i++) {
             int c = argb[i];
             gray[i] = (((c >> 16) & 255) * 299 + ((c >> 8) & 255) * 587 + (c & 255) * 114) / 1000f;
         }
+        checkCancelled(cancelled);
         int[] g = resize(gray, w, h, outW, outH);
+        gray = null;
+        checkCancelled(cancelled);
         flatten(g, outW, outH);
+        checkCancelled(cancelled);
         double angle = skew(g, outW, outH);
         if (Math.abs(angle) > 0.1) g = rotate(g, outW, outH, angle);
+        checkCancelled(cancelled);
         int threshold = otsu(g);
         int n = outW * outH;
         if (!binarize && !removeLines) {
@@ -61,6 +77,10 @@ public final class OcrPreprocess {
         int[] out = new int[n];
         for (int i = 0; i < n; i++) out[i] = dark[i] ? 0xFF000000 : 0xFFFFFFFF;
         return out;
+    }
+
+    private static void checkCancelled(BooleanSupplier cancelled) {
+        if (cancelled != null && cancelled.getAsBoolean()) throw new CancellationException();
     }
 
     /** Деление на оценку фона (максимум по блокам, сглаженный): тени и градиент света → ровный белый фон. */
