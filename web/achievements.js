@@ -41,20 +41,26 @@
   function badges() {
     var orders = load("orders.v1", {}), done = 0, rated = 0;
     Object.keys(orders).forEach(function (k) { if (orders[k].stage >= 4) done++; if (orders[k].rated) rated++; });
-    var finesPaid = load("fines.v1", {}), unpaid = ["f1", "f2"].filter(function (k) { return !finesPaid[k]; }).length;
+    // Штрафы: хотя бы один оплачен в приложении и неоплаченных у машины не осталось
+    var finesPaid = Object.keys(load("fines.v1", {})).length, unpaid = window.AutoHubScreens && window.AutoHubScreens.finesUnpaid ? window.AutoHubScreens.finesUnpaid() : null;
+    // Заправки — по всем машинам гаража: уровень не зависит от того, какая машина выбрана
+    var fuelAll = load("fuel.v1", {}), ids = window.AutoHubCar ? window.AutoHubCar.cars().map(function (c) { return c.id; }) : Object.keys(fuelAll);
+    var fuelN = ids.reduce(function (n, id) { return n + ((fuelAll[id] || []).length); }, 0);
+    // Полученное достижение остаётся полученным (autohub.ach.v1), даже если условие потом перестало выполняться
+    var un = load("ach.v1", { unlocked: {} }).unlocked || {};
     var s = (load("session.v1", {}) || {}).since, days = s ? Math.floor((Date.now() - new Date(s + "T12:00:00")) / 864e5) : 0;
     return [
       ["to", "ТО вовремя", "ok", "пройдите ТО через приложение", [Math.min(done, 1), 1], "#TO"],
       ["streak", "Серия пробега", "flame", "обновляйте пробег 3 месяца подряд", [Math.min(streak().months, 3), 3], "#Fuel"],
-      ["fuel", "Журнал заправок", "fuel", "10 заправок в журнале", [Math.min(window.AutoHubFuel ? window.AutoHubFuel.count() : 0, 10), 10], "#Fuel"],
-      ["fines", "Штрафы закрыты", "shield", "оплатите все штрафы", [unpaid ? 0 : 1, 1], "#Fines"],
+      ["fuel", "Журнал заправок", "fuel", "10 заправок в журнале", [Math.min(fuelN, 10), 10], "#Fuel"],
+      ["fines", "Штрафы закрыты", "shield", "оплатите все штрафы", [finesPaid && unpaid === 0 ? 1 : 0, 1], "#Fines"],
       ["checklist", "Готов к дороге", "check", "пройдите чек-лист целиком", [Math.min(ev("checklist_done"), 1), 1], "#Checklists"],
       ["diy", "Сделал сам", "wrench", "3 инструкции «Сделай сам»", [Math.min(ev("diy_done"), 3), 3], "#DIY"],
       ["review", "Честный отзыв", "star", "оцените сервис после ТО", [Math.min(rated, 1), 1], "#TO"],
       ["photo", "Под защитой", "camera", "сделайте фото кузова", [Math.min(ev("photos_done"), 1), 1], "#BodyPhoto"],
       ["parking", "Паркуюсь с умом", "pin", "3 раза отметьте парковку", [Math.min(load("parking.log.v1", []).length, 3), 3], "#Parking"],
       ["year", "Год с АвтоХабом", "cal", "пользуйтесь приложением год", [Math.min(days, 365), 365], "#Garage"]
-    ].map(function (b) { return { id: b[0], title: b[1], icon: b[2], how: b[3], cur: b[4][0], need: b[4][1], href: b[5], got: b[4][0] >= b[4][1] }; });
+    ].map(function (b) { return { id: b[0], title: b[1], icon: b[2], how: b[3], cur: b[4][0], need: b[4][1], href: b[5], got: b[4][0] >= b[4][1] || !!un[b[0]] }; });
   }
   function score(list) { return list.filter(function (b) { return b.got; }).length * 100 + streak().months * 20; }
   function level() {

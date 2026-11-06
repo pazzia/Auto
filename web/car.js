@@ -101,16 +101,88 @@
   function uid() { return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
   function demoCar() { return Object.assign({ id: "demo" }, DEMO_CAR); }
   function loadGarage() {
-    try {
-      var g = JSON.parse(localStorage.getItem(GARAGE_KEY) || "null");
-      if (g && g.cars && g.cars.length) return g;
-    } catch (e) {}
-    var old = null; // перенос машины из версии 0.4 (одна машина)
+    var g = null, old = null;
+    try { g = JSON.parse(localStorage.getItem(GARAGE_KEY) || "null"); } catch (e) {}
     try { old = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) {}
-    var c = old ? Object.assign({ id: uid() }, old) : demoCar();
-    return { cars: [c], activeId: c.id };
+    if (g && g.cars && g.cars.length) {
+      if (old) migrateOld(g, old); // гараж уже есть, но старый ключ 0.4 остался — спасти данные и убрать ключ
+      return g;
+    }
+    if (old) { // перенос машины из версии 0.4 (одна машина): id выдаётся один раз и сразу сохраняется
+      var c = Object.assign({}, old, { id: uid() });
+      g = { cars: [c], activeId: c.id };
+      migrateOld(g, old);
+      return g;
+    }
+    var d = demoCar();
+    return { cars: [d], activeId: d.id };
   }
   function saveGarage(g) { try { localStorage.setItem(GARAGE_KEY, JSON.stringify(g)); } catch (e) {} }
+
+  /* ---------- Данные по машинам: ключи localStorage, где запись лежит под id машины ---------- */
+  var CAR_MAPS = ["history.v1", "fuel.v1", "orders.v1", "todraft.v1", "chat.v1", "ach.mileage.v1"];
+  function lsGet(k) { try { return JSON.parse(localStorage.getItem("autohub." + k) || "null"); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem("autohub." + k, JSON.stringify(v)); } catch (e) {} }
+  function idTime(id) { var m = /^c([0-9a-z]+)[0-9a-z]{4}$/.exec(id || ""); return m ? parseInt(m[1], 36) : NaN; }
+  /* В 0.5–0.16 без сохранённого гаража машина из 0.4 при каждом запуске получала новый случайный id,
+   * и заправки, история, заказы писались под ним. Такие «осиротевшие» записи (id вида c<время><4 знака>,
+   * которого нет в гараже и который выдан раньше id найденной машины) переносим в машину из 0.4. */
+  function migrateOld(g, old) {
+    var target = g.cars.filter(function (c) {
+      return !c.demo && ((old.vin && c.vin === old.vin) || (!old.vin && old.plate && c.plate === old.plate && c.region === old.region) ||
+        (!old.vin && !old.plate && c.make === old.make && c.model === old.model));
+    })[0];
+    if (target) adoptOrphans(g, target);
+    saveGarage(g);
+    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  }
+  function adoptOrphans(g, target) {
+    var known = {}, limit = idTime(target.id);
+    g.cars.forEach(function (c) { known[c.id] = 1; });
+    if (isNaN(limit)) limit = Date.now();
+    function orphan(id) { var t = idTime(id); return !known[id] && !isNaN(t) && t <= limit; }
+    function byAge(a, b) { return idTime(a) - idTime(b); }
+    var moved = {};
+    CAR_MAPS.forEach(function (k) {
+      var all = lsGet(k); if (!all || typeof all !== "object") return;
+      var ids = Object.keys(all).filter(orphan).sort(byAge); if (!ids.length) return;
+      var cur = all[target.id];
+      if (Array.isArray(cur) || Array.isArray(all[ids[0]])) {
+        var seen = {}, merged = [];
+        ids.map(function (id) { return all[id] || []; }).concat([cur || []]).forEach(function (arr) {
+          arr.forEach(function (x) { var key = x && x.id; if (key && seen[key]) return; if (key) seen[key] = 1; merged.push(x); });
+        });
+        all[target.id] = merged;
+      } else if (k === "ach.mileage.v1") {
+        var rec = cur || { km: 0, months: {} };
+        ids.forEach(function (id) { var r = all[id] || {}; Object.keys(r.months || {}).forEach(function (m) { rec.months[m] = 1; }); rec.km = Math.max(rec.km || 0, r.km || 0); });
+        all[target.id] = rec;
+      } else if (!cur) { // заказ ТО, черновик ТО — берём самый свежий
+        var last = all[ids[ids.length - 1]];
+        if (last && typeof last === "object" && "carId" in last) last.carId = target.id;
+        all[target.id] = last;
+      }
+      ids.forEach(function (id) { delete all[id]; moved[id] = 1; });
+      lsSet(k, all);
+    });
+    var b = lsGet("booking.v1");
+    if (b && (moved[b.carId] || orphan(b.carId))) { b.carId = target.id; lsSet("booking.v1", b); }
+  }
+  /** Удалить всё, что приложение хранит про машину: история, заправки, заказы и черновик ТО, чат механика,
+   * серия пробега, запись в сервис, полис и оплаченные штрафы этой машины, оригиналы документов. */
+  function purgeCar(id) {
+    CAR_MAPS.forEach(function (k) { var all = lsGet(k); if (all && typeof all === "object" && id in all) { delete all[id]; lsSet(k, all); } });
+    var b = lsGet("booking.v1"); if (b && b.carId === id) { try { localStorage.removeItem("autohub.booking.v1"); } catch (e) {} }
+    var o = lsGet("osago.v1"); if (o && o.carId === id) { try { localStorage.removeItem("autohub.osago.v1"); } catch (e) {} }
+    var f = lsGet("fines.v1");
+    if (f && typeof f === "object") {
+      var changed = false;
+      Object.keys(f).forEach(function (k) { if (f[k] && f[k].carId === id) { delete f[k]; changed = true; } });
+      if (changed) lsSet("fines.v1", f);
+    }
+    var D = window.AutoHubDocuments;
+    if (D && D.removeForCar) { try { Promise.resolve(D.removeForCar(id)).catch(function () {}); } catch (e) {} }
+  }
   function activeCar(g) {
     g = g || loadGarage();
     return g.cars.filter(function (c) { return c.id === g.activeId; })[0] || g.cars[0];
@@ -122,7 +194,11 @@
     var dup = g.cars.filter(function (c) {
       return (car.vin && c.vin === car.vin) || (!car.vin && car.plate && c.plate === car.plate && c.region === car.region);
     })[0];
-    if (dup) { var id = dup.id; Object.assign(dup, car); dup.id = id; dup.demo = false; g.activeId = id; }
+    if (dup) { // новые пустые поля не стирают уже известные (госномер, регион, модель)
+      var id = dup.id;
+      Object.keys(car).forEach(function (k) { var v = car[k]; if (v != null && v !== "") dup[k] = v; });
+      dup.id = id; dup.demo = false; g.activeId = id;
+    }
     else { car.id = uid(); car.demo = false; g.cars.push(car); g.activeId = car.id; }
     saveGarage(g); refresh();
     return !!dup;
@@ -131,6 +207,7 @@
   function removeCar(id) {
     var g = loadGarage();
     g.cars = g.cars.filter(function (c) { return c.id !== id; });
+    purgeCar(id);
     if (!g.cars.length) g.cars = [demoCar()];
     if (g.activeId === id) g.activeId = g.cars[0].id;
     saveGarage(g); refresh();
@@ -180,7 +257,7 @@
     return '<div><div style="color:#5B5F66">' + label + '</div><div style="font-weight:600' +
       (mono ? ";font-family:'JetBrains Mono',monospace;font-weight:500" : "") + '">' + esc(val || "—") + "</div></div>";
   }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function esc(s) { return window.AutoHubUI.esc(s); }
 
   function renderResult(c, kind, source, note) {
     draft = Object.assign({}, draft, c);
@@ -198,18 +275,27 @@
     $("resNote").hidden = !note; $("resNote").textContent = note || "";
     $("resRefine").hidden = ok;
     $("resSource").textContent = source;
-    $("milInput").value = draft.mileage || "";
+    // Пробег, который пользователь ввёл сам, не перетираем данными поиска
+    if (!$("milInput").dataset.user) $("milInput").value = draft.mileage || "";
     var box = $("carResult"); box.hidden = false; box.style.display = "flex";
     $("saveCar").disabled = !draft.make;
     box.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
+  // Новый поиск: прошлый результат не должен оставаться на экране и попадать в сохранение
+  function hideResult() {
+    var box = $("carResult"); box.hidden = true; box.style.display = "";
+    $("saveCar").disabled = true;
+  }
   function onVinFind() {
     var v = normVin($("vinInput").value); $("vinInput").value = v;
-    var err = vinError(v); showErr("vinErr", err); if (err) return;
+    var err = vinError(v); showErr("vinErr", err); if (err) { hideResult(); return; }
     var loc = decodeLocal(v), btn = $("vinFind");
     busy(btn, true, "Ищем в базе…");
-    draft = { vin: v, plate: draft.plate, region: draft.region, plant: loc.plant };
+    hideResult();
+    // Госномер сохраняем, только если он введён для этой же машины: номер не нашли (VIN нет) или VIN совпал
+    var keepPlate = draft.plate && (!draft.vin || draft.vin === v);
+    draft = { vin: v, plate: keepPlate ? draft.plate : undefined, region: keepPlate ? draft.region : undefined, plant: loc.plant };
     API().vehicle.decodeVin(v).then(function (r) {
       var c = {
         make: r.make || loc.make, model: r.model, year: r.year || loc.year,
@@ -236,6 +322,8 @@
     if (!validPlate(p, r)) { showErr("plateErr", "Формат: буква, три цифры, две буквы и регион — например, А123ВС 77."); return; }
     showErr("plateErr", "");
     $("plateMsg").hidden = true;
+    hideResult();
+    draft = {};
     var btn = $("plateFind");
     busy(btn, true, "Ищем по номеру…");
     API().vehicle.findByPlate(p, r).then(function (car) {
@@ -245,7 +333,7 @@
         transmission: car.transmission, body: car.body }, car.make && car.model ? "full" : "partial",
         "Источник: " + (car.source || "поиск по госномеру"), "");
     }, function (e) {
-      draft.plate = p; draft.region = r;
+      draft = { plate: p, region: r };
       var mock = API().mode === "mock";
       $("plateMsgTitle").textContent = e.code === "not_found" ? "Номер не нашли — найдём по VIN" : "Номер сохраним, данные найдём по VIN";
       $("plateMsgText").textContent = mock
@@ -321,6 +409,7 @@
   function resetForm() {
     draft = {};
     ["plateInput", "regionInput", "vinInput", "mkInput", "mdInput", "engInput", "milInput"].forEach(function (id) { $(id).value = ""; });
+    delete $("milInput").dataset.user;
     $("yrSel").value = ""; $("vinCount").textContent = "0 / 17"; $("vinCount").style.color = "#5B5F66";
     ["plateErr", "vinErr", "modelErr"].forEach(function (id) { showErr(id, ""); });
     $("plateMsg").hidden = true; $("carResult").hidden = true; $("saveCar").disabled = true; $("mdHint").textContent = "";
@@ -458,9 +547,6 @@
           window.AutoHubUI.close(function () {
             if (act === "mileage") askMileage();
             if (act === "profile") location.hash = "#Profile";
-            if (act === "delete") window.AutoHubKit.confirm({ title: "Убрать " + shortName(c) + " из гаража?", ok: "Убрать", danger: true }, function () {
-              removeCar(c.id); window.AutoHubUI.toast("Автомобиль убран из гаража");
-            });
           });
         });
       }
@@ -528,6 +614,7 @@
     $("modelApply").addEventListener("click", onModelApply);
     $("resRefine").addEventListener("click", onRefine);
     $("saveCar").addEventListener("click", onSave);
+    $("milInput").addEventListener("input", function () { if (this.value.trim()) this.dataset.user = "1"; else delete this.dataset.user; });
     var mb = document.querySelector('[data-action="mileage"]');
     if (mb) mb.addEventListener("click", function () {
       var c = activeCar(), cur = c.mileage || "";

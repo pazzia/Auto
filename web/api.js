@@ -54,9 +54,19 @@
       method: method, headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: body ? JSON.stringify(body) : undefined
     }).then(function (r) {
-      if (!r.ok) throw apiError("http_" + r.status);
-      return r.json();
+      if (!r.ok) throw apiError("http_" + r.status, "Сервер ответил ошибкой " + r.status);
+      return r.json().catch(function () { throw apiError("bad_json", "Сервер прислал ответ не в формате JSON"); });
+    }, function (e) {
+      throw apiError("network", "Нет связи с сервером" + (e && e.message ? ": " + e.message : ""));
     });
+  }
+  /** Понятный текст ошибки для экрана (по полю code). */
+  function errorText(e) {
+    var c = e && e.code;
+    return c === "not_configured" ? "Бэкенд не подключён — откройте прототип в демо-режиме."
+      : c === "network" || c === "timeout" ? "Нет связи с сервером. Проверьте интернет и попробуйте ещё раз."
+      : c === "not_found" ? "Ничего не нашли."
+      : "Не удалось загрузить данные. Попробуйте ещё раз.";
   }
   function qs(o) {
     return Object.keys(o || {}).filter(function (k) { return o[k] != null && o[k] !== ""; })
@@ -100,19 +110,19 @@
   var USER_POS = { lat: 55.8215, lng: 37.3302, label: "Красногорск" };
   var MARKET_TO = 4600; // медиана цены ТО для демо-авто, ₽
   var M_SERVICES = [
-    { id: "s1", name: "Автосервис «[Название]»", town: "Красногорск", address: "[адрес]", lat: 55.8292, lng: 37.3151, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 312, ratingYa: 4.7, reviewsYa: 208, priceTO: 3900, online: true, tires: true, today: "16:30", next: "Сегодня, 16:30", brands: "все марки" },
-    { id: "s2", name: "Техцентр «[Название]»", town: "Нахабино", address: "[адрес]", lat: 55.8440, lng: 37.1795, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 184, ratingYa: 4.5, reviewsYa: 97, priceTO: 5200, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "работает с Kia" },
-    { id: "s3", name: "Автосервис «[Название]»", town: "Химки", address: "[адрес]", lat: 55.8960, lng: 37.4300, hours: "круглосуточно", ratingGis: 4.9, reviewsGis: 521, ratingYa: 4.8, reviewsYa: 344, priceTO: 4400, online: true, tires: true, today: "18:00", next: "Сегодня, 18:00", brands: "корейские марки" },
-    { id: "s4", name: "Шиномонтаж «[Название]»", town: "Опалиха", address: "[адрес]", lat: 55.8255, lng: 37.2360, hours: "до 22:00", ratingGis: 4.5, reviewsGis: 76, ratingYa: 4.4, reviewsYa: 41, priceTO: null, online: true, tires: true, today: "15:00", next: "Сегодня, 15:00", brands: "шиномонтаж и хранение" },
-    { id: "s5", kind: "body", name: "Кузовной центр «[Название]»", town: "Одинцово", address: "[адрес]", lat: 55.6830, lng: 37.2750, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 203, ratingYa: 4.6, reviewsYa: 150, priceTO: 4700, online: false, tires: false, today: null, next: "Пт, 12:00", brands: "все марки" },
-    { id: "s6", name: "Автосервис «[Название]»", town: "Дедовск", address: "[адрес]", lat: 55.8690, lng: 37.1250, hours: "до 19:00", ratingGis: 4.3, reviewsGis: 58, ratingYa: 4.2, reviewsYa: 33, priceTO: 3600, online: true, tires: true, today: null, next: "Завтра, 9:30", brands: "все марки" },
-    { id: "s7", name: "Техцентр «[Название]»", town: "Долгопрудный", address: "[адрес]", lat: 55.9380, lng: 37.5020, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 410, ratingYa: 4.7, reviewsYa: 265, priceTO: 4900, online: true, tires: false, today: "19:30", next: "Сегодня, 19:30", brands: "Kia, Hyundai" },
-    { id: "s8", name: "Автосервис «[Название]»", town: "Истра", address: "[адрес]", lat: 55.9120, lng: 36.8700, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 121, ratingYa: 4.6, reviewsYa: 88, priceTO: 4100, online: true, tires: true, today: null, next: "Завтра, 11:00", brands: "все марки" },
-    { id: "s9", name: "Сервис «[Название]»", town: "Лобня", address: "[адрес]", lat: 56.0100, lng: 37.4800, hours: "до 20:00", ratingGis: 4.4, reviewsGis: 95, ratingYa: 4.3, reviewsYa: 60, priceTO: 4300, online: false, tires: true, today: null, next: "Сб, 10:00", brands: "все марки" },
-    { id: "s10", name: "Техцентр «[Название]»", town: "Звенигород", address: "[адрес]", lat: 55.7300, lng: 36.8600, hours: "до 19:00", ratingGis: 4.7, reviewsGis: 132, ratingYa: 4.6, reviewsYa: 71, priceTO: 3800, online: true, tires: true, today: "17:00", next: "Сегодня, 17:00", brands: "все марки" },
-    { id: "s11", name: "Техцентр «[Название]»", town: "Одинцово", address: "[адрес]", lat: 55.6720, lng: 37.2900, hours: "до 21:00", ratingGis: 4.7, reviewsGis: 356, ratingYa: 4.7, reviewsYa: 190, priceTO: 4200, online: true, tires: true, today: "18:30", next: "Сегодня, 18:30", brands: "все марки" },
-    { id: "s12", name: "Автосервис «[Название]»", town: "Мытищи", address: "[адрес]", lat: 55.9050, lng: 37.7400, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 240, ratingYa: 4.5, reviewsYa: 130, priceTO: 4000, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "все марки" },
-    { id: "s13", name: "Техцентр «[Название]»", town: "Подольск", address: "[адрес]", lat: 55.4380, lng: 37.5500, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 198, ratingYa: 4.6, reviewsYa: 112, priceTO: 3950, online: true, tires: true, today: "16:00", next: "Сегодня, 16:00", brands: "все марки" }
+    { id: "s1", name: "Мотор-Профи", town: "Красногорск", address: "ул. Заводская, 14", lat: 55.8292, lng: 37.3151, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 312, ratingYa: 4.7, reviewsYa: 208, priceTO: 3900, online: true, tires: true, today: "16:30", next: "Сегодня, 16:30", brands: "все марки" },
+    { id: "s2", name: "Северный", town: "Нахабино", address: "ул. Институтская, 7", lat: 55.8440, lng: 37.1795, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 184, ratingYa: 4.5, reviewsYa: 97, priceTO: 5200, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "работает с Kia" },
+    { id: "s3", name: "Ключ на 10", town: "Химки", address: "Ленинградское ш., 41", lat: 55.8960, lng: 37.4300, hours: "круглосуточно", ratingGis: 4.9, reviewsGis: 521, ratingYa: 4.8, reviewsYa: 344, priceTO: 4400, online: true, tires: true, today: "18:00", next: "Сегодня, 18:00", brands: "корейские марки" },
+    { id: "s4", name: "Колесо 24", town: "Опалиха", address: "ул. Вокзальная, 3", lat: 55.8255, lng: 37.2360, hours: "до 22:00", ratingGis: 4.5, reviewsGis: 76, ratingYa: 4.4, reviewsYa: 41, priceTO: null, online: true, tires: true, today: "15:00", next: "Сегодня, 15:00", brands: "шиномонтаж и хранение" },
+    { id: "s5", kind: "body", name: "Ровный кузов", town: "Одинцово", address: "Транспортная ул., 9", lat: 55.6830, lng: 37.2750, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 203, ratingYa: 4.6, reviewsYa: 150, priceTO: 4700, online: false, tires: false, today: null, next: "Пт, 12:00", brands: "все марки" },
+    { id: "s6", name: "Гараж № 7", town: "Дедовск", address: "ул. Гагарина, 22", lat: 55.8690, lng: 37.1250, hours: "до 19:00", ratingGis: 4.3, reviewsGis: 58, ratingYa: 4.2, reviewsYa: 33, priceTO: 3600, online: true, tires: true, today: null, next: "Завтра, 9:30", brands: "все марки" },
+    { id: "s7", name: "Азимут-Авто", town: "Долгопрудный", address: "Лихачёвский пр-д, 12", lat: 55.9380, lng: 37.5020, hours: "до 21:00", ratingGis: 4.8, reviewsGis: 410, ratingYa: 4.7, reviewsYa: 265, priceTO: 4900, online: true, tires: false, today: "19:30", next: "Сегодня, 19:30", brands: "Kia, Hyundai" },
+    { id: "s8", name: "Истринский двор", town: "Истра", address: "ул. Промышленная, 11", lat: 55.9120, lng: 36.8700, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 121, ratingYa: 4.6, reviewsYa: 88, priceTO: 4100, online: true, tires: true, today: null, next: "Завтра, 11:00", brands: "все марки" },
+    { id: "s9", name: "Поршень", town: "Лобня", address: "ул. Победы, 18", lat: 56.0100, lng: 37.4800, hours: "до 20:00", ratingGis: 4.4, reviewsGis: 95, ratingYa: 4.3, reviewsYa: 60, priceTO: 4300, online: false, tires: true, today: null, next: "Сб, 10:00", brands: "все марки" },
+    { id: "s10", name: "Тихий ход", town: "Звенигород", address: "ул. Московская, 30", lat: 55.7300, lng: 36.8600, hours: "до 19:00", ratingGis: 4.7, reviewsGis: 132, ratingYa: 4.6, reviewsYa: 71, priceTO: 3800, online: true, tires: true, today: "17:00", next: "Сегодня, 17:00", brands: "все марки" },
+    { id: "s11", name: "Западный", town: "Одинцово", address: "Можайское ш., 52", lat: 55.6720, lng: 37.2900, hours: "до 21:00", ratingGis: 4.7, reviewsGis: 356, ratingYa: 4.7, reviewsYa: 190, priceTO: 4200, online: true, tires: true, today: "18:30", next: "Сегодня, 18:30", brands: "все марки" },
+    { id: "s12", name: "Шестерня", town: "Мытищи", address: "ул. Силикатная, 8", lat: 55.9050, lng: 37.7400, hours: "до 20:00", ratingGis: 4.6, reviewsGis: 240, ratingYa: 4.5, reviewsYa: 130, priceTO: 4000, online: true, tires: false, today: null, next: "Завтра, 10:00", brands: "все марки" },
+    { id: "s13", name: "Южный двор", town: "Подольск", address: "Домодедовское ш., 15", lat: 55.4380, lng: 37.5500, hours: "до 20:00", ratingGis: 4.7, reviewsGis: 198, ratingYa: 4.6, reviewsYa: 112, priceTO: 3950, online: true, tires: true, today: "16:00", next: "Сегодня, 16:00", brands: "все марки" }
   ];
 
   // Каталог запчастей (демо). cat: filters, brakes, suspension, oils, electrics
@@ -140,10 +150,10 @@
   var CAT_NAMES = { filters: "Фильтры", brakes: "Тормоза", suspension: "Подвеска", oils: "Масла", electrics: "Электрика" };
   // Продавцы: задержка доставки (дней), стоимость доставки, наценка к минимальной цене
   var SELLERS = {
-    A: { name: "Магазин А", reliability: 98, delivery: 199, days: 1, when: "доставка завтра", stock: "12 шт", markup: 1.00 },
-    B: { name: "Магазин Б", reliability: 97, delivery: 249, days: 0, when: "доставка сегодня", stock: "в наличии 3 шт", markup: 1.07 },
-    C: { name: "Магазин В", reliability: 99, delivery: 150, days: 2, when: "доставка 2–3 дня", stock: "40 шт", markup: 1.20 },
-    D: { name: "Магазин Г", reliability: 71, delivery: 250, days: 6, when: "под заказ 5–7 дней", stock: "под заказ", markup: 0.95 }
+    A: { name: "Запчастино", reliability: 98, delivery: 199, days: 1, when: "доставка завтра", stock: "12 шт", markup: 1.00 },
+    B: { name: "МоторМаркет", reliability: 97, delivery: 249, days: 0, when: "доставка сегодня", stock: "в наличии 3 шт", markup: 1.07 },
+    C: { name: "Склад Деталей", reliability: 99, delivery: 150, days: 2, when: "доставка 2–3 дня", stock: "40 шт", markup: 1.20 },
+    D: { name: "Гаечка", reliability: 71, delivery: 250, days: 6, when: "под заказ 5–7 дней", stock: "под заказ", markup: 0.95 }
   };
   function sellerPrice(p, k) { return Math.round(p.priceMin * SELLERS[k].markup / 10) * 10 + (k === "A" ? p.priceMin - Math.round(p.priceMin / 10) * 10 : 0); }
 
@@ -168,13 +178,13 @@
     brake: [["Hyundai/Kia", "01100-00130", 1, 4.7, 180, 780], ["ATE SL.6", "03.9901-6402.2", 0, 4.9, 870, 890], ["Bosch", "1987479107", 0, 4.6, 640, 520], ["Rosdot 4", "430101H03", 0, 4.3, 1300, 330]],
     plugs: [["Hyundai/Kia", "18855-10060", 1, 4.7, 240, 690], ["NGK", "LZKR6B-10E", 0, 4.8, 1900, 520], ["Denso", "XU22TT", 0, 4.6, 400, 610], ["Bosch", "FR7DC+", 0, 4.3, 520, 260]]
   };
-  // Площадки-продавцы (мок-интеграции): наценка к базовой цене, срок доставки в днях, доставка в сервис
+  // Площадки-продавцы (мок-интеграции, названия демонстрационные; ключи — внутренние id): наценка к базовой цене, срок доставки в днях, доставка в сервис
   var MARKETS = {
-    exist: { name: "Exist", k: 1.04, days: 2, delivery: 199 },
-    emex: { name: "Emex", k: 0.97, days: 4, delivery: 249 },
-    autopiter: { name: "Автопитер", k: 1.00, days: 3, delivery: 0 },
-    zzap: { name: "ZZap", k: 0.94, days: 6, delivery: 290 },
-    autodoc: { name: "Autodoc", k: 1.03, days: 1, delivery: 150 }
+    exist: { name: "Запчастино", k: 1.04, days: 2, delivery: 199 },
+    emex: { name: "МоторМаркет", k: 0.97, days: 4, delivery: 249 },
+    autopiter: { name: "Склад Деталей", k: 1.00, days: 3, delivery: 0 },
+    zzap: { name: "Гаечка", k: 0.94, days: 6, delivery: 290 },
+    autodoc: { name: "ДетальЭкспресс", k: 1.03, days: 1, delivery: 150 }
   };
   function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
   function partOptions(slot) {
@@ -201,19 +211,42 @@
   }
   function nextTO(car) {
     car = car || {};
-    var m = car.mileage || 0;
-    var km = car.lastTOkm ? car.lastTOkm + TO_STEP : (Math.floor(m / TO_STEP) + 1) * TO_STEP;
-    if (car.lastTOkm && m > km + TO_STEP) km = (Math.floor(m / TO_STEP) + 1) * TO_STEP; // пропущено несколько ТО
-    var items = REGULATION.filter(function (r) { return km % r.every === 0; });
+    var m = car.mileage || 0, last = car.lastTOkm || 0, km;
+    if (last) {
+      km = last + TO_STEP;
+      // Пропущено несколько ТО: ближайшее — последнее кратное шагу, которое уже пройдено (статус «пора» не пропадает)
+      if (m >= km + TO_STEP) km = Math.floor(m / TO_STEP) * TO_STEP;
+    } else {
+      // Без отметки о прошлом ТО: ровно 45 000 — это ТО-45 000, а не следующее
+      km = m > 0 && m % TO_STEP === 0 ? m : (Math.floor(m / TO_STEP) + 1) * TO_STEP;
+    }
+    // Состав работ — по номеру ТО в регламенте (последнее ТО могло быть не на круглом пробеге)
+    var slot = Math.max(1, Math.round(km / TO_STEP)) * TO_STEP;
+    var items = REGULATION.filter(function (r) { return slot % r.every === 0; });
     var left = km - m;
-    return { km: km, left: left, overdue: m > 0 && left < 0, soon: m > 0 && left <= 2000, noMileage: !m, items: items,
+    return { km: km, left: left, overdue: m > 0 && left <= 0, soon: m > 0 && left <= 2000, noMileage: !m, items: items,
       parts: items.filter(function (r) { return r.part; }) };
   }
+  // Вердикт цены работ относительно рынка: выше на 5% — дорого, ниже на 20% — подозрительно дёшево
+  function priceVerdict(price, market) {
+    var diff = Math.round((price / market - 1) * 100);
+    return { verdict: diff > 5 ? "high" : diff < -20 ? "low" : "ok", diffPct: diff };
+  }
+  function worksPrice(service, items) {
+    return ((service && service.priceTO) || 4000) + (items || []).reduce(function (s, r) { return s + (r.extra || 0); }, 0);
+  }
 
-  var M_FINES = [
-    { id: "f1", date: "2026-09-14", article: "12.9.2", text: "Превышение скорости на 20–40 км/ч", amount: 500, discountUntil: "2026-10-04", discountAmount: 250 },
-    { id: "f2", date: "2026-08-30", article: "12.16.4", text: "Остановка в запрещённом месте", amount: 3000, discountUntil: null, discountAmount: null }
-  ];
+  // Штрафы демо-машины. Даты — от сегодняшнего дня; скидка 50% действует 20 дней с даты постановления (КоАП 32.2)
+  function isoLocal(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function daysFromToday(n) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return isoLocal(d); }
+  function demoFines() {
+    return [
+      { id: "f1", date: daysFromToday(-4), time: "14:32", article: "12.9.2", text: "Превышение скорости на 20–40 км/ч", place: "[адрес камеры]", uin: "•••4821",
+        amount: 500, discountUntil: daysFromToday(16), discountAmount: 250 },
+      { id: "f2", date: daysFromToday(-17), time: "08:11", article: "12.12.1", text: "Проезд на запрещающий сигнал", place: "[адрес камеры]", uin: "•••1170",
+        amount: 1000, discountUntil: daysFromToday(3), discountAmount: 500 }
+    ];
+  }
 
   /* ---------- Утилиты заглушек ---------- */
   function normPlateKey(p, region) { return String(p || "").toUpperCase().replace(/\s+/g, "") + String(region || ""); }
@@ -235,7 +268,23 @@
     for (var i = 0; i < map.length; i++) if (map[i][0].test(b)) return map[i][1];
     return b;
   }
-  function titleCase(s) { return s ? s.charAt(0) + s.slice(1).toLowerCase() : s; }
+  // vPIC пишет марки заглавными: «BMW», «MERCEDES-BENZ», «KIA». Известные — по таблице, остальные — по правилу.
+  var MAKE_NAMES = { BMW: "BMW", "MERCEDES-BENZ": "Mercedes-Benz", KIA: "Kia", MINI: "MINI", GMC: "GMC", RAM: "Ram", BYD: "BYD", JAC: "JAC", FAW: "FAW", MG: "MG",
+    DS: "DS", SEAT: "SEAT", CUPRA: "Cupra", SKODA: "Škoda", CITROEN: "Citroën", LADA: "Lada", UAZ: "УАЗ", GAZ: "ГАЗ", KAMAZ: "КАМАЗ", MCLAREN: "McLaren",
+    SSANGYONG: "SsangYong", "ROLLS-ROYCE": "Rolls-Royce", "LAND ROVER": "Land Rover", "ALFA ROMEO": "Alfa Romeo", "ASTON MARTIN": "Aston Martin",
+    "GREAT WALL": "Great Wall", "HAVAL": "Haval", "CHERY": "Chery", "GEELY": "Geely", "EXEED": "Exeed", "VOLKSWAGEN": "Volkswagen", "HYUNDAI": "Hyundai" };
+  function titleCase(s) {
+    s = String(s || "").trim(); if (!s) return s;
+    var key = s.toUpperCase().replace(/\s+/g, " ");
+    if (MAKE_NAMES[key]) return MAKE_NAMES[key];
+    if (s !== s.toUpperCase()) return s; // уже написано как надо (McLaren, smart)
+    // Слово до 3 букв без гласных — аббревиатура (GMC, BMW); остальное — с заглавной, дефис и пробел сохраняются
+    return s.split(/([\s-]+)/).map(function (w) {
+      if (/^[\s-]+$/.test(w) || !w) return w;
+      if (w.length <= 3 && !/[AEIOUYАЕЁИОУЫЭЮЯ]/.test(w)) return w;
+      return w.charAt(0) + w.slice(1).toLowerCase();
+    }).join("");
+  }
   function vpicDecode(v) {
     return httpGetJson(VPIC + "DecodeVinValues/" + encodeURIComponent(v) + "?format=json").then(function (d) {
       var r = (d && d.Results && d.Results[0]) || {};
@@ -257,6 +306,8 @@
   var api = {
     mode: MOCK ? "mock" : "live",
     config: cfg,
+    /** Текст ошибки для пользователя по коду (синхронно). */
+    errorText: errorText,
     userPosition: function () { return MOCK ? ok(USER_POS) : backend("GET", "/v1/me/position"); },
 
     vehicle: {
@@ -290,20 +341,19 @@
 
     maintenance: {
       step: TO_STEP,
-      regulation: REGULATION,
-      markets: MARKETS,
       /** Очередное ТО по пробегу и последнему ТО (синхронно — расчёт на телефоне). */
       nextTO: nextTO,
+      /** Вердикт цены относительно рынка (синхронно): { verdict: ok | high | low, diffPct }. */
+      priceVerdict: priceVerdict,
       /** Варианты деталей для позиции ТО с предложениями площадок и тремя уровнями выбора. */
       options: function (slot) {
         if (!MOCK) return backend("GET", "/v1/maintenance/parts?" + qs({ slot: slot }));
         var opts = partOptions(slot);
         return ok({ slot: slot, title: PART_TITLES[slot], options: opts, tiers: pickTiers(opts), source: SRC_MOCK });
       },
-      /** Стоимость работ сервиса для набора работ ТО. */
-      worksPrice: function (service, items) {
-        return (service.priceTO || 4000) + items.reduce(function (s, r) { return s + (r.extra || 0); }, 0);
-      }
+      /** Стоимость работ сервиса для набора работ ТО (синхронно): базовая цена ТО сервиса + доплаты за работы регламента.
+       * Единственный источник цены работ: «Автосервисы», «Запись в сервис» и сценарий ТО. */
+      worksPrice: worksPrice
     },
 
     parts: {
@@ -325,12 +375,14 @@
         });
         return ok({ items: items, source: SRC_MOCK });
       },
+      /** Деталь из локального демо-каталога (синхронно; корзина). */
       find: function (partId) { return clone(M_PARTS.filter(function (x) { return x.id === partId; })[0] || null); },
       get: function (partId) {
+        if (!MOCK) return backend("GET", "/v1/parts/" + encodeURIComponent(partId));
         var p = M_PARTS.filter(function (x) { return x.id === partId; })[0];
         return p ? ok(p) : fail("not_found");
       },
-      /** Цена у каждого продавца (для корзины: «собрать у одного»). */
+      /** Цена у каждого продавца по локальному демо-каталогу (синхронно; корзина: «собрать у одного»). */
       priceTable: function (partId) {
         var p = M_PARTS.filter(function (x) { return x.id === partId; })[0], t = {};
         if (p) Object.keys(SELLERS).forEach(function (k) { t[k] = sellerPrice(p, k); });
@@ -362,9 +414,9 @@
           var o = clone(s);
           o.distanceKm = Math.round(distKm(from, s) * 10) / 10;
           if (s.priceTO) {
-            var diff = Math.round((s.priceTO / MARKET_TO - 1) * 100);
-            o.priceVerdict = diff > 5 ? "high" : diff < -20 ? "low" : "ok";
-            o.priceDiffPct = diff;
+            var v = priceVerdict(s.priceTO, MARKET_TO);
+            o.priceVerdict = v.verdict;
+            o.priceDiffPct = v.diffPct;
           }
           return o;
         }).sort(function (a, b) { return a.distanceKm - b.distanceKm; });
@@ -385,14 +437,18 @@
     },
 
     fines: {
-      /** Неоплаченные штрафы по СТС/госномеру (в рабочей версии — платёжный партнёр с доступом к ГИС ГМП). */
+      /** Неоплаченные штрафы по СТС/госномеру (в рабочей версии — платёжный партнёр с доступом к ГИС ГМП).
+       * Заглушка: штрафы есть только у демо-машины гаража; у добавленных пользователем машин — пусто. */
       list: function (car) {
         if (!MOCK) return backend("GET", "/v1/fines?" + qs({ plate: car && car.plate, region: car && car.region }));
-        return ok({ items: M_FINES, source: SRC_MOCK });
+        return ok({ items: car && car.demo ? demoFines() : [], source: SRC_MOCK });
       },
+      /** Оплата: в ответе — квитанции по каждому штрафу (в заглушке деньги не списываются). */
       pay: function (fineIds) {
         if (!MOCK) return backend("POST", "/v1/fines/pay", { ids: fineIds });
-        return ok({ paymentUrl: null, status: "demo", message: "Оплата в прототипе не подключена", source: SRC_MOCK });
+        var stamp = Date.now();
+        return ok({ status: "demo", message: "Оплата в прототипе не подключена: деньги не списываются",
+          receipts: (fineIds || []).map(function (id, i) { return { fineId: id, receipt: "ДЕМО-" + String(stamp + i).slice(-8), paidAt: stamp }; }), source: SRC_MOCK });
       }
     },
 
@@ -402,8 +458,8 @@
         if (!MOCK) return backend("GET", "/v1/insurance/quotes?" + qs({ vin: car && car.vin, kind: kind || "osago" }));
         return ok({ kind: kind || "osago", items: [
           { insurer: "Страховая А", price: 7840, rating: 4.6 },
-          { insurer: "Страховая Б", price: 8210, rating: 4.8 },
-          { insurer: "Страховая В", price: 8990, rating: 4.4 }
+          { insurer: "Страховая Б", price: 8120, rating: 4.8 },
+          { insurer: "Страховая В", price: 8900, rating: 4.4 }
         ], source: SRC_MOCK });
       }
     },
@@ -412,7 +468,7 @@
       /** Когда менять шины: прогноз погоды → рекомендация. */
       advice: function (pos) {
         if (!MOCK) return backend("GET", "/v1/tires/advice?" + qs(pos || {}));
-        return ok({ season: "winter", changeFrom: "2026-10-20", reason: "Среднесуточная ниже +5 °C пять дней подряд", source: SRC_MOCK });
+        return ok({ season: "winter", changeFrom: daysFromToday(5), reason: "Среднесуточная ниже +5 °C пять дней подряд", source: SRC_MOCK });
       }
     },
 

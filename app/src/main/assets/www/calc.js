@@ -58,7 +58,7 @@
         : "<span>Введите расстояние — посчитаем стоимость бензина</span>";
     } else if (tab === "tax") {
       st.hp = $("cHp").value; st.months = $("cMonths").value; st.region = $("cRegion").value;
-      var hp = num(st.hp), m = Math.min(12, Math.max(1, num(st.months) || 12)), rows = RATES[st.region].rows;
+      var hp = num(st.hp), m = String(st.months == null ? "" : st.months).trim() === "" ? 12 : Math.min(12, Math.max(0, Math.round(num(st.months)))), rows = RATES[st.region].rows; // пусто — год; 0 месяцев — 0
       var rate = (rows.filter(function (x) { return hp <= x[0]; })[0] || rows[rows.length - 1])[1];
       r.innerHTML = hp ? "<span>Транспортный налог за год · " + RATES[st.region].name + "</span><b>≈ " + rub(hp * rate * m / 12) + "</b><span>" + hp + " л.с. × " + rate + " ₽" + (m < 12 ? " × " + m + "/12 мес" : "") + "</span>"
         : "<span>Укажите мощность — она есть в СТС</span>";

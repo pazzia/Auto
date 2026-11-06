@@ -227,5 +227,10 @@
       UI.sheet({ title: 'Оригинал заказ-наряда', html: '<div class="ocr-originals"></div><button data-close="1" class="btn-light">Закрыть</button>', onMount: function (b) { originals(b, saved.files, saved.ocr.previews); } });
     } catch (e) { UI.toast(e.message); }
   }
-  window.AutoHubDocuments = { open: open, view: view, clear: function () { cancelPending(); return storage('readwrite', function (s) { return s.clear(); }); } };
+  // Оригиналы удалённой машины: ключи «<carId>:<hash>»
+  function removeForCar(carId) {
+    var prefix = String(carId) + ':';
+    return storage('readwrite', function (s) { return s.delete(IDBKeyRange.bound(prefix, prefix + '\uffff')); });
+  }
+  window.AutoHubDocuments = { open: open, view: view, removeForCar: removeForCar, clear: function () { cancelPending(); return storage('readwrite', function (s) { return s.clear(); }); } };
 })();

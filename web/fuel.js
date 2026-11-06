@@ -62,12 +62,12 @@
       "<div><span>Цена км</span><b>" + (s.perKm ? fmt1(s.perKm) + " ₽" : "—") + "</b><small>только топливо</small></div>" +
       '<div><span>' + MON[new Date().getMonth()] + "</span><b class=\"acc\">" + rub(s.month) + "</b><small>" + s.monthCount + " запр.</small></div></div>" +
       '<div class="fu-chart" aria-label="Траты на топливо по месяцам">' + s.chart.map(function (x) {
-        return '<div><i style="height:' + Math.max(4, Math.round(x.sum / max * 100)) + '%"' + (x.cur ? ' class="cur"' : "") + '></i><span>' + x.label + "</span></div>";
+        return '<div><i style="height:' + Math.max(4, Math.round(x.sum / max * 100)) + '%"' + (x.cur ? ' class="cur"' : "") + '></i><span>' + esc(x.label) + "</span></div>";
       }).join("") + "</div></div>";
     html += '<div class="to-sec">ИСТОРИЯ</div><div class="kv">' + l.map(function (e) {
       var d = new Date(e.date);
-      return '<div class="fu-row"><span><b>' + d.getDate() + " " + MON[d.getMonth()] + "</b><small>" + fmt1(e.liters) + " л · " + esc(e.type) + (e.full ? " · полный бак" : "") + '</small><small class="mono">' + e.km.toLocaleString("ru-RU") + " км</small></span>" +
-        '<span class="r"><b>' + rub(e.sum) + '</b><small class="' + (s.cons[e.id] ? "ok" : "") + '">' + (s.cons[e.id] ? fmt1(s.cons[e.id]) + " л/100" : "—") + '</small><button class="linkbtn" data-del="' + e.id + '" data-action="del" aria-label="Удалить запись">Удалить</button></span></div>';
+      return '<div class="fu-row"><span><b>' + d.getDate() + " " + MON[d.getMonth()] + "</b><small>" + fmt1(+e.liters || 0) + " л · " + esc(e.type) + (e.full ? " · полный бак" : "") + '</small><small class="mono">' + Number(e.km).toLocaleString("ru-RU") + " км</small></span>" +
+        '<span class="r"><b>' + rub(e.sum) + '</b><small class="' + (s.cons[e.id] ? "ok" : "") + '">' + (s.cons[e.id] ? fmt1(s.cons[e.id]) + " л/100" : "—") + '</small><button class="linkbtn" data-del="' + esc(e.id) + '" data-action="del" aria-label="Удалить запись">Удалить</button></span></div>';
     }).join("") + "</div>";
     body.innerHTML = html;
   }
@@ -104,7 +104,9 @@
             (last && km < last.km) ? "Пробег меньше, чем в прошлой записи (" + last.km.toLocaleString("ru-RU") + " км)." : "";
           if (err) { var er = b.querySelector("#fuErr"); er.textContent = err; er.hidden = false; return; }
           var l = list(); l.push({ id: "f" + Date.now().toString(36), date: new Date().toISOString(), sum: sum, liters: lit, km: km, type: type, full: b.querySelector("#fuFull").checked, photo: photo });
-          l.slice(10).forEach(function (x) { delete x.photo; }); // фото чеков — только у 10 последних, чтобы хватило памяти
+          // Фото чеков — только у 10 последних (по пробегу), чтобы хватило памяти: новая запись в начале, фото теряют самые старые
+          l.sort(function (a, b) { return b.km - a.km || (b.date > a.date ? 1 : -1); });
+          l.slice(10).forEach(function (x) { delete x.photo; });
           saveList(l);
           var upd = km > (c.mileage || 0);
           if (upd) window.AutoHubCar.update(c.id, { mileage: km });

@@ -163,8 +163,8 @@
   var busy = false;
   function load() { try { return JSON.parse(localStorage.getItem("autohub.chat.v1") || "{}"); } catch (e) { return {}; } }
   function carId() { var c = window.AutoHubCar && window.AutoHubCar.active(); return (c && c.id) || "demo"; }
-  function history() { return load()[carId()] || []; }
-  function saveHistory(h) { var all = load(); all[carId()] = h.slice(-40); try { localStorage.setItem("autohub.chat.v1", JSON.stringify(all)); } catch (e) {} }
+  function history(id) { return load()[id || carId()] || []; }
+  function saveHistory(h, id) { var all = load(); all[id || carId()] = h.slice(-40); try { localStorage.setItem("autohub.chat.v1", JSON.stringify(all)); } catch (e) {} }
 
   function botHtml(m, last) {
     var html = '<div class="mc-msg bot">';
@@ -194,12 +194,13 @@
   function send(text, node) {
     if (busy || (!text && !node)) return;
     var c = window.AutoHubCar && window.AutoHubCar.active();
-    var h = history(); if (!h.length) h = [answer({ node: "root", car: c })];
-    h.push({ me: true, text: text }); saveHistory(h);
+    var id = carId(); // ответ сохраняем в ту машину, о которой спрашивали, даже если пока ждали — выбрали другую
+    var h = history(id); if (!h.length) h = [answer({ node: "root", car: c })];
+    h.push({ me: true, text: text }); saveHistory(h, id);
     busy = true; render();
     API.ai.ask({ message: text, node: node || null, car: c ? { make: c.make, model: c.model, year: c.year, mileage: c.mileage, lastTOkm: c.lastTOkm } : null })
       .then(function (r) { h.push(r); }, function () { h.push({ text: "Не удалось получить ответ. Проверьте интернет или попробуйте ещё раз.", acts: [["Записаться на диагностику", "#Services"]] }); })
-      .then(function () { busy = false; saveHistory(h); render(); });
+      .then(function () { busy = false; saveHistory(h, id); render(); });
   }
   /** Открыть механика с готовым вопросом (из значков и других экранов). */
   function ask(text) { location.hash = "#Mechanic"; setTimeout(function () { send(text); }, 80); }
