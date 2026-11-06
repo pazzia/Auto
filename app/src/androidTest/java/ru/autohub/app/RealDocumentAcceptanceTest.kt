@@ -21,8 +21,10 @@ import java.util.concurrent.TimeUnit
  * ИЗ ASSETS ЭТОГО APK выполняется в Android WebView так же, как в web/documents.js.
  * Документы — androidTest/assets/acceptance (синтетические наряды с вымышленными данными; реальные документы
  * пользователей в открытый репозиторий не кладутся). Тест пишет отчёт ocr-acceptance.json (поля, строки,
- * текст каждого прохода), сверку с эталоном делает шаг CI (tools/ocr_replay/compare.cjs). По тексту проходов
- * проверяется равенство локального повтора tools/ocr_replay и устройства.
+ * текст каждого прохода и его SHA-256), сверку с эталоном делает шаг CI (tools/ocr_replay/compare.cjs). По тексту
+ * проходов проверяется равенство локального повтора tools/ocr_replay и устройства. Наружу (артефакт, ветка
+ * ci-ocr-reports) CI выкладывает отчёт без поля text — только поля разбора, метрики и хэши.
+ * Тест падает, если хотя бы один документ не прочитан или из него не извлечено ни одного поля.
  */
 @RunWith(AndroidJUnit4::class)
 class RealDocumentAcceptanceTest {
@@ -61,7 +63,7 @@ class RealDocumentAcceptanceTest {
         assumeTrue("Нет расшифрованных документов для приёмки — пропуск", files.isNotEmpty())
         val parserBytes = context.assets.open("www/document-parser.js").use { it.readBytes() }
         val report = JSONObject()
-            .put("parserSha256", MessageDigest.getInstance("SHA-256").digest(parserBytes).joinToString("") { "%02x".format(it) })
+            .put("parserSha256", sha256(parserBytes))
             .put("build", context.packageManager.getPackageInfo(context.packageName, 0).versionName)
         val docs = JSONArray()
         for (name in files) {
@@ -73,10 +75,12 @@ class RealDocumentAcceptanceTest {
                 doc.put("ocrMs", System.currentTimeMillis() - started)
                 val passes = ocr.getJSONArray("passes")
                 doc.put("passes", JSONArray((0 until passes.length()).map { val p = passes.getJSONObject(it); "${p.getString("name")}:${p.getJSONArray("lines").length()}" }))
-                doc.put("text", JSONArray((0 until passes.length()).map { i -> val ls = passes.getJSONObject(i).getJSONArray("lines"); (0 until ls.length()).joinToString("\n") { ls.getJSONObject(it).getString("text") } }))
+                val texts = (0 until passes.length()).map { i -> val ls = passes.getJSONObject(i).getJSONArray("lines"); (0 until ls.length()).joinToString("\n") { ls.getJSONObject(it).getString("text") } }
+                doc.put("text", JSONArray(texts))
+                doc.put("textSha256", JSONArray(texts.map { sha256(it.toByteArray(Charsets.UTF_8)) }))
                 val parsed = parseInWebView(ocr)
                 doc.put("fields", parsed.getJSONObject("fields")).put("items", parsed.getJSONArray("items")).put("warnings", parsed.getJSONArray("warnings"))
-            } catch (e: Throwable) { doc.put("error", e.toString()) }
+            } catch (e: Exception) { doc.put("error", e.toString()) }
             Log.i("OcrAcceptance", JSONObject(doc.toString()).apply { remove("text") }.toString())
             docs.put(doc)
         }
@@ -84,6 +88,14 @@ class RealDocumentAcceptanceTest {
         val outFile = File(context.getExternalFilesDir(null), "ocr-acceptance.json")
         outFile.writeText(report.toString(1))
         Log.i("OcrAcceptance", "report: ${outFile.absolutePath}")
-        assertTrue("Нет ни одного результата разбора", (0 until docs.length()).any { docs.getJSONObject(it).has("fields") })
+        // Каждый документ должен дойти до разбора без ошибки и дать хотя бы одно распознанное поле.
+        // Точное совпадение полей и строк с эталоном проверяет шаг CI (compare.cjs).
+        val bad = (0 until docs.length()).map { docs.getJSONObject(it) }.filter { doc ->
+            val fields = doc.optJSONObject("fields")
+            doc.has("error") || fields == null || fields.keys().asSequence().none { !fields.isNull(it) }
+        }.map { it.getString("image") + (if (it.has("error")) ": " + it.getString("error") else ": нет распознанных полей") }
+        assertTrue("Документы без результата разбора: $bad", bad.isEmpty())
     }
+
+    private fun sha256(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 }
