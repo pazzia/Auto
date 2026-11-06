@@ -119,7 +119,7 @@
     var left = s.until ? s.until - Date.now() : null;
     body.innerHTML = '<div class="pk-card"><div class="pk-card-h"><div><b>Стоит ' + dur(Date.now() - s.at) + '</b><span>с ' + clock(s.at) + (s.car ? " · " + esc(s.car) : "") + "</span></div>" +
         (s.accuracy != null ? '<span class="to-mk">±' + s.accuracy + " м</span>" : "") + "</div>" +
-        (s.photo ? '<img class="pk-img" src="' + s.photo + '" alt="Фото места парковки">' : "") +
+        (UI.safeImg(s.photo) ? '<img class="pk-img" src="' + UI.safeImg(s.photo) + '" alt="Фото места парковки">' : "") +
         (s.floor || s.note ? '<div class="pk-meta">' + (s.floor ? "<span>Этаж / ряд: <b>" + esc(s.floor) + "</b></span>" : "") + (s.note ? "<span>" + esc(s.note) + "</span>" : "") + "</div>" : "") + "</div>" +
       (s.until ? '<div class="pk-timer' + (left <= 10 * 60000 ? " soon" : "") + '"><div><b>' + (left > 0 ? "Осталось " + dur(left) : "Время вышло " + dur(-left) + " назад") + "</b><span>оплачено до " + clock(s.until) + '</span></div><button class="btn-light" data-pk="extend" data-action="pk">+30 мин</button></div>' : "") +
       (s.lat != null ? '<div class="pk-finder" id="pkFinder"></div><button class="btn-light" data-pk="map" data-action="pk" style="height:48px">Маршрут в картах</button>'
@@ -136,7 +136,7 @@
     switch (b.dataset.pk) {
       case "mark": startMark(); break;
       case "retry": keepInputs(); draft.status = "locating"; render(); startMarkRetry(); break;
-      case "photo": keepInputs(); DEV.takePhoto().then(function (d) { if (d && draft) { draft.photo = d; render(); } }); break;
+      case "photo": keepInputs(); DEV.takePhoto().then(function (d) { d = UI.safeImg(d); if (d && draft) { draft.photo = d; render(); } }); break; // только data:image/… и blob:
       case "save": saveMark(); break;
       case "cancel": draft = null; render(); break;
       case "extend":
@@ -178,5 +178,7 @@
     });
     render(); renderGarage();
   }
-  window.AutoHubParking = { init: init, spot: spot };
+  /** Снять напоминания о парковке (удаление аккаунта). */
+  function cancelReminders() { DEV.cancel(REMIND_ID); DEV.cancel(REMIND_END); }
+  window.AutoHubParking = { init: init, spot: spot, cancelReminders: cancelReminders };
 })();
