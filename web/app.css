@@ -32,7 +32,8 @@ a[aria-label="Назад"],button[aria-label="Назад"]{width:44px!important;
 .fld input,.fld select{height:48px;padding:0 12px;border-radius:12px;border:1px solid #E2DED6;background:#fff;font-size:15px;color:#17191C;min-width:0;box-sizing:border-box}
 .dot{width:22px;height:22px;border-radius:999px;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
 .dot.ok{background:#0F6B3A}.dot.part{background:#9A3412}
-.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:#17191C;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+/* Тост — сразу над нижней панелью (80 px), во всю ширину: не наезжает на карточку машины на 360×640 */
+.toast{position:fixed;left:16px;right:16px;bottom:calc(88px + env(safe-area-inset-bottom,0px));max-width:448px;margin:0 auto;box-sizing:border-box;text-align:center;background:#17191C;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;line-height:1.35;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
 .screen>div>div[style*="flex-grow: 1"]>*{flex-shrink:0}
@@ -80,12 +81,18 @@ a[aria-label="Назад"],button[aria-label="Назад"]{width:44px!important;
 .mini.all b{font-size:18px}
 .mini.add{width:48px;align-items:center;justify-content:center;border-style:dashed;border-color:#C2410C;color:#C2410C;font-size:24px;font-weight:700}
 .sdot{width:9px;height:9px;border-radius:9px;flex-shrink:0;background:#0F6B3A}
-.sdot.soon{background:#C2410C}.sdot.none{background:#C9C3B6}
+/* Статус не только цветом: «ок» — круг, «скоро ТО» — ромб, «нет пробега» — пустое кольцо */
+.sdot.soon{background:#C2410C;border-radius:2px;transform:rotate(45deg) scale(.9)}.sdot.none{background:transparent;box-shadow:inset 0 0 0 2px #9A958B}
 .mini.on .sdot{box-shadow:0 0 0 2px #17191C,0 0 0 3px rgba(255,255,255,.35)}
+.mini.on .sdot.none{box-shadow:inset 0 0 0 2px #C9CCD1}
 #carCard{position:relative;inset:auto;transform:none;min-height:200px}
 .allsearch{display:flex;align-items:center;gap:8px;height:48px;padding:0 12px;background:#fff;border:1.5px solid #17191C;border-radius:14px}
 .allsearch input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:16px;font-family:inherit;color:#17191C}
-.allchips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+/* Горизонтальные ленты чипов и карточек: прокрутка до края экрана, справа затухание — видно, что лента продолжается.
+   Вертикальные 4 px отступа — место для расширенной до 44 px зоны нажатия чипов (иначе её обрежет прокрутка). */
+.hscroll,.allchips,.wl-earn{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:-4px -16px;padding:4px 40px 4px 16px;scroll-padding:0 16px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent)}
+.hscroll::-webkit-scrollbar,.allchips::-webkit-scrollbar,.wl-earn::-webkit-scrollbar{display:none}
+.hscroll>*{flex-shrink:0}
 .chip2{flex-shrink:0;height:36px;padding:0 12px;border-radius:999px;background:#fff;border:1px solid #E2DED6;font-size:13px;font-weight:600;color:#17191C}
 .chip2.on{background:#17191C;border-color:#17191C;color:#fff}
 .alllist{display:flex;flex-direction:column;gap:8px}
@@ -102,7 +109,7 @@ a[aria-label="Назад"],button[aria-label="Назад"]{width:44px!important;
 .dc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .dc-tile{background:#25282D;border:none;border-radius:12px;padding:9px 12px;color:#fff;text-align:left;display:flex;flex-direction:column;gap:2px;font-family:inherit;min-width:0}
 .dc-tile small{font-size:12px;color:#C9CCD1}.dc-tile b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dc-tile b.mono{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:14px}
+.dc-tile b.mono{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:14px;color:#fff}
 button.dc-tile{cursor:pointer}
 .dc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .dc-to{font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;background:#25282D;color:#fff}
@@ -211,7 +218,7 @@ body{position:fixed;inset:0}
 .to-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:4px 16px 10px;flex-shrink:0}
 .to-steps[hidden]{display:none}
 .to-step{display:flex;flex-direction:column;gap:4px}.to-step span{height:4px;border-radius:9px;background:#D8D2C6}
-.to-step small{font-size:11px;font-weight:600;color:#9A958B;text-align:center}
+.to-step small{font-size:12px;font-weight:600;color:#5B5F66;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .to-step.done span{background:#17191C}.to-step.done small{color:#17191C}
 .to-step.on span{background:#C2410C}.to-step.on small{color:#C2410C;font-weight:800}
 .to-foot{flex-shrink:0;padding:12px 16px 14px;background:#fff;border-top:1px solid #E2DED6;display:flex;flex-direction:column;gap:8px}
@@ -390,7 +397,6 @@ body{position:fixed;inset:0}
 .bd-cat>div:first-child{display:flex;flex-direction:column;gap:1px}.bd-cat>div:first-child b{font-size:14px}.bd-cat>div:first-child span{font-size:12px;color:#5B5F66}
 .bd-bar{grid-column:1/-1;height:6px;border-radius:9px;background:#EFECE6}.bd-bar i{display:block;height:100%;border-radius:9px;background:#C2410C}
 .kv small{display:block;font-size:12px;color:#5B5F66;margin-top:1px}
-.wl-earn{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
 .wl-earn a{flex-shrink:0;width:128px;background:#fff;border:1px solid #E2DED6;border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;text-decoration:none;color:#17191C}
 .wl-earn b{font-size:16px;color:#0F6B3A}.wl-earn span{font-size:12px;line-height:1.3}
 /* AUTO-14 Заправки */
@@ -483,3 +489,8 @@ body{position:fixed;inset:0}
 #ocrStatus, #docError { overflow-wrap:anywhere; color:#9A3412; }
 .sheet-body details { margin:16px 0; overflow-wrap:anywhere; }
 .sheet-body summary { min-height:44px; cursor:pointer; }
+
+/* Доступность: зона нажатия не меньше 44×44 px при прежнем внешнем виде (псевдоэлемент по центру элемента) */
+.chip2,.hscroll>button,.qty button,.dc-more,.hist-foot a,.sn-go,.skiplink,.fu-row .linkbtn,.mc-chips button,.pk-timers button,.mc-opts button,.to-more,.seg3 button,#s-Services button[style*="height: 38px"]{position:relative}
+.chip2::after,.hscroll>button::after,.qty button::after,.dc-more::after,.hist-foot a::after,.sn-go::after,.skiplink::after,.fu-row .linkbtn::after,.mc-chips button::after,.pk-timers button::after,.mc-opts button::after,.to-more::after,.seg3 button::after,#s-Services button[style*="height: 38px"]::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+.mc-chips{padding:5px 0;margin:-5px 0}

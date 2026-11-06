@@ -359,8 +359,8 @@
   }
   function miniHtml(c, on) {
     var k = statusKind(c);
-    return '<button class="mini' + (on ? " on" : "") + '" data-car-id="' + esc(c.id) + '" data-action="car" aria-pressed="' + on + '" aria-label="' + esc(shortName(c)) + '">' +
-      '<span class="mini-top"><span class="mini-name">' + esc(modelShort(c)) + '</span><span class="sdot ' + k + '" aria-hidden="true"></span></span>' +
+    return '<button class="mini' + (on ? " on" : "") + '" data-car-id="' + esc(c.id) + '" data-action="car" aria-pressed="' + on + '" aria-label="' + esc(shortName(c) + ", " + toStatus(c).text) + '">' +
+      '<span class="mini-top"><span class="mini-name">' + esc(modelShort(c)) + '</span><span class="sdot ' + k + '" aria-hidden="true" title="' + esc(toStatus(c).text) + '"></span></span>' +
       '<span class="mini-sub">' + esc(c.plate ? c.plate : (c.make || "")) + (c.demo ? " · демо" : "") + "</span></button>";
   }
   var rib = { el: null, card: null };
