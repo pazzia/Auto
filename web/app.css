@@ -1,3 +1,7 @@
+/* Шрифты лежат в web/fonts (OFL, см. OFL.txt); сборка встраивает их в index.html — без сети и без запросов к Google */
+@font-face{font-family:Manrope;src:url("fonts/Manrope.woff2") format("woff2");font-weight:400 800;font-style:normal;font-display:swap}
+@font-face{font-family:Unbounded;src:url("fonts/Unbounded.woff2") format("woff2");font-weight:500 700;font-style:normal;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url("fonts/JetBrainsMono.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
 /* --sb — отступ под статус-бар. В браузере имитирует его (как в макетах) и учитывает вырез экрана,
    в Android-приложении страница уже начинается ниже статус-бара, поэтому 0. */
 :root{--sb:max(40px,calc(env(safe-area-inset-top,0px) + 8px))}

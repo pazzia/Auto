@@ -69,6 +69,12 @@ def screen(name):
 
 BUILD = open(os.path.join(ROOT, "VERSION"), encoding="utf-8").read().strip()
 CSS = open(os.path.join(WEB, "app.css"), encoding="utf-8").read()
+# Шрифты (web/fonts/*.woff2) встраиваются в CSS как data: — работают из file:// в WebView и офлайн, без Google Fonts
+import base64
+def _font(m):
+    data = open(os.path.join(WEB, "fonts", m.group(1)), "rb").read()
+    return 'url("data:font/woff2;base64,%s")' % base64.b64encode(data).decode("ascii")
+CSS = re.sub(r'url\("fonts/([\w.-]+\.woff2)"\)', _font, CSS)
 APP = open(os.path.join(WEB, "app.js"), encoding="utf-8").read()
 MAP = open(os.path.join(WEB, "map", "podmoskovye.svg"), encoding="utf-8").read().strip()
 SCRIPTS = "\n".join('<script src="%s"></script>' % f for f in JS_FILES)
@@ -80,7 +86,6 @@ html = """<!doctype html>
 <meta name="theme-color" content="#F3F1EC">
 <meta name="autohub-build" content="%s">
 <title>АвтоХаб</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 %s
 </style>
@@ -104,4 +109,6 @@ for f in JS_FILES:
     shutil.copy(os.path.join(WEB, f), os.path.join(OUT, f))
 os.makedirs(os.path.join(OUT, "map"), exist_ok=True)
 shutil.copy(os.path.join(WEB, "map", "podmoskovye.svg"), os.path.join(OUT, "map", "podmoskovye.svg"))
+os.makedirs(os.path.join(OUT, "fonts"), exist_ok=True)
+shutil.copy(os.path.join(WEB, "fonts", "OFL.txt"), os.path.join(OUT, "fonts", "OFL.txt"))  # лицензия едет вместе со шрифтами
 print("ok, сборка", BUILD, "->", OUT)
