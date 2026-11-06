@@ -95,9 +95,24 @@
       if (st.compare.length < 2) { e.preventDefault(); UI.toast("Отметьте две детали «К сравнению»"); }
     });
   }
+  function errBox(e, retry) {
+    return '<div class="empty"><b>Не удалось загрузить</b><span>' + esc(API.errorText(e)) + '</span><button class="btn-light" data-action="retry" data-retry="' + retry + '" style="height:48px">Повторить</button></div>';
+  }
+  var searchReq = 0;
   function load() {
+    var req = ++searchReq;
+    st.loading = true; st.error = null;
     res.list.innerHTML = '<div class="loading">Ищем в каталогах магазинов…</div>';
-    return API.parts.search({ query: st.query, cat: st.cat, kit: st.kit }).then(function (d) { st.items = d.items; drawResults(); });
+    res.count.textContent = "Ищем…"; // не «Ничего не нашлось», пока поиск идёт
+    return API.parts.search({ query: st.query, cat: st.cat, kit: st.kit }).then(function (d) {
+      if (req !== searchReq) return;
+      st.loading = false; st.items = d.items || []; drawResults();
+    }, function (e) {
+      if (req !== searchReq) return;
+      st.loading = false; st.items = []; st.error = e;
+      res.count.textContent = "Поиск не удался";
+      res.list.innerHTML = errBox(e, "results");
+    });
   }
   function renderResults() {
     res.chips[0].textContent = st.sortDesc ? "Цена ↓" : "Цена ↑";
@@ -106,6 +121,7 @@
     drawResults();
   }
   function drawResults() {
+    if (st.loading || st.error) { res.title.textContent = st.kit ? "Комплект к ТО" : st.cat ? API.parts.categories[st.cat] : (st.query || "Все запчасти"); return; }
     var title = st.kit ? "Комплект к ТО" : st.cat ? API.parts.categories[st.cat] : (st.query || "Все запчасти");
     res.title.textContent = title;
     var items = st.items.filter(function (p) {
@@ -173,7 +189,14 @@
   var offData = null;
   function loadOffers() {
     off.list.innerHTML = '<div class="loading">Собираем цены продавцов…</div>';
-    return API.parts.offers(st.partId).then(function (d) { offData = d; drawOffers(); });
+    offData = null;
+    var id = st.partId;
+    return API.parts.offers(id).then(function (d) { if (id === st.partId) { offData = d; drawOffers(); } },
+      function (e) {
+        if (id !== st.partId) return;
+        off.list.innerHTML = errBox(e, "offers");
+        Array.prototype.forEach.call(off.sum.firstElementChild.children, function (v) { v.lastElementChild.textContent = "—"; });
+      });
   }
   function drawOffers() {
     if (!offData) return;
@@ -183,7 +206,8 @@
     var totals = o.map(function (x) { return x.total; }), best = Math.min.apply(null, totals), worst = Math.max.apply(null, totals);
     var vals = off.sum.firstElementChild.children;
     vals[0].lastElementChild.textContent = rub(best); vals[1].lastElementChild.textContent = rub(worst); vals[2].lastElementChild.textContent = rub(worst - best);
-    off.sum.lastElementChild.textContent = "Цены с доставкой до: Красногорск, [адрес] · демо";
+    var w = window.AutoHubAuth ? window.AutoHubAuth.location() : { city: "Красногорск", address: "" };
+    off.sum.lastElementChild.textContent = "Цены с доставкой до: " + w.city + (w.address ? ", " + w.address : "") + " · демо";
     var modes = ["total", "fast", "rel"];
     off.sorts.forEach(function (b, i) {
       var on = modes[i] === st.offerSort;
@@ -225,7 +249,8 @@
   var cmpParts = [];
   function loadCompare() {
     var ids = st.compare.length === 2 ? st.compare : ["p-hk-26300", "p-mann-w811"];
-    return Promise.all(ids.map(function (id) { return API.parts.get(id); })).then(function (ps) { cmpParts = ps; drawCompare(); });
+    return Promise.all(ids.map(function (id) { return API.parts.get(id); })).then(function (ps) { cmpParts = ps; drawCompare(); },
+      function (e) { cmpParts = []; cmp.body.innerHTML = errBox(e, "compare"); });
   }
   function drawCompare() {
     if (cmpParts.length < 2) return;
@@ -276,6 +301,11 @@
     }
   }
 
+  // «Повторить» после ошибки загрузки
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-retry]"); if (!b) return;
+    if (b.dataset.retry === "results") load(); else if (b.dataset.retry === "offers") loadOffers(); else if (b.dataset.retry === "compare") loadCompare();
+  });
   function onHash() {
     var h = location.hash.split("/")[0];
     if (h === "#Results" && res.list) { renderResults(); load(); }

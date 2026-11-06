@@ -36,8 +36,9 @@
   function plural(n, a, b, c) { var m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 10 || h >= 20) ? b : c; }
   function today() { var d = new Date(); d.setHours(12, 0, 0, 0); return d; }
   function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
-  function dShort(d) { d = new Date(d); return WD[d.getDay()] + ", " + d.getDate() + " " + MON[d.getMonth()]; }
-  function dLong(d) { d = new Date(d); return d.getDate() + " " + MONF[d.getMonth()]; }
+  // ГГГГ-ММ-ДД — местная дата (new Date("2026-11-09") был бы полночью UTC и в западных поясах давал предыдущий день)
+  function dShort(d) { d = UI.dates.toDate(d); return WD[d.getDay()] + ", " + d.getDate() + " " + MON[d.getMonth()]; }
+  function dLong(d) { d = UI.dates.toDate(d); return d.getDate() + " " + MONF[d.getMonth()]; }
   function iso(d) { d = new Date(d); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   function load(k, d) { try { var v = JSON.parse(localStorage.getItem("autohub." + k) || "null"); return v == null ? d : v; } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem("autohub." + k, JSON.stringify(v)); } catch (e) {} }
@@ -110,6 +111,14 @@
     }).join("");
     el.setAttribute("aria-label", "Шаг " + (idx + 1) + " из " + STEPS.length + ": " + STEPS[idx][1]);
   }
+  // Ошибка загрузки (нет связи, бэкенд не подключён): понятное сообщение и «Повторить» вместо вечного «Сравниваем цены…»
+  function failed(step) {
+    return function (e) {
+      if (stepOf() !== step) return;
+      body('<div class="empty"><b>Не удалось загрузить</b><span>' + esc(API.errorText(e)) + '</span><button class="btn-light" data-to="retry" style="height:48px">Повторить</button></div>');
+      foot("");
+    };
+  }
   function head(title, sub) { $("toTitle").textContent = title; $("toSub").textContent = sub; }
   function foot(html) { var f = $("toFoot"); f.innerHTML = html || ""; f.hidden = !html; }
   function body(html) { var b = $("toBody"); b.innerHTML = html; b.scrollTop = 0; }
@@ -156,7 +165,7 @@
   /* ================= 2. Запчасти ================= */
   function renderParts(c, t, d) {
     head("Запчасти к ТО-" + t.km.toLocaleString("ru-RU"), carName(c) + " · подходят по VIN");
-    body('<div class="loading">Сравниваем цены на Exist, Emex, Автопитер, ZZap и Autodoc…</div>'); foot("");
+    body('<div class="loading">Сравниваем цены в пяти магазинах…</div>'); foot("");
     loadOptions(t).then(function () {
       if (stepOf() !== "parts") return;
       ensurePicks(d, t); saveDraft(d);
@@ -172,10 +181,10 @@
             (l.tier.length ? '<span class="to-badge">' + esc(l.tier.join(" · ")) + "</span>" : '<span class="to-badge own">ваш выбор</span>') + "</div>" +
             '<button class="to-more" data-slot="' + r.part + '" data-action="alt">Другие варианты и магазины ›</button></div>';
         }).join("") +
-        '<div class="to-note">Цены и наличие — с площадок Exist, Emex, Автопитер, ZZap и Autodoc (демо-интеграции). Все детали подходят к ' + esc(carName(c)) + ".</div>");
+        '<div class="to-note">Цены и наличие — из магазинов Запчастино, МоторМаркет, Склад Деталей, Гаечка и ДетальЭкспресс (демо-интеграции). Все детали подходят к ' + esc(carName(c)) + ".</div>");
       foot('<div class="to-sum"><span>Запчасти · ' + t.parts.length + " поз.</span><b>" + rub(tot.parts) + '</b></div><div class="to-sum sub"><span>Все приедут к ' + dShort(tot.eta) + "</span><span>" + Object.keys(tot.markets).length + " " + plural(Object.keys(tot.markets).length, "магазин", "магазина", "магазинов") + "</span></div>" +
         '<button class="btn-accent" data-to="next-service">Выбрать автосервис</button>');
-    });
+    }, failed("parts"));
   }
   function altSheet(slot) {
     var d = draft(), data = opts[slot]; if (!data) return;
@@ -189,7 +198,7 @@
             '</div><span class="to-star">★ ' + o.rating.toFixed(1) + " · " + o.reviews.toLocaleString("ru-RU") + "</span></div>" +
             o.offers.map(function (f) {
               var sel = o.id === cur.id && f.market === cur.market, best = f.market === o.best.market;
-              return '<button class="alt-o' + (sel ? " on" : "") + '" data-opt="' + esc(o.id) + '" data-market="' + f.market + '" data-action="pick-offer"><span>' + esc(f.marketName) + (best ? " · выгоднее" : "") + "</span><span>" + dShort(addDays(today(), f.days)) + "</span><b>" + rub(f.price) + "</b></button>";
+              return '<button class="alt-o' + (sel ? " on" : "") + '" data-opt="' + esc(o.id) + '" data-market="' + esc(f.market) + '" data-action="pick-offer"><span>' + esc(f.marketName) + (best ? " · выгоднее" : "") + "</span><span>" + dShort(addDays(today(), f.days)) + "</span><b>" + rub(f.price) + "</b></button>";
             }).join("") + "</div>";
         }).join(""),
       onMount: function (b) {
@@ -211,12 +220,13 @@
     API.services.list({ lat: w.lat, lng: w.lng }).then(function (r) {
       if (stepOf() !== "service") return;
       services = rankServices(r.items);
+      if (!services.length) { body('<div class="empty"><b>Рядом нет сервисов для ТО</b><span>Измените адрес — подберём сервисы от него.</span><button class="btn-light" data-to="address" style="height:48px">Изменить адрес</button></div>'); return; }
       if (!d.serviceId && services[0]) { d.serviceId = services[0].id; saveDraft(d); }
       var sel = services.filter(function (s) { return s.id === d.serviceId; })[0] || services[0];
       body('<button class="to-addr" data-to="address"><span>📍</span><div><b>' + esc(w.city + (w.address ? ", " + w.address : "")) + "</b><span>подбираем сервисы от этого адреса</span></div><span class=\"linkbtn\">Изменить</span></button>" +
         services.slice(0, 6).map(function (s, i) {
           var price = API.maintenance.worksPrice(s, t.items), on = s.id === sel.id;
-          return '<button class="to-svc' + (on ? " on" : "") + '" data-svc="' + s.id + '" data-action="svc" aria-pressed="' + on + '">' +
+          return '<button class="to-svc' + (on ? " on" : "") + '" data-svc="' + esc(s.id) + '" data-action="svc" aria-pressed="' + on + '">' +
             '<div class="to-svc-h"><b>' + esc(s.name) + "</b>" + (i === 0 ? '<span class="to-badge">Лучший выбор</span>' : "") + "</div>" +
             "<span>" + String(s.distanceKm).replace(".", ",") + " км · " + esc(s.town) + " · " + esc(s.hours) + "</span>" +
             '<div class="to-svc-m"><span class="to-star">★ ' + s.ratingGis.toFixed(1) + " 2ГИС · " + (s.ratingYa || s.ratingGis).toFixed(1) + " Яндекс</span>" +
@@ -224,7 +234,7 @@
         }).join("") + '<div class="to-note">«Лучший выбор» — баланс оценок в 2ГИС и Яндексе, расстояния и онлайн-записи. Цена — работы по этому ТО, запчасти уже выбраны.</div>');
       var price = API.maintenance.worksPrice(sel, t.items);
       foot('<div class="to-sum"><span>Работы · ' + esc(sel.name) + "</span><b>" + rub(price) + '</b></div><button class="btn-accent" data-to="next-time">Выбрать время</button>');
-    });
+    }, failed("service"));
   }
 
   /* ================= 4. Время ================= */
@@ -250,7 +260,7 @@
         slotsHtml(d, tot.earliest, d.serviceId) + '<div class="to-note">Занятые окна зачёркнуты. Работы займут около ' + String(1 + t.items.length * 0.25).replace(".", ",") + " ч — можно подождать в сервисе.</div>");
       saveDraft(d);
       foot('<div class="to-sum"><span>Визит</span><b>' + (d.time ? dShort(d.date) + ", " + d.time : "выберите время") + '</b></div><button class="btn-accent" data-to="next-pay"' + (d.time ? "" : " disabled") + ">К оплате</button>");
-    });
+    }, failed("time"));
   }
   function serviceObj(d) { return (services || []).filter(function (s) { return s.id === d.serviceId; })[0] || d.service || null; }
 
@@ -277,7 +287,7 @@
       foot('<button class="btn-accent" data-to="pay">Оплатить ' + rub(pay) + "</button>");
       d._pay = { amount: pay, points: d.usePoints ? pts : 0, works: works };
       saveDraft(d);
-    });
+    }, failed("pay"));
   }
   function doPay() {
     var d = draft(), c = car(), t = API.maintenance.nextTO(c), tot = totals(d, t), svc = serviceObj(d), p = d._pay || {};
@@ -345,12 +355,14 @@
   }
   function complete(o) {
     var C = window.AutoHubCar, c = C.cars().filter(function (x) { return x.id === o.carId; })[0] || {};
-    C.update(o.carId, { lastTOkm: o.km, lastTOdate: o.visit.date, mileage: Math.max(c.mileage || 0, Math.min(o.km, (c.mileage || 0) + 800)) });
+    // Пробег на визите: тот же, что ставится машине, — он же уходит в историю
+    var mileage = Math.max(c.mileage || 0, Math.min(o.km, (c.mileage || 0) + 800));
+    C.update(o.carId, { lastTOkm: o.km, lastTOdate: o.visit.date, mileage: mileage });
     // Заказ-наряд: запчасти построчно, работы одной строкой, доставка
     var lines = o.items.map(function (it) { return [it.title + " " + it.brand + (it.qty > 1 ? " × " + it.qty : ""), it.sum]; })
       .concat([["Работы: " + o.works.join(", ").toLowerCase(), o.worksPrice], ["Доставка запчастей", o.delivery]]);
     if (window.AutoHubScreens) window.AutoHubScreens.addHistory({
-      date: o.visit.date, km: c.mileage || null, kind: "visit", title: "ТО-" + o.km.toLocaleString("ru-RU") + " км",
+      date: o.visit.date, km: mileage || null, kind: "visit", title: "ТО-" + o.km.toLocaleString("ru-RU") + " км",
       place: (o.service ? o.service.name : "Автосервис") + " · заказ " + o.id, cost: o.worksPrice + o.partsTotal + o.delivery, order: lines
     }, o.carId);
     window.AutoHubPoints.add((o.partsTotal + o.worksPrice) * 0.03, "ТО-" + o.km.toLocaleString("ru-RU") + " · 3% от заказа");
@@ -361,7 +373,7 @@
     if (e.target.closest("[data-photo]")) { try { sessionStorage.setItem("autohub.photoPurpose", "Перед сервисом"); } catch (x) {} return; }
     var b = e.target.closest("[data-to],[data-tier],[data-slot],[data-svc],[data-date],[data-time],[data-deliv],[data-star]"); if (!b) return;
     var c = car(), t = API.maintenance.nextTO(c), d = draft(), o = order(c.id);
-    if (b.dataset.tier) { loadOptions(t).then(function () { applyTier(d, t, b.dataset.tier); saveDraft(d); render(); }); return; }
+    if (b.dataset.tier) { loadOptions(t).then(function () { applyTier(d, t, b.dataset.tier); saveDraft(d); render(); }, failed("parts")); return; }
     if (b.dataset.slot) { altSheet(b.dataset.slot); return; }
     if (b.dataset.svc) { d.serviceId = b.dataset.svc; d.service = serviceObj(d); d.time = null; saveDraft(d); render(); return; }
     if (b.dataset.date) { d.date = b.dataset.date; d.time = null; saveDraft(d); render(); return; }
@@ -373,6 +385,7 @@
         var n = parseInt(($("toMil").value || "").replace(/\D/g, ""), 10);
         if (!n || n < 100 || n > 2000000) { var er = $("toMilErr"); er.textContent = "Введите пробег цифрами, например 58400."; er.hidden = false; return; }
         window.AutoHubCar.update(c.id, { mileage: n }); render(); break;
+      case "retry": render(); break;
       case "next-parts": go("parts"); break;
       case "next-service": go("service"); break;
       case "back-service": go("service"); break;
@@ -450,7 +463,7 @@
     card.style.border = t.soon || t.overdue || o ? "1.5px solid #C2410C" : "1px solid #E2DED6";
     // Плитка «Регламент ТО»
     var reg = g.querySelector('a[href="#Reminders"], a#regTile');
-    if (reg) { reg.id = "regTile"; reg.href = "#TO"; var sp = reg.querySelectorAll("span"); if (sp[1]) sp[1].textContent = t.noMileage ? "укажите пробег" : "ТО-" + t.km.toLocaleString("ru-RU") + " · " + t.items.length + " работ"; }
+    if (reg) { reg.id = "regTile"; reg.href = "#TO"; var sp = reg.querySelectorAll("span"); if (sp[1]) sp[1].textContent = t.noMileage ? "укажите пробег" : "ТО-" + t.km.toLocaleString("ru-RU") + " · " + t.items.length + " " + plural(t.items.length, "работа", "работы", "работ"); }
     // Карточка записи: заказ ТО важнее разовой записи
     var bk = g.querySelector('a[href="#RepairLive"], a#visitCard');
     if (bk) {
@@ -492,39 +505,22 @@
     loadOptions(t).then(function () {
       var sum = t.parts.reduce(function (acc, r) { var o2 = opts[r.part] && opts[r.part].tiers.cheap; return acc + (o2 ? o2.best.price * (r.qty || 1) : 0); }, 0);
       bottom.children[0].textContent = sum ? "от " + rub(sum) : "";
-    });
+    }, function () { bottom.children[0].textContent = "цены недоступны"; });
   }
   function fillVisit(a, day, mon, title, sub, href) {
     a.href = href;
     var spans = a.querySelectorAll("span");
     if (spans.length >= 4) { spans[0].textContent = day; spans[1].textContent = mon; spans[2].textContent = title; spans[3].textContent = sub; }
   }
-  // «Сегодня полезно» — одна актуальная подсказка между ТО
-  var TIPS = [
-    ["#Tires", "Пора думать о зимней резине", "Ночью уже около нуля. Запишитесь на шиномонтаж без очереди"],
-    ["#Insurance", "ОСАГО заканчивается через 28 дней", "Сравните цены трёх страховых и продлите за минуту"],
-    ["#Budget", "Сколько стоит ваша машина в месяц", "Бюджет владения и прогноз расходов на год"],
-    ["#Community", "Что ставят владельцы вашей модели", "Популярные запчасти и сервисы по отзывам"],
-    ["#SOS", "Сохраните помощь на дороге", "Эвакуатор, техпомощь и порядок действий при ДТП"],
-    ["#CarPassport", "Паспорт авто для продажи", "История обслуживания повышает цену машины"]
-  ];
+  // «Совет дня» — из модуля «Сезон» (AUTO-21); без него карточки нет
   function renderTip(g) {
     var anchor = g.querySelector("#toCard"); if (!anchor) return;
     var tip = document.getElementById("tipCard");
     if (!tip) { tip = document.createElement("a"); tip.id = "tipCard"; tip.className = "tipcard"; anchor.parentNode.insertBefore(tip, anchor.nextSibling); }
-    var month = new Date().getMonth(), list = TIPS.slice();
-    if (!(month >= 8 && month <= 10) && !(month >= 2 && month <= 3)) list.shift(); // резина — в сезон
-    if (load("osago.v1", null)) list = list.filter(function (x) { return x[0] !== "#Insurance"; });
-    // AUTO-21: совет дня по сезону; если модуля нет — прежние подсказки о разделах
-    if (window.AutoHubSeason) {
-      var sn = window.AutoHubSeason.tip();
-      tip.href = sn.href;
-      tip.innerHTML = '<span class="tip-k">' + esc(sn.label) + "</span><b>" + esc(sn.title) + "</b><span>" + esc(sn.text) + '</span><span class="prow-go">›</span>';
-      return;
-    }
-    var x = list[new Date().getDate() % list.length];
-    tip.href = x[0];
-    tip.innerHTML = '<span class="tip-k">СЕГОДНЯ ПОЛЕЗНО</span><b>' + esc(x[1]) + "</b><span>" + esc(x[2]) + '</span><span class="prow-go">›</span>';
+    var sn = window.AutoHubSeason && window.AutoHubSeason.tip();
+    tip.hidden = !sn; if (!sn) return;
+    tip.href = sn.href;
+    tip.innerHTML = '<span class="tip-k">' + esc(sn.label) + "</span><b>" + esc(sn.title) + "</b><span>" + esc(sn.text) + '</span><span class="prow-go">›</span>';
   }
 
   function init() {
@@ -535,6 +531,8 @@
       var s = stepOf(), i = STEPS.map(function (x) { return x[0]; }).indexOf(s);
       location.hash = i > 0 ? "#TO" + (i === 1 ? "" : "/" + STEPS[i - 1][0]) : "#Garage";
     });
+    // Плитка «Регламент ТО» в гараже — пометить до того, как старые входы перепишутся на #TO
+    Array.prototype.forEach.call(document.querySelectorAll('#s-Garage a[href="#Reminders"]'), function (a) { if (/Регламент/.test(a.textContent)) a.id = "regTile"; });
     // Все старые входы в ТО ведут в единый сценарий
     document.querySelectorAll('a[href="#OneTapTO"], a[href="#Reminders"]').forEach(function (a) { a.href = a.closest("#s-Garage") && /Собрать|один тап/.test(a.textContent) ? "#TO/parts" : "#TO"; });
     var kit = Array.prototype.filter.call(document.querySelectorAll('#s-Main a[href="#Results"]'), function (a) { return /ТО/.test(a.textContent); })[0];
