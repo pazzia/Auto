@@ -81,9 +81,9 @@
     var l = level(), s = streak(), list = badges();
     var pct = l.next ? Math.round((l.score - l.prev) / (l.next - l.prev) * 100) : 100;
     var html = '<div class="ac-level"><div class="ac-top"><span class="ac-n">' + l.n + '</span><span><b>' + esc(l.name) + "</b><small>" +
-      (l.next ? "до уровня «" + esc(l.nextName) + "» — " + (l.next - l.score) + " очков · +200 баллов" : "максимальный уровень") + '</small></span></div><div class="to-bar"><div style="width:' + pct + '%"></div></div></div>' +
+      (l.next ? "до уровня «" + esc(l.nextName) + "» — ещё " + window.AutoHubKit.count(l.next - l.score, "балл", "балла", "баллов") + " · награда +200 баллов" : "максимальный уровень") + '</small></span></div><div class="to-bar"><div style="width:' + pct + '%"></div></div></div>' +
       '<a class="ac-streak" href="#Fuel"><span>' + icon("flame", "#C2410C") + "</span><span><b>" + (s.months ? "Серия: пробег " + s.months + " мес. подряд" : "Начните серию пробега") + "</b><small>" +
-      (s.thisMonth ? "в этом месяце уже обновлён — отлично" : s.months ? "обновите пробег в этом месяце, чтобы не прервать · +20 очков" : "обновляйте пробег каждый месяц: через заправку или вручную") + "</small></span></a>" +
+      (s.thisMonth ? "в этом месяце уже обновлён — отлично" : s.months ? "обновите пробег в этом месяце, чтобы не прервать · +20 баллов" : "обновляйте пробег каждый месяц: через заправку или вручную") + "</small></span></a>" +
       '<div class="ac-grid">' + list.map(function (b) {
         return '<button class="ac-b' + (b.got ? " got" : "") + '" data-badge="' + b.id + '" data-action="b"><span class="ac-ic">' + icon(b.icon, b.got ? "#FFFFFF" : "#9A958B") + "</span><b>" + esc(b.title) + "</b><small>" +
           (b.got ? "получено" : b.need > 1 ? b.cur + " из " + b.need : esc(b.how)) + "</small>" + (!b.got && b.need > 1 ? '<i><em style="width:' + Math.round(b.cur / b.need * 100) + '%"></em></i>' : "") + "</button>";

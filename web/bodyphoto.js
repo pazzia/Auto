@@ -63,8 +63,9 @@
         return '<div class="bp-slot done"><img src="' + s.shots[x[0]] + '" alt="' + x[1] + '"><span>' + x[1] + "</span></div>"; }).join("") + "</div>" +
         '<p class="ic-note">' + esc(s.place) + " · " + stamp(s.at) + '</p><button class="linkbtn" data-action="del" style="align-self:center">Удалить съёмку</button>',
       onMount: function (b) { b.querySelector("[data-action=del]").addEventListener("click", function () {
-        if (!window.confirm("Удалить эту съёмку?")) return;
-        save(load().filter(function (x) { return x.id !== id; })); UI.close(render);
+        window.AutoHubKit.confirm({ title: "Удалить эту съёмку?", text: "Фото удалятся с телефона.", ok: "Удалить", danger: true }, function () {
+          save(load().filter(function (x) { return x.id !== id; })); render();
+        });
       }); } });
   }
   function init() {
@@ -80,7 +81,7 @@
         sets.push({ id: "b" + Date.now().toString(36), at: Date.now(), purpose: purpose, place: place, shots: {}, done: false });
         if (save(sets)) render();
       }
-      if (a.dataset.action === "cancel" && window.confirm("Отменить съёмку? Снятые кадры удалятся.")) { save(load().filter(function (x) { return x.done; })); render(); }
+      if (a.dataset.action === "cancel") window.AutoHubKit.confirm({ title: "Отменить съёмку?", text: "Снятые кадры удалятся.", ok: "Отменить съёмку", cancel: "Продолжить", danger: true }, function () { save(load().filter(function (x) { return x.done; })); render(); });
       if (a.dataset.action === "finish") {
         var all = load(), cur = all.filter(function (x) { return !x.done; })[0]; cur.done = true; save(all);
         UI.track("photos_done", cur.id); UI.toast("Съёмка сохранена"); render();

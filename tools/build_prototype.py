@@ -1,7 +1,11 @@
 """Собирает веб-прототип в app/src/main/assets/www/ из экранов макета и кода в web/.
 
 Запуск: python3 tools/build_prototype.py [папка с .dc.html, по умолчанию design]
-Результат: index.html (39 экранов: 25 из design/ и 14 из web/*.html, см. NAMES) + все модули JS_FILES и map/podmoskovye.svg.
+Результат: index.html — 37 экранов (NAMES): 19 из design/*.dc.html и 18 из web/*.html (OVERRIDES;
+AddCar, Cart, Wallet и Budget заменяют одноимённые макеты), — плюс модули JS_FILES, map/podmoskovye.svg
+и fonts/OFL.txt. Шрифты из web/fonts встраиваются в CSS как data: (без запросов в сеть).
+Макеты Reminders и OneTapTO в сборку не входят: их заменил сценарий #TO, старые адреса app.js
+перенаправляет на #TO.
 Та же папка публикуется на GitHub Pages и упаковывается в APK.
 """
 import re, os, sys
@@ -11,10 +15,10 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "design")
 if not os.path.isabs(SRC):
     SRC = os.path.join(ROOT, SRC) if not os.path.isdir(SRC) else SRC
 WEB = os.path.join(ROOT, "web")
-JS_FILES = ["ui.js", "device.js", "api.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js"]
+JS_FILES = ["ui.js", "kit.js", "device.js", "api.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js"]
 OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html", "Welcome": "welcome.html", "Profile": "profile.html", "TO": "to.html", "Icons": "icons.html", "Parking": "parking.html", "Mechanic": "mechanic.html", "Fuel": "fuel.html", "Budget": "budget.html", "Wallet": "wallet.html", "Docs": "docs.html", "Season": "season.html", "Checklists": "checklists.html", "DIY": "diy.html", "BodyPhoto": "bodyphoto.html", "Calc": "calc.html", "Achievements": "achievements.html"}  # экраны, свёрстанные вручную
 OUT = os.path.join(ROOT, "app/src/main/assets/www")
-NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Checklists", "DIY", "BodyPhoto", "Calc", "Achievements", "Garage", "AddCar", "Reminders", "History", "OneTapTO", "Main", "Results", "Offers",
+NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Checklists", "DIY", "BodyPhoto", "Calc", "Achievements", "Garage", "AddCar", "History", "Main", "Results", "Offers",
          "Compare", "Cart", "Services", "ServiceBooking", "BookingDone",
          "Fines", "Tires", "Insurance", "SOS", "Subscription", "Wallet", "Budget",
          "RepairLive", "Warranty", "CarPassport", "Family", "Community"]
@@ -69,6 +73,12 @@ def screen(name):
 
 BUILD = open(os.path.join(ROOT, "VERSION"), encoding="utf-8").read().strip()
 CSS = open(os.path.join(WEB, "app.css"), encoding="utf-8").read()
+# Шрифты (web/fonts/*.woff2) встраиваются в CSS как data: — работают из file:// в WebView и офлайн, без Google Fonts
+import base64
+def _font(m):
+    data = open(os.path.join(WEB, "fonts", m.group(1)), "rb").read()
+    return 'url("data:font/woff2;base64,%s")' % base64.b64encode(data).decode("ascii")
+CSS = re.sub(r'url\("fonts/([\w.-]+\.woff2)"\)', _font, CSS)
 APP = open(os.path.join(WEB, "app.js"), encoding="utf-8").read()
 MAP = open(os.path.join(WEB, "map", "podmoskovye.svg"), encoding="utf-8").read().strip()
 SCRIPTS = "\n".join('<script src="%s"></script>' % f for f in JS_FILES)
@@ -80,7 +90,6 @@ html = """<!doctype html>
 <meta name="theme-color" content="#F3F1EC">
 <meta name="autohub-build" content="%s">
 <title>АвтоХаб</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 %s
 </style>
@@ -104,4 +113,6 @@ for f in JS_FILES:
     shutil.copy(os.path.join(WEB, f), os.path.join(OUT, f))
 os.makedirs(os.path.join(OUT, "map"), exist_ok=True)
 shutil.copy(os.path.join(WEB, "map", "podmoskovye.svg"), os.path.join(OUT, "map", "podmoskovye.svg"))
+os.makedirs(os.path.join(OUT, "fonts"), exist_ok=True)
+shutil.copy(os.path.join(WEB, "fonts", "OFL.txt"), os.path.join(OUT, "fonts", "OFL.txt"))  # лицензия едет вместе со шрифтами
 print("ok, сборка", BUILD, "->", OUT)

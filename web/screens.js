@@ -27,10 +27,10 @@
 
   /* ================= История обслуживания ================= */
   var HIST_DEMO = [
-    { id: "h1", date: "2026-03-12", km: 45200, kind: "visit", title: "Замена масла и фильтров", place: "Автосервис «[Название]» · запись через приложение", cost: 6300,
+    { id: "h1", date: "2026-03-12", km: 45200, kind: "visit", title: "Замена масла и фильтров", place: "Автосервис «Мотор-Профи» · запись через приложение", cost: 6300,
       order: [["Замена масла ДВС", 900], ["Замена масляного фильтра", 300], ["Масло 5W-30, 4 л", 3150], ["Фильтр масляный", 640], ["Фильтр салонный", 590], ["Диагностика", 720]] },
-    { id: "h2", date: "2026-02-03", km: null, kind: "purchase", title: "Колодки тормозные передние", place: "Магазин А · дешевле средней цены на 620 ₽", cost: 2480 },
-    { id: "h3", date: "2025-09-18", km: 38900, kind: "visit", title: "Сезонная смена шин", place: "Шиномонтаж «[Название]» · добавлено вручную", cost: 2400 }
+    { id: "h2", date: "2026-02-03", km: null, kind: "purchase", title: "Колодки тормозные передние", place: "Магазин «Запчастино» · дешевле средней цены на 620 ₽", cost: 2480 },
+    { id: "h3", date: "2025-09-18", km: 38900, kind: "visit", title: "Сезонная смена шин", place: "Шиномонтаж «Колесо 24» · добавлено вручную", cost: 2400 }
   ];
   var KIND = { visit: "ВИЗИТ В СЕРВИС", purchase: "ПОКУПКА", self: "СВОИМИ СИЛАМИ", booking: "ЗАПИСЬ" };
   var MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
@@ -57,8 +57,17 @@
     var keys = ["all", "service", "visits"];
     hist.tabs.forEach(function (b, i) { on(b, function () { hist.filter = keys[i]; drawHistory(); }); });
     on(head.querySelector('button[aria-label="Добавить запись"]'), function () {
-      UI.sheet({ title: "Добавить в историю", html: '<button id="historyScan" class="btn-accent">Сканировать наряд-заказ</button><button id="historyManual" class="btn-light">Ввести вручную</button>', onMount: function (b) {
-        b.querySelector('#historyScan').onclick = function () { window.AutoHubDocuments.open(); };
+      UI.sheet({ title: "Добавить в историю", html: '<button id="historyScan" class="btn-accent">Сканировать заказ-наряд</button><button id="historyManual" class="btn-light">Ввести вручную</button>', onMount: function (b) {
+        b.querySelector('#historyScan').onclick = function () {
+          // На демо-машине документ привязать не к чему — сразу предлагаем добавить свою
+          if (car().demo || !car().id || car().id === "demo") {
+            UI.sheet({ title: "Добавьте свой автомобиль", html: '<p class="sheet-text">Заказ-наряд привязывается к машине. Добавьте свою — и загрузите документ в её историю.</p>' +
+              '<button class="btn-accent" data-action="add-car">Добавить авто</button><button class="btn-light" data-close="1" data-action="close">Понятно</button>',
+              onMount: function (d) { d.querySelector("[data-action=add-car]").addEventListener("click", function () { UI.close(function () { location.hash = "#AddCar"; }); }); } });
+            return;
+          }
+          window.AutoHubDocuments.open();
+        };
         b.querySelector('#historyManual').onclick = addRecordSheet;
       } });
     });
@@ -107,7 +116,7 @@
     UI.sheet({ title: "Новая запись",
       html: '<div class="seg3" role="radiogroup"><button data-kind="visit" class="on" data-action="k">Сервис</button><button data-kind="purchase" data-action="k">Покупка</button><button data-kind="self" data-action="k">Сам</button></div>' +
         '<label class="fld">Что сделали<input id="hTitle" placeholder="Замена свечей зажигания" autocomplete="off"></label>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fld">Дата<input id="hDate" type="date" value="' + today + '"></label>' +
+        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label class="fld">Дата<input id="hDate" type="date" value="' + today + '"></label>' +
         '<label class="fld">Пробег, км<input id="hKm" inputmode="numeric" placeholder="' + (car().mileage || 58400) + '"></label></div>' +
         '<label class="fld">Где<input id="hPlace" placeholder="Сервис или магазин" autocomplete="off"></label>' +
         '<label class="fld">Сумма, ₽<input id="hCost" inputmode="numeric" placeholder="3 500"></label>' +
@@ -151,7 +160,7 @@
       var d = DAYS[bk.day], t = bk.times[bk.time].textContent.trim(), svc = service();
       var works = []; if (bk.checks[0] && bk.checks[0].checked) works.push("ТО-60 000 км"); if (bk.checks[1] && bk.checks[1].checked) works.push("Компьютерная диагностика");
       var b = { when: d[0] + ", " + d[1] + " " + MONTHS[d[2]] + ", " + t, short: d[1] + " " + MSHORT[d[2]] + ", " + t, day: d[1], mon: MSHORT[d[2]].toUpperCase(), time: t,
-        service: svc.name, address: svc.town ? svc.town + ", " + svc.address : "[адрес]", works: works.join(", ") || "Осмотр", own: bk.checks[2] && bk.checks[2].checked,
+        service: svc.name, address: svc.town ? svc.town + ", " + svc.address : "Красногорск, ул. Заводская, 14", works: works.join(", ") || "Осмотр", own: bk.checks[2] && bk.checks[2].checked,
         car: carName(), carId: car().id, total: totalWorks() };
       save("booking.v1", b);
       if (window.AutoHubTO) setTimeout(window.AutoHubTO.renderGarage, 0);
@@ -163,7 +172,7 @@
   }
   function service() {
     try { var s = JSON.parse(sessionStorage.getItem("autohub.serviceObj") || "null"); if (s) return s; } catch (e) {}
-    return { name: "Автосервис «[Название]»", ratingGis: 4.8, distanceKm: 1.2, town: "", address: "" };
+    return { name: "Автосервис «Мотор-Профи»", ratingGis: 4.8, distanceKm: 1.2, town: "", address: "" };
   }
   function totalWorks() { var t = 0; if (bk.checks[0] && bk.checks[0].checked) t += 3900; if (bk.checks[1] && bk.checks[1].checked) t += 1200; return t; }
   function drawBooking() {
@@ -381,7 +390,7 @@
         return;
       }
       save("plus.v1", { until: "27 октября" }); draw();
-      UI.dialog("«Плюс» подключён", "30 дней бесплатно, до 27 октября. Регламентное ТО по фиксированной цене, кэшбэк ×2 и эвакуатор раз в год. Цена после пробного периода — [ЦЕНА] ₽/мес.", "Отлично");
+      UI.dialog("«Плюс» подключён", "30 дней бесплатно, до 27 октября. Регламентное ТО по фиксированной цене, кэшбэк ×2 и эвакуатор раз в год. Цена после пробного периода — 299 ₽/мес (демо-цена).", "Отлично");
     });
     draw();
   }
