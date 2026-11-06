@@ -15,7 +15,18 @@
   var FIELDS = ['date', 'mileage', 'vin', 'number', 'service', 'total'];
   var LAT2CYR = { a: 'а', b: 'в', c: 'с', e: 'е', h: 'н', k: 'к', m: 'м', o: 'о', p: 'р', t: 'т', x: 'х', y: 'у', '0': 'о' };
   var CYR2LAT = { 'А': 'A', 'В': 'B', 'С': 'C', 'Е': 'E', 'Н': 'H', 'К': 'K', 'М': 'M', 'О': 'O', 'Р': 'P', 'Т': 'T', 'Х': 'X', 'У': 'Y' };
-  var MONEY = '\\d{1,3}(?:[ \\u00a0]\\d{3})+[.,]\\d{2}|\\d+[.,]\\d{2}';
+  // Сумма с копейками; справа — не часть даты («01.10.2026») или длинного числа. Левая граница — в moneyAll()
+  // (без lookbehind: его нет в WebView старше Chrome 62, а minSdk 26)
+  var MONEY = '(?:\\d{1,3}(?:[ \\u00a0]\\d{3})+[.,]\\d{2}|\\d+[.,]\\d{2})(?![.,]?\\d)';
+  // Целое с разделителем тысяч: пробел (любой ширины — clean() уже свёл его к « ») или точка («125.400»)
+  var INT = '\\d{1,3}(?:[ .]\\d{3})+(?!\\d)|\\d{1,7}(?!\\d)';
+  // Метка итога документа (по key(): нижний регистр, ё → е). Голое «Итого:» — итог раздела, а не документа.
+  var TOTAL_LABEL = /(?:всего к оплате|итого к оплате|итого по заказ[ -]?наряду|итого по заказу|общая сумма(?: заказа)?|(?:итого|сумма|всего|стоимость)(?: к оплате)? (?:со скидкой|с учетом скидки)|к оплате)/;
+  // Даты, которые не являются датой выполнения работ (docs/ocr.md): приём, печать, оформление, открытие…
+  // и даты будущего: следующее/плановое ТО, гарантия «до …»
+  var NOT_SERVICE_DATE = /прием|приня|печат|оформлен|открыти|поступлен|записи|начал|составлен|следующ|очередн|планов|рекоменд|гарант|(?:^|\s)до\s*$/;
+  // Пробег следующего/планового ТО — не текущий пробег
+  var NEXT_SERVICE = /следующ|очередн|след\.|планов|рекоменд|через|каждые/;
 
   /** Чистка строки: рамки таблиц и типографский мусор → пробелы. */
   function clean(text) {
@@ -29,7 +40,33 @@
     });
   }
   function num(v) { return Number(String(v).replace(/[\s ]/g, '').replace(',', '.')); }
-  function moneyList(text) { var m = text.match(new RegExp(MONEY, 'g')); return m ? m.map(num) : []; }
+  /** Целое с разделителем тысяч: «125.400» → 125400 (точка здесь не дробная часть). */
+  function intNum(v) { return Number(String(v).replace(/[\s.]/g, '')); }
+  /** Вырезает суммы НДС, скидки и «без скидки» — это не итог («в т.ч. НДС 20%: 900,00», «Скидка 10%: 600,00»). */
+  function stripTaxDiscount(s) {
+    return s.replace(new RegExp('(?:в\\s*т\\.?\\s*ч\\.?|в\\s+том\\s+числе|без\\s+скидки|скидк[аиуо]?(?![а-я])|ндс)[^0-9]{0,24}?(?:\\(?\\d{1,2}(?:[.,]\\d+)?\\s*%\\)?)?[^0-9]{0,6}?(?:' + MONEY + ')', 'g'),
+      function (all, at, str) {
+        // «с НДС: 5 400,00», «со скидкой: 5 400,00» — уточнение итога, а не сумма налога или скидки
+        if (!/^(?:в|без)/.test(all) && /(?:^|[\s,(])(?:с|со|включая|вкл\.?|учетом)\s*$/.test(str.slice(0, at))) return all;
+        return ' ';
+      });
+  }
+  /** Итог в тексте после метки: деньги с копейками, «N руб.», «на сумму N» или «: N» до конца строки — но не количество. */
+  function totalValue(seg) {
+    var s = stripTaxDiscount(seg), m;
+    if ((m = moneyAll(s)).length) return num(m[0]);
+    if ((m = s.match(/(?:^|\s)(\d{1,3}(?: \d{3})+|\d+)\s*(?:руб|р\.|₽)/))) return num(m[1]);
+    if ((m = s.match(/на сумму\s*(\d{1,3}(?: \d{3})+|\d+)(?![\d.,])/))) return num(m[1]);
+    if ((m = s.match(/^\s*[:=]?\s*(\d{1,3}(?: \d{3})+|\d+)\s*$/))) return num(m[1]); // «Итого к оплате 3 900» — число и есть весь остаток строки
+    return null;
+  }
+  /** Все суммы с копейками в строке (не начиная с середины числа: «01.10.2026» и «1 12 484,00» → «12 484,00»). */
+  function moneyAll(text) {
+    var re = new RegExp('(?:^|[^\\d.,])(' + MONEY + ')', 'g'), out = [], m;
+    while ((m = re.exec(text))) out.push(m[1]);
+    return out;
+  }
+  function moneyList(text) { return moneyAll(text).map(num); }
   function validDate(d, m, y) {
     var iso = y + '-' + m + '-' + d, t = new Date(iso + 'T12:00:00Z');
     return Number.isFinite(+t) && t.toISOString().slice(0, 10) === iso ? iso : null;
@@ -138,7 +175,7 @@
 
   function extract(lines) {
     var fields = {}, candidates = {}, items = [], warnings = [], section = null, columns = 0, recommendations = false;
-    var sections = [], cur = null, subtotalSum = [];
+    var sections = [], cur = null, subtotalSum = [], discount = { base: [], items: [], seen: false };
     FIELDS.forEach(function (k) { fields[k] = { value: null, evidence: [] }; candidates[k] = []; });
 
     lines.forEach(function (line, index) {
@@ -155,18 +192,25 @@
       if (m) { var nm = text.match(new RegExp('(?:№|N[eoо°]?|#|номер)\\s*([0-9A-Za-zА-Яа-яЁё][0-9A-Za-zА-Яа-яЁё_/.-]*)', 'i')); add('number', (nm ? nm[1] : m[1]).replace(/[.,]$/, '')); }
 
       // Дата выполнения: «Дата выполнения работ», «Дата закрытия», «Работы выполнены»; слово «Дата» может быть испорчено
-      m = low.match(/(?:выполнени[яе](?:\s+работ)?|закрыти[яе](?:\s+заказа)?|обслуживани[яе]|работы выполнены|окончани[яе] работ|дата выдачи)[^\d]{0,12}(\d{2})[./-](\d{2})[./-](\d{4})/);
-      if (m) { var d = validDate(m[1], m[2], m[3]); if (d) add('date', d, 2); else warnings.push('Некорректная дата: ' + m[0]); }
+      // «Дата приёма на обслуживание», «Дата печати…» — не дата выполнения: метка от последней цифры до даты не должна их содержать
+      var dre = /(?:выполнени[яе](?:\s+работ)?|закрыти[яе](?:\s+заказа)?|обслуживани[яе]|работы выполнены|окончани[яе] работ|дата выдачи)([^\d]{0,12})(\d{2})[./-](\d{2})[./-](\d{4})/g;
+      while ((m = dre.exec(low))) {
+        var label = low.slice(0, m.index).split(/\d/).pop() + m[0].slice(0, m[0].length - 10);
+        if (NOT_SERVICE_DATE.test(label) || NOT_SERVICE_DATE.test(m[1])) continue;
+        var d = validDate(m[2], m[3], m[4]); if (d) add('date', d, 2); else warnings.push('Некорректная дата: ' + m[0]);
+        break; // как раньше: одна дата выполнения на строку
+      }
 
-      // Пробег: «Пробег: 125 400 км» в строке…
-      m = low.match(/(?:пробег(?!а)|одометр)\s*[:=]?\s*(?:км\s*)?(\d{1,3}(?:[  ]\d{3})+|\d{1,7})(?!\s*тыс)(?![.,]\d)/);
-      if (m) { var mv = num(m[1]); if (mv <= 3000000) add('mileage', mv, 2); }
+      // Пробег в строке: «Пробег: 125 400 км», «125.400», «Пробег, км: 125400»; не «125 тыс. км» (→ 12), не мили, не копейки и не дата
+      m = low.match(new RegExp('(?:пробег(?!а)(?:\\s+(?:автомобиля|а/м|тс))?|(?:показания\\s+)?одометра?)\\s*(?:[,(]\\s*км\\.?\\s*\\)?)?\\s*[:=]?\\s*(?:км\\.?\\s*)?(' + INT + ')(?!\\s*(?:тыс|мил|mi))(?![.,]\\d)(?! \\d{3}(?!\\d))'));
+      if (m && NEXT_SERVICE.test(low.slice(0, m.index))) m = null; // «Следующее ТО: пробег 135 000 км»
+      if (m) { var mv = intNum(m[1]); if (mv <= 3000000) add('mileage', mv, 2); }
       // …или заголовок колонки «Пробег», а значение — на строке ниже (последнее число строки)
       else if (/(?:^|\s)(?:пробег(?!а)|одометр)\s*[:=]?\s*(?:км)?\s*$/.test(low) || (/пробег(?!а)/.test(low) && /vin|вин/.test(low) && !/\d{3}/.test(low.split(/пробег/)[1] || ''))) {
         for (var o = 1; o <= 2; o++) {
           var nl = near(o); if (!nl) break;
           var nt = clean(nl.text).replace(/[A-Za-z0-9]{17}/g, ' ').replace(/\d{2}[./]\d{2}[./]\d{2,4}/g, ' ').replace(/\+?\d[\d\- ]{9,}\d/g, ' ');
-          var ints = (nt.match(/(?:^|\s)(\d{1,3}(?: \d{3})+|\d{2,7})(?:\s*(?:км|km))?(?=\s|$)/gi) || []).map(function (s) { return num(s.replace(/км|km/i, '')); });
+          var ints = (nt.match(/(?:^|\s)(\d{1,3}(?:[ .]\d{3})+|\d{2,7})(?:\s*(?:км|km))?(?=\s|$)/gi) || []).map(function (s) { return intNum(s.replace(/км|km/i, '')); });
           if (ints.length) { var last = ints[ints.length - 1]; if (last >= 10 && last <= 3000000) add('mileage', last, 2); break; }
         }
       }
@@ -180,8 +224,8 @@
         var vt = vinTokens(vl.text); vt.forEach(function (v) { add('vin', v, vinWeight(v, 3)); });
         // Таблица «… VIN: | Пробег»: под ней «VIN  число» — число после VIN и есть пробег, даже если заголовок «Пробег» прочитан с ошибкой
         if (vt.length && /vin\s*[:.]?\s*\S/i.test(low.replace(/[|\]\[]/g, ' '))) {
-          var after = clean(vl.text).split(/[A-Za-z0-9(€¢©]{17}/).pop().match(/^\s*(\d{1,3}(?: \d{3})+|\d{2,7})\s*(?:км|km)?\s*$/i);
-          if (after) { var av = num(after[1]); if (av >= 10 && av <= 3000000) add('mileage', av, 1); }
+          var after = clean(vl.text).split(/[A-Za-z0-9(€¢©]{17}/).pop().match(/^\s*(\d{1,3}(?:[ .]\d{3})+|\d{2,7})\s*(?:км|km)?\s*$/i);
+          if (after) { var av = intNum(after[1]); if (av >= 10 && av <= 3000000) add('mileage', av, 1); }
         }
         if (vt.length) break;
       }
@@ -197,11 +241,25 @@
       m = text.match(/^(?:автосервис|исполнитель|сервис)\s*:\s*(.+)$/i); if (m) add('service', m[1].trim(), 2);
 
       // Итог документа
-      m = low.match(/(?:всего к оплате|итого к оплате|итого по заказу|общая сумма|к оплате)\s*[:=]?\s*(\d[\d  ]*(?:[.,]\d{2})?)/);
-      if (m) { var am = num(m[1]); if (Number.isFinite(am) && am <= 100000000) add('total', am, 3); }
-      if (!recommendations && /без скидки/.test(low) && /итого/.test(low)) {
-        var g = text.match(new RegExp('итого\\s*[:=]?\\s*(' + MONEY + ')', 'i')) || text.match(new RegExp('(' + MONEY + ')\\s*$'));
-        if (g) add('total', num(g[1]), 3);
+      // Только сумма денег после метки итога: не количество («К оплате 2 позиции…»), не НДС, не «без скидки»
+      var tl = low.match(TOTAL_LABEL), tlRest = tl ? low.slice(tl.index + tl[0].length) : '';
+      if (tl && !/^\s*без\s/.test(tlRest) && !/без\s+(?:скидки|ндс)\s*$/.test(low.slice(0, tl.index))) { var am = totalValue(tlRest); if (am !== null && am <= 100000000) add('total', am, 3); }
+      if (!recommendations && /скидк/.test(low)) {
+        // «Стоимость без скидки: 3 670,00 Скидка: 0,00 Итого: 3 670,00» — «Итого» в строке со скидкой — итог документа
+        if (!tl && /итог/.test(low)) {
+          var g = low.match(new RegExp('итого(?!\\s*без)\\s*[:=]?\\s*(' + MONEY + ')'));
+          var rest = g ? null : moneyAll(stripTaxDiscount(low)); // «Итог0: …» — единственная сумма, кроме скидочных
+          if (g) add('total', num(g[1]), 3); else if (rest && rest.length === 1) add('total', num(rest[0]), 2);
+        }
+        // Для итога «без скидки − скидка», если явного итога нет
+        var nb = low.match(new RegExp('без\\s+скидки[^0-9]{0,6}?(' + MONEY + ')')); if (nb) discount.base.push(num(nb[1]));
+        var dl = low.replace(new RegExp('без\\s+скидки[^0-9]{0,6}?(?:' + MONEY + ')?', 'g'), ' ').replace(/(?:со|с учетом)\s+скидк[а-я]*/g, ' ');
+        var dc = dl.match(new RegExp('скидк[аи]?(?![а-я])[^0-9]{0,24}(?:\\(?(\\d{1,2}(?:[.,]\\d+)?)\\s*%\\)?)?[^0-9]{0,6}(' + MONEY + ')?'));
+        if (dc) {
+          var dPct = dc[1] != null ? num(dc[1]) : null, dAmt = dc[2] != null ? num(dc[2]) : null;
+          discount.items.push({ pct: dPct, amount: dAmt, evidence: raw.trim() });
+          if (dPct || dAmt) discount.seen = true;
+        }
       }
 
       // Разделы работ и материалов
@@ -219,8 +277,9 @@
         section = 'part'; columns = hasCols ? nCols : 0; cur = { kind: 'part', rows: [], subtotal: null }; sections.push(cur); return;
       }
       if (section && hasCols) { columns = nCols; return; }
-      if (/^(?:итого|всего|подпись|заказчик|исполнитель|гарантия|ндс|к оплате|стоимость без скидки|сумма прописью|услуга)/.test(head)) {
-        if (section && /^(?:итого|всего)/.test(head) && cur) { var st = moneyList(text); if (st.length) { cur.subtotal = st[st.length - 1]; subtotalSum.push(cur.subtotal); } }
+      if (/^(?:итого|всего|подпись|заказчик|исполнитель|гарантия|ндс|к оплате|стоимость без скидки|сумма прописью|услуга|скидка|сумма (?:без|со|с учетом) скидк|в том числе|в т\.? ?ч\.?(?![а-я]))/.test(head)) {
+        // «Итого со скидкой» после раздела — не итог раздела (строки раздела — до скидки)
+        if (section && /^(?:итого|всего)/.test(head) && cur && !/скидк/.test(low)) { var st = moneyList(text); if (st.length) { cur.subtotal = st[st.length - 1]; subtotalSum.push(cur.subtotal); } }
         section = null; return;
       }
       if (section && !/^(?:наименование|кол-во|количество|цена|сумма)(?![а-яa-z0-9])/.test(head)) {
@@ -232,8 +291,20 @@
       }
     });
 
-    // Итог не найден явно — сумма итогов разделов (работы + запчасти), если их хотя бы два
-    if (!candidates.total.length && subtotalSum.length >= 2) {
+    // Итог не найден явно, есть «без скидки» и сумма скидки — итог = без скидки − скидка, если всё однозначно
+    // и процент (если указан) сходится с суммой; иначе поле остаётся пустым (скидка могла быть только на работы)
+    var uniq = function (a) { return a.filter(function (v, i) { return a.indexOf(v) === i; }); };
+    var dAmts = uniq(discount.items.map(function (x) { return x.amount; }).filter(function (v) { return v != null; }));
+    var dPcts = uniq(discount.items.map(function (x) { return x.pct; }).filter(function (v) { return v != null; }));
+    var bases = uniq(discount.base);
+    if (!candidates.total.length && bases.length === 1 && dAmts.length === 1 && dPcts.length <= 1 && dAmts[0] <= bases[0] &&
+        (!dPcts.length || Math.abs(bases[0] * dPcts[0] / 100 - dAmts[0]) < 1)) {
+      candidates.total.push({ value: Math.round((bases[0] - dAmts[0]) * 100) / 100, weight: 1,
+        evidence: { page: null, text: 'стоимость без скидки − скидка', box: null, confidence: null } });
+    }
+    if (discount.seen && !candidates.total.length) warnings.push('Есть скидка, а итог со скидкой не найден — укажите итог вручную.');
+    // Итог не найден явно — сумма итогов разделов (работы + запчасти), если их хотя бы два и нет скидки (суммы разделов — до скидки)
+    if (!candidates.total.length && subtotalSum.length >= 2 && !discount.seen) {
       candidates.total.push({ value: Math.round(subtotalSum.reduce(function (a, b) { return a + b; }, 0) * 100) / 100, weight: 1,
         evidence: { page: null, text: 'сумма итогов разделов', box: null, confidence: null } });
     }
