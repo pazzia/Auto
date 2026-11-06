@@ -73,7 +73,7 @@ class OfflineOcrEngine(private val context: Context) {
      * 2400 px (первый проход OCR — 2400 px, мелкий текст не должен теряться), и не больше ~25 Мп в памяти.
      * Фото 50/108 Мп принимаются: 8160×6120 → 4080×3060, 12000×9000 → 3000×2250.
      */
-    internal fun sampleSize(width: Int, height: Int): Int {
+    fun sampleSize(width: Int, height: Int): Int {
         val longSide = maxOf(width, height)
         var sample = 1
         while (longSide / (sample * 2) >= MIN_LONG_SIDE) sample *= 2
@@ -285,7 +285,7 @@ class OfflineOcrEngine(private val context: Context) {
          * (как androidx ExifInterface): 5 TRANSPOSE = отражение + 270°, 7 TRANSVERSE = отражение + 90°.
          * Проверено на всех 8 значениях против PIL ImageOps.exif_transpose.
          */
-        internal fun exifMatrix(orientation: Int): Matrix = Matrix().apply {
+        fun exifMatrix(orientation: Int): Matrix = Matrix().apply {
             when (orientation) {
                 ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> postScale(-1f, 1f)          // 2
                 ExifInterface.ORIENTATION_ROTATE_180 -> postRotate(180f)                // 3
