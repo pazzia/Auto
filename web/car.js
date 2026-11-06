@@ -512,7 +512,7 @@
   function init() {
     fillYears(); fillMakes(); setTab("vin");
     $("addSub").textContent = API().mode === "mock"
-      ? "Демо-режим: данные из заглушек API. Попробуйте номер А123ВС 177 или VIN XWEFC41ABKC001234"
+      ? "Демонстрационные данные. Попробуйте номер А123ВС 177 или VIN XWEFC41ABKC001234"
       : "Расшифруем VIN по открытой базе NHTSA vPIC и справочнику кодов производителей";
     document.addEventListener("click", function (e) {
       var t = e.target.closest(".cartab"); if (t) setTab(t.dataset.tab);

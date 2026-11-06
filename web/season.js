@@ -64,7 +64,7 @@
       }).join("") + '</div><div class="to-sec">ДАЛЬШЕ</div>';
     for (var k = 1; k <= 3; k++) {
       var mm = (m + k) % 12, list = TASKS[mm];
-      html += '<div class="kv"><button class="sn-month" data-month="' + mm + '" data-action="m" aria-expanded="' + !!open[mm] + '"><span><b>' + MONTHS[mm] + "</b><small>" + list.length + " дела · " + esc(list.map(function (x) { return x[0].split(/[,(]/)[0].toLowerCase(); }).slice(0, 2).join(", ")) + '</small></span><span class="prow-go">' + (open[mm] ? "⌃" : "›") + "</span></button>" +
+      html += '<div class="kv"><button class="sn-month" data-month="' + mm + '" data-action="m" aria-expanded="' + !!open[mm] + '"><span><b>' + MONTHS[mm] + "</b><small>" + window.AutoHubKit.count(list.length, "дело", "дела", "дел") + " · " + esc(list.map(function (x) { return x[0].split(/[,(]/)[0].toLowerCase(); }).slice(0, 2).join(", ")) + '</small></span><span class="prow-go">' + (open[mm] ? "⌃" : "›") + "</span></button>" +
         (open[mm] ? list.map(function (x) { return '<div><span>' + esc(x[0]) + (x[1] ? "<small>" + esc(x[1]) + "</small>" : "") + "</span></div>"; }).join("") : "") + "</div>";
     }
     body.innerHTML = html;

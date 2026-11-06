@@ -78,7 +78,7 @@
       '<div class="dy-pic">' + (s[2] || '<span class="dy-num">' + (step + 1) + "</span>" + icon(g.icon, "#C2410C")) + "</div>" +
       '<p class="dy-text">' + esc(s[0]) + "</p>" + (s[1] ? '<div class="dy-tip">' + esc(s[1]) + "</div>" : "") +
       (last && g.parts ? '<button class="btn-light" data-go="parts:' + esc(g.parts) + '" data-action="go">Подобрать: ' + esc(g.parts) + "</button>" : "") +
-      '<button class="linkbtn" data-action="ask" style="align-self:flex-start">Не получается? Спросить AI-механика</button>';
+      '<button class="linkbtn" data-action="ask" style="align-self:flex-start">Не получается? Спросить механика-помощника</button>';
     var f = $("dyFoot"); f.hidden = false;
     f.innerHTML = '<div class="tc-btns"><button class="btn-light" data-action="prev" style="height:54px">' + (step ? "Назад" : "К списку") + '</button><button class="btn-accent" data-action="next">' + (last ? "Готово" : "Дальше") + "</button></div>";
     $("dyBody").scrollTop = 0;

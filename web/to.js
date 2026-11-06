@@ -170,7 +170,7 @@
           var l = pickOf(d, r); if (!l) return "";
           return '<div class="to-part"><div class="to-part-top"><div><span class="to-part-t">' + esc(l.opt.name) + (l.qty > 1 ? " × " + l.qty : "") + '</span><b>' + esc(l.opt.brand) + '</b><span class="mono">' + esc(l.opt.article) + "</span></div>" +
             '<div class="to-price"><b>' + rub(l.sum) + "</b><span>" + esc(l.offer.marketName) + "</span></div></div>" +
-            '<div class="to-part-meta"><span class="to-star">★ ' + l.opt.rating.toFixed(1) + "</span><span>" + l.opt.reviews.toLocaleString("ru-RU") + " отзывов</span><span>привезут " + dShort(addDays(today(), l.offer.days)) + "</span>" +
+            '<div class="to-part-meta"><span class="to-star">★ ' + l.opt.rating.toFixed(1) + "</span><span>" + l.opt.reviews.toLocaleString("ru-RU") + " " + plural(l.opt.reviews, "отзыв", "отзыва", "отзывов") + "</span><span>привезут " + dShort(addDays(today(), l.offer.days)) + "</span>" +
             (l.tier.length ? '<span class="to-badge">' + esc(l.tier.join(" · ")) + "</span>" : '<span class="to-badge own">ваш выбор</span>') + "</div>" +
             '<button class="to-more" data-slot="' + r.part + '" data-action="alt">Другие варианты и магазины ›</button></div>';
         }).join("") +
@@ -273,7 +273,7 @@
           var x = tot.markets[m];
           return "<div><span>" + esc(x.name) + " · к " + dShort(addDays(today(), x.days)) + "</span><b>" + rub(x.sum) + "</b></div>";
         }).join("") + "<div><span>Доставка</span><b>" + rub(tot.delivery) + "</b></div></div>" +
-        '<label class="to-points"><input type="checkbox" data-action="points"' + (d.usePoints ? " checked" : "") + "><span><b>Списать " + pts.toLocaleString("ru-RU") + " баллов</b><small>у вас " + points().toLocaleString("ru-RU") + ", можно оплатить до 30%</small></span></label>" +
+        '<label class="to-points"><input type="checkbox" data-action="points"' + (d.usePoints ? " checked" : "") + "><span><b>Списать " + pts.toLocaleString("ru-RU") + " " + plural(pts, "балл", "балла", "баллов") + "</b><small>у вас " + points().toLocaleString("ru-RU") + ", можно оплатить до 30%</small></span></label>" +
         '<div class="kv"><div class="kv-total"><span>К оплате сейчас</span><b>' + rub(pay) + '</b></div><div><span>Работы — в сервисе после ТО</span><b>' + rub(works) + "</b></div></div>" +
         '<div class="to-note">Если сервис найдёт что-то ещё, он спросит вас в приложении — без согласия ничего лишнего не сделают.</div>');
       foot('<button class="btn-accent" data-to="pay">Оплатить ' + rub(pay) + "</button>");
@@ -321,12 +321,12 @@
         (o.rated ? '<div class="to-card to-row"><div><b>Ваша оценка: ' + "★".repeat(o.rated) + "</b><span>Спасибо! +100 баллов</span></div></div>" : "") +
         '<div class="to-card to-row"><div><b>Следующее ТО-' + next.km.toLocaleString("ru-RU") + "</b><span>через " + km(next.left) + " · напомним заранее</span></div><span class=\"to-mk\">" + next.items.length + " работ</span></div>" +
         '<a class="to-card to-row link" href="#Warranty"><div><b>Гарантия 30 дней</b><span>на работы и запчасти — если что-то не так</span></div><span class="prow-go">›</span></a>' +
-        '<a class="to-card to-row link" href="#History"><div><b>Заказ-наряд в истории</b><span>' + o.items.length + " деталей · работы " + rub(o.worksPrice) + '</span></div><span class="prow-go">›</span></a>';
+        '<a class="to-card to-row link" href="#History"><div><b>Заказ-наряд в истории</b><span>' + o.items.length + " " + plural(o.items.length, "деталь", "детали", "деталей") + " · работы " + rub(o.worksPrice) + '</span></div><span class="prow-go">›</span></a>';
       foot('<button class="btn-dark" data-to="finish">Готово</button>');
     } else {
       html += '<div class="to-tl">' + names.map(function (n, i) {
         var sub = [
-          "Списано " + rub(o.paid) + (o.pointsUsed ? " и " + o.pointsUsed + " баллов" : ""),
+          "Списано " + rub(o.paid) + (o.pointsUsed ? " и " + o.pointsUsed + " " + plural(o.pointsUsed, "балл", "балла", "баллов") : ""),
           o.markets.map(function (m) { return m.name + " — к " + dShort(m.eta); }).join(", "),
           o.deliveryTo === "home" ? "Возьмите их с собой на визит" : "Сервис примет детали, вам ничего не нужно забирать",
           dShort(o.visit.date) + ", " + o.visit.time + " · " + (o.service ? o.service.name : ""),
@@ -452,7 +452,7 @@
     card.style.border = t.soon || t.overdue || o ? "1.5px solid #C2410C" : "1px solid #E2DED6";
     // Плитка «Регламент ТО»
     var reg = g.querySelector('a[href="#Reminders"], a#regTile');
-    if (reg) { reg.id = "regTile"; reg.href = "#TO"; var sp = reg.querySelectorAll("span"); if (sp[1]) sp[1].textContent = t.noMileage ? "укажите пробег" : "ТО-" + t.km.toLocaleString("ru-RU") + " · " + t.items.length + " работ"; }
+    if (reg) { reg.id = "regTile"; reg.href = "#TO"; var sp = reg.querySelectorAll("span"); if (sp[1]) sp[1].textContent = t.noMileage ? "укажите пробег" : "ТО-" + t.km.toLocaleString("ru-RU") + " · " + t.items.length + " " + plural(t.items.length, "работа", "работы", "работ"); }
     // Карточка записи: заказ ТО важнее разовой записи
     var bk = g.querySelector('a[href="#RepairLive"], a#visitCard');
     if (bk) {
