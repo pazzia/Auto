@@ -29,11 +29,11 @@ android {
     // Ключи и пароли в репозиторий не кладутся (.gitignore: *.jks, *.keystore).
     val releaseSigning = listOf("AUTOHUB_KEYSTORE_FILE", "AUTOHUB_KEYSTORE_PASSWORD", "AUTOHUB_KEY_ALIAS", "AUTOHUB_KEY_PASSWORD")
         .associateWith { System.getenv(it).orEmpty() }
-        .takeIf { env -> env.values.all { it.isNotBlank() } && java.io.File(env.getValue("AUTOHUB_KEYSTORE_FILE")).isFile }
+        .takeIf { env -> env.values.all { it.isNotBlank() } && file(env.getValue("AUTOHUB_KEYSTORE_FILE")).isFile }
     signingConfigs {
         if (releaseSigning != null) {
             create("release") {
-                storeFile = java.io.File(releaseSigning.getValue("AUTOHUB_KEYSTORE_FILE"))
+                storeFile = file(releaseSigning.getValue("AUTOHUB_KEYSTORE_FILE"))
                 storePassword = releaseSigning.getValue("AUTOHUB_KEYSTORE_PASSWORD")
                 keyAlias = releaseSigning.getValue("AUTOHUB_KEY_ALIAS")
                 keyPassword = releaseSigning.getValue("AUTOHUB_KEY_PASSWORD")
