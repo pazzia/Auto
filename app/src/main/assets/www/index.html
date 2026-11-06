@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
-<meta name="autohub-build" content="0.17">
+<meta name="autohub-build" content="0.18">
 <title>АвтоХаб</title>
 <style>
 /* Шрифты лежат в web/fonts (OFL, см. OFL.txt); сборка встраивает их в index.html — без сети и без запросов к Google */
@@ -504,6 +504,16 @@ body{position:fixed;inset:0}
 .chip2,.hscroll>button,.qty button,.dc-more,.hist-foot a,.sn-go,.skiplink,.fu-row .linkbtn,.mc-chips button,.pk-timers button,.mc-opts button,.to-more,.seg3 button,#s-Services button[style*="height: 38px"]{position:relative}
 .chip2::after,.hscroll>button::after,.qty button::after,.dc-more::after,.hist-foot a::after,.sn-go::after,.skiplink::after,.fu-row .linkbtn::after,.mc-chips button::after,.pk-timers button::after,.mc-opts button::after,.to-more::after,.seg3 button::after,#s-Services button[style*="height: 38px"]::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
 .mc-chips{padding:5px 0;margin:-5px 0}
+
+/* AUTO-45 Госданные (web/gov.js) */
+.gov-banner{width:100%;border:0;text-align:left;font:inherit;margin:4px 0 8px;min-height:44px;cursor:pointer}
+.gov-banner .dl-t{display:flex;flex-direction:column;gap:2px}
+.gov-banner .dl-t span{font-size:13px;color:#5B5F66}
+.gov-mileage{margin:12px 0}
+.gov-mileage .to-sec{padding:4px 4px 8px;font-size:12px;font-weight:700;letter-spacing:.06em;color:#5B5F66}
+.gov-warn span{color:#9A3412;font-size:13px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;color:#17191C;min-height:44px}
+.chk input{width:22px;height:22px;margin:2px 0 0;flex-shrink:0;accent-color:#C2410C}
 
 </style>
 </head>
@@ -1447,11 +1457,12 @@ body{position:fixed;inset:0}
 <g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
 </g>
 </svg></template>
-<script>window.AUTOHUB_BUILD = "0.17";</script>
+<script>window.AUTOHUB_BUILD = "0.18";</script>
 <script src="ui.js"></script>
 <script src="kit.js"></script>
 <script src="device.js"></script>
 <script src="api.js"></script>
+<script src="gov.js"></script>
 <script src="car.js"></script>
 <script src="services.js"></script>
 <script src="cart.js"></script>
@@ -1533,7 +1544,7 @@ body{position:fixed;inset:0}
       el.textContent=el.dataset.dateCase==="upper"?t.toUpperCase():t;
     });
   })();
-  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubAch","AutoHubHub"].forEach(function(m){
+  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubAch","AutoHubHub","AutoHubGov"].forEach(function(m){
     try{ if(window[m]) window[m].init(); }catch(err){ if(window.console) console.error(m,err); }
   });
   show();

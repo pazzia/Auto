@@ -29,7 +29,27 @@
 
   /* ---------- Сеть (режим live): в Android через нативный мост без CORS, в браузере через fetch ---------- */
   var cbSeq = 0, cbs = {};
-  window.__nativeHttpCb = function (id, okFlag, body) { var cb = cbs[id]; delete cbs[id]; if (cb) cb(okFlag, body); };
+  window.__nativeHttpCb = function (id, okFlag, body, status) { var cb = cbs[id]; delete cbs[id]; if (cb) cb(okFlag, body, status); };
+  /** GET с кодом ответа и телом (в том числе для 4xx: у API Assist в нём описание ошибки). Отказ — только при сбое сети. */
+  function httpGet(url, timeoutMs) {
+    timeoutMs = timeoutMs || 12000;
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var timer = setTimeout(function () { if (!done) { done = true; reject(apiError("timeout")); } }, timeoutMs);
+      function finish(okFlag, body, status) {
+        if (done) return; done = true; clearTimeout(timer);
+        status = status || (okFlag ? 200 : 0);
+        if (!okFlag && !status) return reject(apiError("network", body));
+        resolve({ ok: !!okFlag, status: status, body: body || "" });
+      }
+      if (window.NativeHttp && window.NativeHttp.get) {
+        var id = "c" + (++cbSeq); cbs[id] = finish; window.NativeHttp.get(url, id);
+      } else {
+        fetch(url).then(function (r) { return r.text().then(function (t) { finish(r.ok, t, r.status); }); },
+          function (e) { finish(false, String(e), 0); });
+      }
+    });
+  }
   function httpGetJson(url, timeoutMs) {
     timeoutMs = timeoutMs || 12000;
     return new Promise(function (resolve, reject) {
@@ -66,6 +86,7 @@
     return c === "not_configured" ? "Бэкенд не подключён — откройте прототип в демо-режиме."
       : c === "network" || c === "timeout" ? "Нет связи с сервером. Проверьте интернет и попробуйте ещё раз."
       : c === "not_found" ? "Ничего не нашли."
+      : e && /^(gov_|source_unavailable)/.test(c || "") && e.message ? e.message
       : "Не удалось загрузить данные. Попробуйте ещё раз.";
   }
   function qs(o) {
@@ -308,6 +329,7 @@
     config: cfg,
     /** Текст ошибки для пользователя по коду (синхронно). */
     errorText: errorText,
+    http: { get: httpGet },
     userPosition: function () { return MOCK ? ok(USER_POS) : backend("GET", "/v1/me/position"); },
 
     vehicle: {
@@ -440,6 +462,11 @@
       /** Неоплаченные штрафы по СТС/госномеру (в рабочей версии — платёжный партнёр с доступом к ГИС ГМП).
        * Заглушка: штрафы есть только у демо-машины гаража; у добавленных пользователем машин — пусто. */
       list: function (car) {
+        // Свой ключ API Assist (Профиль → Госданные): настоящие штрафы по СТС с гибдд.рф — для своих машин, в любом режиме
+        var G = window.AutoHubGov;
+        if (G && G.ready() && car && !car.demo && car.id !== "demo") {
+          return G.fines(car).then(function (r) { return r ? { items: r.items, live: true, at: r.at, source: r.source } : { items: [], needSts: true, source: "нужен СТС" }; });
+        }
         if (!MOCK) return backend("GET", "/v1/fines?" + qs({ plate: car && car.plate, region: car && car.region }));
         return ok({ items: car && car.demo ? demoFines() : [], source: SRC_MOCK });
       },

@@ -142,7 +142,8 @@
       toggle("to", "Напоминания о ТО", "по пробегу и сроку", st.to) +
       toggle("fines", "Новые штрафы", "проверка каждый день", st.fines) +
       '<button class="prow" data-action="city"><span class="prow-txt"><b>Мой адрес</b><span>' + esc(st.city + (st.address ? ", " + st.address : "") + " · для сервисов рядом") + '</span></span><span class="prow-go">›</span></button>' +
-      '<div class="prow"><span class="prow-txt"><b>Данные</b><span>' + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? "Демонстрационные данные" : "Реальные источники") + "</span></span></div></div>" +
+      '<div class="prow"><span class="prow-txt"><b>Данные</b><span>' + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? "Демонстрационные данные" : "Реальные источники") + "</span></span></div>" +
+      '<button class="prow" data-action="gov"><span class="prow-txt"><b>Госданные</b><span>' + (window.AutoHubGov && window.AutoHubGov.ready() ? "подключены · штрафы, ОСАГО, техосмотр · " + window.AutoHubGov.usage().n + " запр. в этом месяце" : "штрафы ГИБДД, ОСАГО и техосмотр по ключу API Assist") + '</span></span><span class="prow-go">›</span></button></div>' +
 
       '<div class="pgroup">' +
       '<button class="prow" data-action="export"><span class="prow-txt"><b>Выгрузить мои данные</b><span>машины, история, настройки</span></span><span class="prow-go">›</span></button>' +
@@ -264,5 +265,5 @@
   function init() {
     addNavTab(); renderAvatar(); initWelcome(); initProfile();
   }
-  window.AutoHubAuth = { init: init, guard: guard, session: session, location: location_, editAddress: editAddress };
+  window.AutoHubAuth = { init: init, guard: guard, session: session, location: location_, editAddress: editAddress, renderProfile: renderProfile };
 })();

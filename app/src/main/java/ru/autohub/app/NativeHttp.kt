@@ -30,6 +30,7 @@ class NativeHttp(private val webView: WebView) {
     fun get(url: String, callbackId: String) {
         pool.execute {
             var ok = false
+            var status = 0
             val body: String = try {
                 val u = URL(url)
                 require(u.protocol == "https" && u.host in allowedHosts) { "host not allowed" }
@@ -42,6 +43,7 @@ class NativeHttp(private val webView: WebView) {
                 }
                 try {
                     val code = conn.responseCode
+                    status = code
                     when (code) {
                         in 200..299 -> {
                             if (conn.contentLengthLong > MAX_RESPONSE_BYTES) throw IOException("response too large")
@@ -50,6 +52,8 @@ class NativeHttp(private val webView: WebView) {
                             text
                         }
                         in 300..399 -> "redirect not allowed (HTTP $code)"
+                        // 4xx: тело с описанием ошибки (API Assist: {"error", "error_code"}), тот же лимит размера
+                        in 400..499 -> conn.errorStream?.use { readLimited(it) } ?: "HTTP $code"
                         else -> "HTTP $code"
                     }
                 } finally {
@@ -58,7 +62,7 @@ class NativeHttp(private val webView: WebView) {
             } catch (e: Exception) {
                 e.message ?: "network error"
             }
-            val js = "window.__nativeHttpCb(${JSONObject.quote(callbackId)}, $ok, ${JSONObject.quote(body)})"
+            val js = "window.__nativeHttpCb(${JSONObject.quote(callbackId)}, $ok, ${JSONObject.quote(body)}, $status)"
             main.post { if (!closed) webView.evaluateJavascript(js, null) }
         }
     }
@@ -79,7 +83,8 @@ class NativeHttp(private val webView: WebView) {
         private const val MAX_RESPONSE_BYTES = 1024 * 1024
 
         // Используется только в режиме live (web/api.js). Адрес бэкенда добавить сюда же.
-        private val allowedHosts = setOf("vpic.nhtsa.dot.gov")
+        // service.api-assist.com — госданные по ключу владельца (web/gov.js, AUTO-45)
+        private val allowedHosts = setOf("vpic.nhtsa.dot.gov", "service.api-assist.com")
 
         /** Один пул на процесс: при пересоздании активности потоки не копятся. */
         private val pool: ExecutorService = Executors.newFixedThreadPool(2) { runnable ->

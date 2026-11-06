@@ -72,6 +72,16 @@
     if (location.hash === "#Docs") render();
     return d;
   }
+  /** Срок из внешнего источника (ЕАИСТО и т. п.): создать или обновить запись с этим id. */
+  function upsert(id, title, until, note, remind) {
+    var l = load("docs.v1", null) || [osagoDefault()], d = l.filter(function (x) { return x.id === id; })[0];
+    if (d && d.until === until && d.note === note) return d;
+    if (!d) { d = { id: id, title: title, remind: remind || 30 }; l.push(d); }
+    d.until = until; d.note = note;
+    schedule(d); save("docs.v1", l);
+    if (location.hash === "#Docs") render();
+    return d;
+  }
   function cancelAll() { (load("docs.v1", null) || []).forEach(unschedule); }
   function status(n) { return n == null ? ["none", "добавьте срок"] : n < 0 ? ["over", human(n)] : n <= 30 ? ["soon", human(n)] : ["ok", human(n)]; }
 
@@ -136,5 +146,5 @@
     window.addEventListener("hashchange", function () { if (location.hash === "#Docs") render(); });
     render();
   }
-  window.AutoHubDocs = { init: init, soon: soon, human: human, osago: osago, setOsago: setOsago, cancelAll: cancelAll, daysLeft: daysLeft };
+  window.AutoHubDocs = { init: init, soon: soon, human: human, osago: osago, setOsago: setOsago, upsert: upsert, cancelAll: cancelAll, daysLeft: daysLeft };
 })();

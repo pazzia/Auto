@@ -276,7 +276,7 @@
 
   /* ================= Штрафы ================= */
   // Единый источник — AutoHubApi.fines.list(машина). Оплаченные: autohub.fines.v1 { id: { at, carId, amount, receipt } }.
-  var fines = { carId: null, items: null, error: null, req: 0 };
+  var fines = { carId: null, items: null, error: null, req: 0, live: false, at: 0 };
   function finesPaid() { return load("fines.v1", {}); }
   function fineDiscount(f) { return !!(f.discountUntil && f.discountAmount != null && daysTo(f.discountUntil) >= 0); }
   function fineSum(f) { return fineDiscount(f) ? f.discountAmount : f.amount; }
@@ -287,7 +287,7 @@
     if (!force && fines.carId === id && (fines.items || fines.error)) return;
     var req = ++fines.req;
     fines.carId = id; fines.items = null; fines.error = null;
-    API.fines.list(c).then(function (d) { if (req === fines.req) fines.items = d.items || []; },
+    API.fines.list(c).then(function (d) { if (req === fines.req) { fines.items = d.items || []; fines.live = !!d.live; fines.at = d.at || 0; } },
       function (e) { if (req === fines.req) { fines.items = []; fines.error = API.errorText(e); } })
       .then(function () { if (req !== fines.req) return; drawFines(); drawGarageFines(); if (window.AutoHubHub) window.AutoHubHub.render(); });
   }
@@ -313,7 +313,9 @@
     loadFines(); drawFines();
   }
   function fineCard(f, paid) {
-    var el = fn.tpl.cloneNode(true), spans = el.querySelectorAll("span"), disc = fineDiscount(f), left = disc ? daysTo(f.discountUntil) : 0;
+    var el = fn.tpl.cloneNode(true), disc = fineDiscount(f), left = disc ? daysTo(f.discountUntil) : 0;
+    // Только span верхнего уровня: в макете дата — вложенный <span data-rel-day>, он сдвигал номера
+    var spans = Array.prototype.filter.call(el.querySelectorAll("span"), function (s) { return !s.parentElement.closest("span"); });
     var d = D.toDate(f.date);
     spans[0].textContent = f.text;
     spans[1].textContent = d.getDate() + " " + D.MON[d.getMonth()] + (f.time ? ", " + f.time : "") + " · " + (f.place || "") + (f.uin ? " · УИН " + f.uin : "");
@@ -331,7 +333,8 @@
   function drawFines() {
     if (!fn.root) return;
     var c = car(), p = finesPaid(), items = fines.items, left = finesLeft();
-    if (fn.sub) fn.sub.textContent = carName() + (c.plate && window.AutoHubCar ? " · " + window.AutoHubCar.plate(c.plate, c.region) : "") + " · проверка каждый день";
+    if (fn.sub) fn.sub.textContent = carName() + (c.plate && window.AutoHubCar ? " · " + window.AutoHubCar.plate(c.plate, c.region) : "") +
+      (fines.live ? " · гибдд.рф, обновлено " + new Date(fines.at || Date.now()).toLocaleString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : " · проверка каждый день");
     Array.prototype.forEach.call(fn.root.querySelectorAll(".fine-card, .fine-empty"), function (e) { e.remove(); });
     if (!items) {
       var w = document.createElement("div"); w.className = "fine-empty loading"; w.textContent = "Проверяем штрафы…"; fn.anchor.parentNode.insertBefore(w, fn.anchor);
@@ -350,8 +353,22 @@
     if (!left.length) setBtn(fn.all, "Все штрафы оплачены ✓", DONE);
     else setBtn(fn.all, (left.length === 1 ? "Оплатить" : "Оплатить все") + (withDisc ? " со скидкой" : "") + " · " + rub(left.reduce(function (s, f) { return s + fineSum(f); }, 0)), { background: ACC, color: "#FFFFFF" });
   }
+  /** Настоящий штраф (гибдд.рф): платёж в приложении не подключён — показываем УИН для оплаты в банке или на Госуслугах. */
+  function payLive(list) {
+    var sum = list.reduce(function (s, f) { return s + fineSum(f); }, 0), uins = list.map(function (f) { return f.uinFull; }).join("\n");
+    UI.sheet({ title: list.length > 1 ? "Как оплатить штрафы" : "Как оплатить штраф", html: '<div class="kv">' + list.map(function (f) {
+        return "<div><span>УИН " + esc(f.uinFull) + "</span><b>" + rub(fineSum(f)) + (fineDiscount(f) ? " со скидкой" : "") + "</b></div>"; }).join("") + "<div><span>Итого</span><b>" + rub(sum) + "</b></div></div>" +
+      '<p class="sheet-text">Оплатите по УИН в приложении банка (раздел «Штрафы ГИБДД») или на Госуслугах. Оплату в АвтоХабе подключим вместе с платёжным партнёром. После оплаты штраф пропадёт из списка при следующей проверке (раз в сутки).</p>' +
+      '<button class="btn-dark" data-action="copy">' + (list.length > 1 ? "Скопировать номера УИН" : "Скопировать УИН") + "</button>",
+      onMount: function (b) {
+        b.querySelector("[data-action=copy]").addEventListener("click", function () {
+          (navigator.clipboard ? navigator.clipboard.writeText(uins) : Promise.reject()).then(function () { UI.toast("УИН скопирован"); }, function () { UI.toast("УИН: " + uins.replace(/\n/g, ", ")); });
+        });
+      } });
+  }
   function pay(ids) {
     var list = (fines.items || []).filter(function (f) { return ids.indexOf(f.id) >= 0; });
+    if (list.some(function (f) { return f.live; })) { payLive(list); return; }
     var sum = list.reduce(function (s, f) { return s + fineSum(f); }, 0), disc = list.some(fineDiscount);
     UI.sheet({ title: list.length > 1 ? "Оплата штрафов" : "Оплата штрафа", html: '<div class="kv"><div><span>' + (disc ? "К оплате со скидкой 50%" : "К оплате") + "</span><b>" + rub(sum) + '</b></div><div><span>Комиссия</span><b>0 ₽</b></div><div><span>Карта</span><b>•••• 4242 (демо)</b></div></div>' +
       '<p class="sheet-text" style="font-size:13px;color:#5B5F66">Прототип: деньги не списываются. В рабочей версии оплата пройдёт через платёжного партнёра с доступом к ГИС ГМП.</p>' +
@@ -674,5 +691,6 @@
       try { f(); } catch (e) { if (window.console) console.error("AutoHubScreens." + f.name, e); }
     });
   }
-  window.AutoHubScreens = { init: init, addHistory: addHistory, historyCount: historyCount, finesUnpaid: finesUnpaid };
+  window.AutoHubScreens = { init: init, addHistory: addHistory, historyCount: historyCount, finesUnpaid: finesUnpaid,
+    reloadFines: function () { loadFines(true); drawFines(); } };
 })();
