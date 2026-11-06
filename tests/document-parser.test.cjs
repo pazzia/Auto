@@ -100,3 +100,85 @@ test('Cyrillic document numbers and quantity from arithmetic when the column is 
  const d=extract(lines('Запчасти и материалы Кол Цена Сумма','Фильтр воздушный % 780,00 780,00','Замена фильтра i 350,00','Итого: 1 130,00'));
  assert.deepEqual(d.items.map(i=>[i.quantity,i.price,i.total]),[[1,780,780],[1,null,350]]);
 });
+
+// ---- Ревью 0.16: ловушки итога, пробега и даты ----
+const field = (k, ...t) => extract(lines(...t)).fields[k].value;
+
+test('total with discount: the amount "без скидки" never wins over the discounted total', () => {
+ // строка «без скидки … Скидка N%: X» без итога — итог = без скидки − скидка (арифметика сходится)
+ assert.equal(field('total','Итого без скидки: 6 000,00 Скидка 10%: 600,00'), 5400);
+ assert.equal(field('total','Итого без скидки: 6 000,00 Скидка 10%: 600,00','Итого со скидкой: 5 400,00'), 5400);
+ assert.equal(field('total','Итого без скидки: 6 000,00 Скидка 10%: 600,00 Итого со скидкой: 5 400,00'), 5400);
+ assert.equal(field('total','Итого со скидкой: 5 400,00'), 5400);
+ assert.equal(field('total','Сумма с учётом скидки: 5 400,00'), 5400);
+ assert.equal(field('total','Стоимость без скидки: 6 000,00','Скидка: 600,00'), 5400);
+ // процент не сходится с суммой скидки (скидка только на работы?) — итог не угадываем
+ assert.equal(field('total','Итого без скидки: 6 000,00 Скидка 10%: 300,00'), null);
+ // скидка только в процентах — сумма итогов разделов (до скидки) не становится итогом
+ assert.equal(field('total','Работы','Итого: 1 000,00','Запчасти','Итого: 2 000,00','Скидка 5%'), null);
+ assert.equal(field('total','Работы','Итого: 1 000,00','Запчасти','Итого: 2 000,00'), 3000);
+});
+
+test('total is money, not a count: «К оплате 2 позиции на сумму 3 000,00»', () => {
+ assert.equal(field('total','К оплате 2 позиции на сумму 3 000,00'), 3000);
+ assert.equal(field('total','Итого к оплате 3 наименования на сумму 3 000'), 3000);
+ assert.equal(field('total','Итого к оплате: 2 шт.'), null);
+ assert.equal(field('total','Итого к оплате на 01.10.2026: 5 400,00'), 5400);
+ assert.equal(field('total','Итого к оплате: 5 400 руб.'), 5400);
+ assert.equal(field('total','Итого к оплате: 3900'), 3900);
+ assert.equal(field('total','Итого к оплате 3 900'), 3900);
+});
+
+test('VAT "в том числе" is not the total and not a work row', () => {
+ assert.equal(field('total','Итого к оплате, в т.ч. НДС 20%: 900,00'), null);
+ assert.equal(field('total','Итого к оплате, в т.ч. НДС 20%: 900,00 5 400,00'), 5400);
+ assert.equal(field('total','Итого к оплате: 5 400,00 в том числе НДС (20%) 900,00'), 5400);
+ assert.equal(field('total','Итого к оплате с НДС 20%: 5 400,00'), 5400);
+ const d=extract(lines('Запчасти и материалы Кол Цена Сумма','Фильтр масляный 1 420,00 420,00','В том числе НДС 20%: 70,00','Итого к оплате: 420,00'));
+ assert.deepEqual(d.items.map(i=>i.name),['Фильтр масляный']);
+ assert.equal(d.fields.total.value,420);
+});
+
+test('mileage thousands separators: space, dot, NBSP, narrow NBSP; no truncation', () => {
+ for (const s of ['125 400','125.400','125 400','125 400','125 400','125400'])
+  assert.equal(field('mileage','Пробег: '+s+' км'),125400,s);
+ assert.equal(field('mileage','Пробег, км: 125 400'),125400);
+ assert.equal(field('mileage','Пробег (км): 125.400'),125400);
+ assert.equal(field('mileage','Пробег: 125 тыс. км'),null);   // не «12»
+ assert.equal(field('mileage','Пробег: 50 000 миль'),null);    // не километры
+ assert.equal(field('mileage','Пробег: 01.10.2026'),null);     // дата, не пробег
+ assert.equal(field('mileage','Пробег: 125,40'),null);         // копейки, не пробег
+ assert.equal(field('mileage','Пробег 87 450 2019 г.в.'),87450);
+ const t=extract([{text:'VIN: Пробег',page:1,confidence:90},{text:'XTAGFK330KY123456 87.450',page:1,confidence:90}]);
+ assert.equal(t.fields.mileage.value,87450);
+ assert.equal(extract([{text:'Пробег',page:1,confidence:90},{text:'125.400',page:1,confidence:90}]).fields.mileage.value,125400);
+});
+
+test('reception/print/registration dates are never the service date', () => {
+ assert.equal(field('date','Дата приема на обслуживание: 01.03.2026'), null);
+ assert.equal(field('date','Дата приёма на обслуживание: 01.03.2026'), null);
+ assert.equal(field('date','Дата печати обслуживания: 01.03.2026'), null);
+ assert.equal(field('date','Дата оформления заказа на обслуживание 01.03.2026'), null);
+ assert.equal(field('date','Дата приёма на обслуживание: 01.03.2026','Дата выполнения работ: 03.03.2026'), '2026-03-03');
+ assert.equal(field('date','Дата обслуживания: 03.03.2026'), '2026-03-03');
+ assert.equal(field('date','Дата закрытия: 03.03.2026'), '2026-03-03');
+ assert.equal(field('date','Дата, время приёма 01.03.2026 10:00 Дата выполнения работ 03.03.2026 18:00'), '2026-03-03');
+});
+
+test('neighbouring traps: next-service date/mileage, "без скидки к оплате", VAT in brackets, mileage label variants', () => {
+ assert.equal(field('date','Следующее техническое обслуживание: 01.03.2027'), null);
+ assert.equal(field('date','Гарантия на обслуживание до 01.03.2027'), null);
+ assert.equal(field('date','Плановое обслуживание 01.03.2027'), null);
+ assert.equal(field('mileage','Следующее ТО: пробег 135 000 км'), null);
+ assert.equal(field('mileage','Пробег: 125 400 км','Следующее ТО: пробег 135 000 км'), 125400);
+ assert.equal(field('mileage','Пробег автомобиля: 125 400 км'), 125400);
+ assert.equal(field('mileage','Показания одометра: 125 400'), 125400);
+ assert.equal(field('total','Итого без скидки к оплате: 6 000,00'), null);
+ assert.equal(field('total','Итого к оплате (в т.ч. НДС 900,00): 5 400,00'), 5400);
+ assert.equal(field('total','Сумма НДС: 900,00','Итого к оплате: 5 400,00'), 5400);
+ assert.equal(field('total','Итого к оплате: НДС не облагается'), null);
+});
+
+test('parser regexes run on old Android WebView (minSdk 26): no lookbehind', () => {
+ assert.doesNotMatch(require('node:fs').readFileSync('web/document-parser.js','utf8'), /\(\?<[!=]/);
+});
