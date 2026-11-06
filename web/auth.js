@@ -36,6 +36,7 @@
         mode = t.dataset.auth;
         scr.querySelectorAll("[data-auth]").forEach(function (b) { b.classList.toggle("on", b === t); b.setAttribute("aria-selected", String(b === t)); });
         $("aNameWrap").hidden = mode !== "reg";
+        scr.classList.toggle("reg", mode === "reg"); // в регистрации прячем список возможностей — кнопка видна без прокрутки
         $("aGo").textContent = mode === "reg" ? "Создать аккаунт" : "Войти";
         $("aPass").setAttribute("autocomplete", mode === "reg" ? "new-password" : "current-password");
         $("aErr").hidden = true;

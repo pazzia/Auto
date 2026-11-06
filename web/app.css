@@ -175,6 +175,7 @@ button.dc-tile{cursor:pointer}
 .brand.small .brand-name{font-size:18px}
 .feats{display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid #E2DED6;border-radius:18px;padding:14px}
 .feats>div{display:flex;gap:12px;align-items:center}.feats>div>div{display:flex;flex-direction:column;gap:1px;font-size:13px;color:#5B5F66}.feats b{font-size:14px;color:#17191C}
+#s-Welcome.reg .feats{display:none}
 .feat-ic{width:36px;height:36px;flex-shrink:0;border-radius:10px;background:#FCEBDF;color:#C2410C;font-weight:800;display:flex;align-items:center;justify-content:center}
 .pwd{display:flex;align-items:center;height:48px;border:1px solid #E2DED6;border-radius:12px;background:#fff;overflow:hidden}
 .pwd input{flex:1;border:none!important;height:100%!important;min-width:0}
