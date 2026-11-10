@@ -22,7 +22,7 @@
 | `docs/` | Контекст, дорожная карта, инструкция проекта, описание API ([`docs/api.md`](docs/api.md)), бэклог задач AUTO-№ ([`docs/backlog.md`](docs/backlog.md)) |
 | `tests/` | Тесты разбора документов (`node --test`), проверка предобработки OCR на JVM, эталоны синтетических нарядов |
 | `tools/ocr_replay/` | Повтор OCR-конвейера APK на ПК и сверка с эталонами |
-| `.github/workflows/build-apk.yml` | Тесты, сборка APK, проверка OCR на эмуляторе в авиарежиме, релиз |
+| `.github/workflows/build-apk.yml` | Тесты, сборка APK, проверка OCR на эмуляторе в авиарежиме, запуск release-сборки на Android 10 и 14, релиз |
 
 ## Как вносить изменения
 
@@ -94,6 +94,11 @@ gh secret set AUTOHUB_KEY_ALIAS -R pazzia/Auto           # autohub
 Или вручную: **Settings → Secrets and variables → Actions → New repository secret**. Без этих секретов CI собирает
 и проверяет APK, но релиз не выпускает (ошибка в задаче release). Локальная подписанная сборка: задать те же
 переменные окружения (`AUTOHUB_KEYSTORE_FILE` — путь к .jks) и `gradle :app:assembleRelease`.
+
+**Пока секретов нет** — APK подписывается тем же ключом вне CI: **Actions → Build APK → Run workflow** (ручной запуск)
+собирает release-сборку, запускает её на эмуляторах Android 10 и 14 (`tools/ci_smoke.sh`) и кладёт неподписанный APK
+в служебную ветку `ci-apk-handoff`; затем `bash tools/sign_handoff.sh autohub-release.jks файл-с-паролем` — и готов
+`AutoHub-<номер>.apk`. Так подписана сборка 0.20. Подпись та же, что будет у релизов из CI, — они встанут поверх.
 
 ## Сборка APK локально
 

@@ -18,7 +18,7 @@ git -C "$ROOT" archive FETCH_HEAD | tar -x -C "$WORK"
 VER="$(grep -o "versionName='[^']*'" "$WORK/badging.txt" | cut -d"'" -f2)"
 OUT="$OUTDIR/AutoHub-$VER.apk"
 
-java -jar "$WORK/apksigner.jar" sign --ks "$KS" --ks-key-alias "$ALIAS" --ks-pass "file:$PASS" --key-pass "file:$PASS" --out "$OUT" "$WORK/app-release-unsigned.apk"
+java -jar "$WORK/apksigner.jar" sign --ks "$KS" --ks-key-alias "$ALIAS" --ks-pass "file:$PASS" --out "$OUT" "$WORK/app-release-unsigned.apk"
 rm -f "$OUT.idsig"
 java -jar "$WORK/apksigner.jar" verify --min-sdk-version 26 --print-certs "$OUT" | grep -E "certificate (DN|SHA-256)"
 echo "Готово: $OUT (сборка $VER, коммит $(cat "$WORK/COMMIT"))"
