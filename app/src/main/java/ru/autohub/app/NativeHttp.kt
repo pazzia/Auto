@@ -27,19 +27,31 @@ class NativeHttp(private val webView: WebView) {
     fun close() { closed = true }
 
     @JavascriptInterface
-    fun get(url: String, callbackId: String) {
+    fun get(url: String, callbackId: String) = fetch(url, null, callbackId)
+
+    /**
+     * GET с токеном «Authorization: Bearer …» — только для хостов из [bearerHosts] (ключ пользователя
+     * к платному API хранится в приложении на телефоне и не уходит ни на какой другой хост).
+     */
+    @JavascriptInterface
+    fun getAuth(url: String, bearer: String, callbackId: String) = fetch(url, bearer, callbackId)
+
+    private fun fetch(url: String, bearer: String?, callbackId: String) {
         pool.execute {
             var ok = false
             var status = 0
             val body: String = try {
                 val u = URL(url)
                 require(u.protocol == "https" && u.host in allowedHosts) { "host not allowed" }
+                require(bearer == null || u.host in bearerHosts) { "token not allowed for host" }
+                require(bearer == null || bearer.matches(Regex("[A-Za-z0-9._~+/=-]{8,256}"))) { "bad token" }
                 val conn = (u.openConnection() as HttpURLConnection).apply {
                     connectTimeout = 10_000
                     readTimeout = 15_000
                     instanceFollowRedirects = false
                     useCaches = false
                     setRequestProperty("Accept", "application/json")
+                    if (bearer != null) setRequestProperty("Authorization", "Bearer $bearer")
                 }
                 try {
                     val code = conn.responseCode
@@ -84,7 +96,9 @@ class NativeHttp(private val webView: WebView) {
 
         // Используется только в режиме live (web/api.js). Адрес бэкенда добавить сюда же.
         // service.api-assist.com — госданные по ключу владельца (web/gov.js, AUTO-45)
-        private val allowedHosts = setOf("vpic.nhtsa.dot.gov", "service.api-assist.com")
+        // api.avtovincod.ru — спецификация по VIN и VIN по госномеру по ключу владельца (web/vincod.js, AUTO-46)
+        private val allowedHosts = setOf("vpic.nhtsa.dot.gov", "service.api-assist.com", "api.avtovincod.ru")
+        private val bearerHosts = setOf("api.avtovincod.ru")
 
         /** Один пул на процесс: при пересоздании активности потоки не копятся. */
         private val pool: ExecutorService = Executors.newFixedThreadPool(2) { runnable ->

@@ -1,0 +1,27 @@
+{
+ "success": 1,
+ "licensePlate": "Т000ТТ00",
+ "vin": "X7TEST00000000001",
+ "bodyNumber": null,
+ "chassisNumber": null,
+ "sts": {
+  "series": "0000",
+  "number": "000000",
+  "date": "2021-06-01"
+ },
+ "brand": "LADA",
+ "model": "VESTA",
+ "year": 2021,
+ "enginePower": 106,
+ "vehicleCode": "B",
+ "isTaxi": false,
+ "status": "done",
+ "testMode": true,
+ "billing": {
+  "charged": 0,
+  "currency": "RUB",
+  "billed": false,
+  "balance": 0,
+  "requestId": null
+ }
+}

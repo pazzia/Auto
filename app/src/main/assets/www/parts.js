@@ -89,7 +89,15 @@
     });
     res.list.addEventListener("click", function (e) {
       var a = e.target.closest("[data-offers]"); if (a) st.partId = a.dataset.offers;
+      if (e.target.closest("[data-action=fit-all]")) { st.showAll = !st.showAll; drawResults(); }
+      if (e.target.closest("[data-action=fit-spec]")) {
+        var C = window.AutoHubCar, car = C && C.active(), VC = window.AutoHubVinCod;
+        if (car && car.demo) { UI.dialog("Добавьте свою машину", "Комплектацию по VIN определяем для своей машины: добавьте её в гараж по VIN или госномеру."); return; }
+        if (!car || !car.vin) { UI.dialog("Нужен VIN", "Укажите VIN машины в гараже — по нему определим двигатель, КПП и привод."); return; }
+        if (VC && VC.ready()) C.specByVin(car); else if (VC) VC.open();
+      }
     });
+    window.addEventListener("autohub:car", function () { if (st.items) drawResults(); });
     var cmp = res.bar.querySelector('a[href="#Compare"]');
     cmp.addEventListener("click", function (e) {
       if (st.compare.length < 2) { e.preventDefault(); UI.toast("Отметьте две детали «К сравнению»"); }
@@ -124,30 +132,42 @@
     if (st.loading || st.error) { res.title.textContent = st.kit ? "Комплект к ТО" : st.cat ? API.parts.categories[st.cat] : (st.query || "Все запчасти"); return; }
     var title = st.kit ? "Комплект к ТО" : st.cat ? API.parts.categories[st.cat] : (st.query || "Все запчасти");
     res.title.textContent = title;
+    // AUTO-46: совместимость с машиной — по комплектации (код двигателя, КПП) или хотя бы по марке, модели и году
+    var car = window.AutoHubCar ? window.AutoHubCar.active() : null, fits = {};
+    st.items.forEach(function (p) { fits[p.id] = API.parts.fit(p, car); });
+    var hiddenNo = 0;
     var items = st.items.filter(function (p) {
-      return (!st.stock || p.days <= 1) && (!st.fast || p.days <= 2) && (!st.orig || p.original);
-    }).sort(function (a, b) { return st.sortDesc ? b.priceMin - a.priceMin : a.priceMin - b.priceMin; });
+      if (!((!st.stock || p.days <= 1) && (!st.fast || p.days <= 2) && (!st.orig || p.original))) return false;
+      if (fits[p.id].status === "no" && !st.showAll) { hiddenNo++; return false; }
+      return true;
+    }).sort(function (a, b) { var r = { fits: 0, check: 1, no: 2 }; return r[fits[a.id].status] - r[fits[b.id].status] || (st.sortDesc ? b.priceMin - a.priceMin : a.priceMin - b.priceMin); });
+    var VC = window.AutoHubVinCod, spec = car && car.spec;
+    var specBox = '<div class="fit-spec">' + (spec
+      ? "<b>Подбор по комплектации</b><span>" + esc((spec.title || carName()) + " · " + (VC ? VC.specLine(spec) : "")) + "</span>"
+      : '<b>Комплектация не определена</b><span>Подбираем по марке, модели и году — детали с разными двигателями и КПП помечены «Проверьте».</span><button class="linkbtn" data-action="fit-spec">Определить по VIN</button>') + "</div>";
+    var moreBox = hiddenNo || st.showAll ? '<button class="linkbtn fit-more" data-action="fit-all">' + (st.showAll ? "Скрыть неподходящие" : "Показать неподходящие (" + hiddenNo + ")") + "</button>" : "";
     var offers = items.reduce(function (n, p) { return n + p.sellers; }, 0);
     res.count.innerHTML = items.length
-      ? '<b style="color: #17191C">' + items.length + " " + plural(items.length, "деталь", "детали", "деталей") + "</b> " + plural(items.length, "подходит", "подходят", "подходят") + " к " + esc(carName()) + " · " + offers + " " + plural(offers, "предложение", "предложения", "предложений")
+      ? '<b style="color: #17191C">' + items.length + " " + plural(items.length, "деталь", "детали", "деталей") + "</b> для " + esc(carName()) + " · " + offers + " " + plural(offers, "предложение", "предложения", "предложений")
       : ""; // при пустой выдаче заголовок один — в блоке ниже
     res.count.hidden = !items.length; res.bar.hidden = !items.length;
     if (!items.length) {
-      res.list.innerHTML = '<div class="empty"><b>По запросу ничего нет</b><span>Попробуйте другое название или артикул, либо снимите фильтры.</span><a href="#Main" class="btn-light" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Изменить поиск</a></div>';
+      res.list.innerHTML = specBox + '<div class="empty"><b>' + (hiddenNo ? "Подходящих деталей нет" : "По запросу ничего нет") + "</b><span>" + (hiddenNo ? "Найдено " + hiddenNo + " " + plural(hiddenNo, "деталь", "детали", "деталей") + ", но они не для этой комплектации." : "Попробуйте другое название или артикул, либо снимите фильтры.") + '</span><a href="#Main" class="btn-light" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Изменить поиск</a></div>' + moreBox;
     } else {
-      res.list.innerHTML = items.map(function (p) {
+      res.list.innerHTML = specBox + items.map(function (p) {
         var on = st.compare.indexOf(p.id) >= 0;
         return '<div style="background: #FFFFFF; border: ' + (on ? "1.5px solid " + ACC : "1px solid #E2DED6") + '; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px">' +
           '<div style="display: flex; gap: 12px"><div class="photo">' + esc(p.brand.split(/[\s/-]/)[0]) + '</div>' +
           '<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">' +
           '<div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap"><span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: ' + (p.original ? "#17191C; color: #FFFFFF" : "#EDEAE3; color: #17191C") + '">' + (p.original ? "ОРИГИНАЛ" : "АНАЛОГ") + '</span><span style="font-family: \'JetBrains Mono\', monospace; font-size: 12px; color: #5B5F66">' + esc(p.article) + "</span></div>" +
           '<div style="font-weight: 700; font-size: 15px; line-height: 1.3">' + esc(p.name + " " + p.brand) + "</div>" +
-          '<div style="font-size: 12px; color: #0F6B3A; font-weight: 600">✓ Подходит к ' + esc(carName()) + " · " + whenText(p.days) + "</div></div></div>" +
+          '<div class="fit fit-' + fits[p.id].status + '">' + ({ fits: "✓ ", check: "? ", no: "✕ " })[fits[p.id].status] + esc(fits[p.id].text) + "</div>" +
+          '<div style="font-size: 12px; color: #5B5F66">' + whenText(p.days) + "</div></div></div>" +
           '<div style="display: flex; align-items: flex-end; justify-content: space-between">' +
           '<div><div style="font-size: 12px; color: #5B5F66">' + p.sellers + " " + plural(p.sellers, "продавец", "продавца", "продавцов") + '</div><div style="font-size: 20px; font-weight: 700">' + p.priceMin.toLocaleString("ru-RU") + " – " + rub(p.priceMax) + "</div></div>" +
           '<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; min-height: 44px"><input type="checkbox" data-cmp="' + p.id + '"' + (on ? " checked" : "") + ' style="width: 20px; height: 20px; accent-color: ' + ACC + '">К сравнению</label></div>' +
           '<a href="#Offers" data-offers="' + p.id + '" style="height: 44px; border-radius: 12px; background: #F3F1EC; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Сравнить цены продавцов</a></div>';
-      }).join("");
+      }).join("") + moreBox;
     }
     var n = st.compare.length, bar = res.bar.querySelector("span");
     if (bar) bar.textContent = n + " " + plural(n, "деталь выбрана", "детали выбрано", "деталей выбрано");

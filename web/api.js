@@ -31,8 +31,8 @@
   var cbSeq = 0, cbs = {};
   window.__nativeHttpCb = function (id, okFlag, body, status) { var cb = cbs[id]; delete cbs[id]; if (cb) cb(okFlag, body, status); };
   /** GET с кодом ответа и телом (в том числе для 4xx: у API Assist в нём описание ошибки). Отказ — только при сбое сети. */
-  function httpGet(url, timeoutMs) {
-    timeoutMs = timeoutMs || 12000;
+  function httpGet(url, timeoutMs, opts) {
+    timeoutMs = timeoutMs || 12000; opts = opts || {};
     return new Promise(function (resolve, reject) {
       var done = false;
       var timer = setTimeout(function () { if (!done) { done = true; reject(apiError("timeout")); } }, timeoutMs);
@@ -43,10 +43,15 @@
         resolve({ ok: !!okFlag, status: status, body: body || "" });
       }
       if (window.NativeHttp && window.NativeHttp.get) {
-        var id = "c" + (++cbSeq); cbs[id] = finish; window.NativeHttp.get(url, id);
+        var id = "c" + (++cbSeq); cbs[id] = finish;
+        if (opts.bearer) {
+          if (!window.NativeHttp.getAuth) { delete cbs[id]; done = true; clearTimeout(timer); return reject(apiError("network", "Обновите приложение: эта версия не умеет запросы с ключом")); }
+          window.NativeHttp.getAuth(url, opts.bearer, id);
+        } else window.NativeHttp.get(url, id);
       } else {
-        fetch(url).then(function (r) { return r.text().then(function (t) { finish(r.ok, t, r.status); }); },
-          function (e) { finish(false, String(e), 0); });
+        fetch(url, opts.bearer ? { headers: { Authorization: "Bearer " + opts.bearer } } : undefined)
+          .then(function (r) { return r.text().then(function (t) { finish(r.ok, t, r.status); }); },
+            function (e) { finish(false, String(e), 0); });
       }
     });
   }
@@ -148,24 +153,24 @@
 
   // Каталог запчастей (демо). cat: filters, brakes, suspension, oils, electrics
   var M_PARTS = [
-    { id: "p-hk-26300", cat: "filters", name: "Фильтр масляный", brand: "Hyundai/Kia", article: "26300-35505", original: true, priceMin: 640, priceMax: 910, avg: 760, sellers: 8, days: 0, rating: 4.7, specs: { "Высота": "85 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то" },
-    { id: "p-mann-w811", cat: "filters", name: "Фильтр масляный", brand: "MANN-FILTER", article: "W 811/80", original: false, priceMin: 412, priceMax: 690, avg: 520, sellers: 11, days: 0, rating: 4.6, specs: { "Высота": "85 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то" },
-    { id: "p-mahle-oc1051", cat: "filters", name: "Фильтр масляный", brand: "Mahle", article: "OC 1051", original: false, priceMin: 455, priceMax: 640, avg: 540, sellers: 5, days: 2, rating: 4.5, specs: { "Высота": "86 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то" },
-    { id: "p-hk-28113", cat: "filters", name: "Фильтр воздушный", brand: "Hyundai/Kia", article: "28113-H8100", original: true, priceMin: 590, priceMax: 880, avg: 700, sellers: 9, days: 1, rating: 4.7, specs: { "Длина": "245 мм", "Ширина": "191 мм", "Высота": "48 мм" }, tags: "то" },
-    { id: "p-filtron-ap", cat: "filters", name: "Фильтр воздушный", brand: "Filtron", article: "AP 185/5", original: false, priceMin: 380, priceMax: 560, avg: 450, sellers: 7, days: 1, rating: 4.4, specs: { "Длина": "245 мм", "Ширина": "191 мм", "Высота": "46 мм" }, tags: "то" },
-    { id: "p-hk-97133", cat: "filters", name: "Фильтр салонный", brand: "Hyundai/Kia", article: "97133-H8000", original: true, priceMin: 540, priceMax: 820, avg: 650, sellers: 10, days: 0, rating: 4.6, specs: { "Тип": "угольный", "Длина": "215 мм" }, tags: "то салон" },
-    { id: "p-hk-58101", cat: "brakes", name: "Колодки тормозные передние", brand: "Hyundai/Kia", article: "58101-H8A20", original: true, priceMin: 3900, priceMax: 4800, avg: 4200, sellers: 6, days: 1, rating: 4.8, specs: { "Толщина": "17 мм", "Датчик износа": "есть", "Ось": "передняя" }, tags: "колодки тормоз" },
-    { id: "p-brembo-p30", cat: "brakes", name: "Колодки тормозные передние", brand: "Brembo", article: "P 30 055", original: false, priceMin: 2480, priceMax: 3300, avg: 2800, sellers: 9, days: 0, rating: 4.7, specs: { "Толщина": "17 мм", "Датчик износа": "нет", "Ось": "передняя" }, tags: "колодки тормоз" },
-    { id: "p-trw-disc", cat: "brakes", name: "Диск тормозной передний", brand: "TRW", article: "DF 6624", original: false, priceMin: 2950, priceMax: 3900, avg: 3300, sellers: 6, days: 2, rating: 4.6, specs: { "Диаметр": "256 мм", "Толщина": "22 мм", "Вентилируемый": "да" }, tags: "диск тормоз" },
-    { id: "p-kyb-339", cat: "suspension", name: "Амортизатор передний", brand: "KYB", article: "339 7058", original: false, priceMin: 4700, priceMax: 6100, avg: 5300, sellers: 7, days: 1, rating: 4.7, specs: { "Тип": "газомасляный", "Сторона": "левая" }, tags: "амортизатор стойка" },
-    { id: "p-hk-54651", cat: "suspension", name: "Амортизатор передний", brand: "Hyundai/Kia", article: "54651-H8000", original: true, priceMin: 7600, priceMax: 9400, avg: 8300, sellers: 4, days: 3, rating: 4.8, specs: { "Тип": "газомасляный", "Сторона": "левая" }, tags: "амортизатор стойка" },
-    { id: "p-lemf-link", cat: "suspension", name: "Стойка стабилизатора", brand: "Lemförder", article: "39574 01", original: false, priceMin: 890, priceMax: 1300, avg: 1050, sellers: 8, days: 1, rating: 4.6, specs: { "Длина": "275 мм", "Сторона": "любая" }, tags: "стабилизатор тяга" },
-    { id: "p-hk-oil", cat: "oils", name: "Масло моторное 5W-30, 4 л", brand: "Hyundai/Kia", article: "05100-00451", original: true, priceMin: 3150, priceMax: 3900, avg: 3450, sellers: 12, days: 0, rating: 4.8, specs: { "Вязкость": "5W-30", "Объём": "4 л", "Допуск": "ACEA C3" }, tags: "масло то" },
-    { id: "p-shell-oil", cat: "oils", name: "Масло моторное 5W-30, 4 л", brand: "Shell Helix", article: "550046375", original: false, priceMin: 2890, priceMax: 3500, avg: 3100, sellers: 14, days: 0, rating: 4.6, specs: { "Вязкость": "5W-30", "Объём": "4 л", "Допуск": "ACEA A3/B4" }, tags: "масло то" },
-    { id: "p-atf", cat: "oils", name: "Масло АКПП SP-IV, 1 л", brand: "Hyundai/Kia", article: "04500-00115", original: true, priceMin: 1150, priceMax: 1500, avg: 1300, sellers: 8, days: 1, rating: 4.7, specs: { "Тип": "ATF SP-IV", "Объём": "1 л" }, tags: "акпп коробка" },
-    { id: "p-ngk-spark", cat: "electrics", name: "Свеча зажигания", brand: "NGK", article: "LZKR6B-10E", original: false, priceMin: 520, priceMax: 720, avg: 600, sellers: 10, days: 0, rating: 4.7, specs: { "Зазор": "1,0 мм", "Резьба": "M14" }, tags: "свечи зажигание то" },
-    { id: "p-varta-akb", cat: "electrics", name: "Аккумулятор 60 А·ч", brand: "Varta", article: "560 409 054", original: false, priceMin: 8900, priceMax: 11200, avg: 9800, sellers: 9, days: 1, rating: 4.8, specs: { "Ёмкость": "60 А·ч", "Пусковой ток": "540 А", "Полярность": "обратная" }, tags: "акб батарея" },
-    { id: "p-osram-h4", cat: "electrics", name: "Лампа фары H4", brand: "Osram", article: "64193", original: false, priceMin: 390, priceMax: 620, avg: 480, sellers: 11, days: 0, rating: 4.5, specs: { "Цоколь": "H4", "Мощность": "60/55 Вт" }, tags: "лампа свет" }
+    { id: "p-hk-26300", cat: "filters", name: "Фильтр масляный", brand: "Hyundai/Kia", article: "26300-35505", original: true, priceMin: 640, priceMax: 910, avg: 760, sellers: 8, days: 0, rating: 4.7, specs: { "Высота": "85 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то", fits: { brands: ["kia","hyundai"], engines: ["G4F","G4L","G4N"] } },
+    { id: "p-mann-w811", cat: "filters", name: "Фильтр масляный", brand: "MANN-FILTER", article: "W 811/80", original: false, priceMin: 412, priceMax: 690, avg: 520, sellers: 11, days: 0, rating: 4.6, specs: { "Высота": "85 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то", fits: { brands: ["kia","hyundai"], engines: ["G4F","G4L","G4N"] } },
+    { id: "p-mahle-oc1051", cat: "filters", name: "Фильтр масляный", brand: "Mahle", article: "OC 1051", original: false, priceMin: 455, priceMax: 640, avg: 540, sellers: 5, days: 2, rating: 4.5, specs: { "Высота": "86 мм", "Резьба": "M20×1,5", "Наружный диаметр": "68 мм", "Клапан": "есть" }, tags: "масло то", fits: { brands: ["kia","hyundai"], engines: ["G4F","G4L","G4N"] } },
+    { id: "p-hk-28113", cat: "filters", name: "Фильтр воздушный", brand: "Hyundai/Kia", article: "28113-H8100", original: true, priceMin: 590, priceMax: 880, avg: 700, sellers: 9, days: 1, rating: 4.7, specs: { "Длина": "245 мм", "Ширина": "191 мм", "Высота": "48 мм" }, tags: "то", fits: { brands: ["kia","hyundai"], models: ["rio","solaris"], years: [2017, 2023] } },
+    { id: "p-filtron-ap", cat: "filters", name: "Фильтр воздушный", brand: "Filtron", article: "AP 185/5", original: false, priceMin: 380, priceMax: 560, avg: 450, sellers: 7, days: 1, rating: 4.4, specs: { "Длина": "245 мм", "Ширина": "191 мм", "Высота": "46 мм" }, tags: "то", fits: { brands: ["kia","hyundai"], models: ["rio","solaris"], years: [2017, 2023] } },
+    { id: "p-hk-97133", cat: "filters", name: "Фильтр салонный", brand: "Hyundai/Kia", article: "97133-H8000", original: true, priceMin: 540, priceMax: 820, avg: 650, sellers: 10, days: 0, rating: 4.6, specs: { "Тип": "угольный", "Длина": "215 мм" }, tags: "то салон", fits: { brands: ["kia","hyundai"], models: ["rio","solaris"], years: [2017, 2023] } },
+    { id: "p-hk-58101", cat: "brakes", name: "Колодки тормозные передние", brand: "Hyundai/Kia", article: "58101-H8A20", original: true, priceMin: 3900, priceMax: 4800, avg: 4200, sellers: 6, days: 1, rating: 4.8, specs: { "Толщина": "17 мм", "Датчик износа": "есть", "Ось": "передняя" }, tags: "колодки тормоз", fits: { brands: ["kia","hyundai"], models: ["rio","solaris"], years: [2017, 2023] } },
+    { id: "p-brembo-p30", cat: "brakes", name: "Колодки тормозные передние", brand: "Brembo", article: "P 30 055", original: false, priceMin: 2480, priceMax: 3300, avg: 2800, sellers: 9, days: 0, rating: 4.7, specs: { "Толщина": "17 мм", "Датчик износа": "нет", "Ось": "передняя" }, tags: "колодки тормоз", fits: { brands: ["kia","hyundai"], models: ["rio","solaris"], years: [2017, 2023] } },
+    { id: "p-trw-disc", cat: "brakes", name: "Диск тормозной передний", brand: "TRW", article: "DF 6624", original: false, priceMin: 2950, priceMax: 3900, avg: 3300, sellers: 6, days: 2, rating: 4.6, specs: { "Диаметр": "256 мм", "Толщина": "22 мм", "Вентилируемый": "да" }, tags: "диск тормоз", fits: { brands: ["kia","hyundai"], models: ["rio","solaris"], years: [2017, 2023] } },
+    { id: "p-kyb-339", cat: "suspension", name: "Амортизатор передний", brand: "KYB", article: "339 7058", original: false, priceMin: 4700, priceMax: 6100, avg: 5300, sellers: 7, days: 1, rating: 4.7, specs: { "Тип": "газомасляный", "Сторона": "левая" }, tags: "амортизатор стойка", fits: { brands: ["kia","hyundai"], models: ["rio","solaris"], years: [2017, 2023] } },
+    { id: "p-hk-54651", cat: "suspension", name: "Амортизатор передний", brand: "Hyundai/Kia", article: "54651-H8000", original: true, priceMin: 7600, priceMax: 9400, avg: 8300, sellers: 4, days: 3, rating: 4.8, specs: { "Тип": "газомасляный", "Сторона": "левая" }, tags: "амортизатор стойка", fits: { brands: ["kia","hyundai"], models: ["rio","solaris"], years: [2017, 2023] } },
+    { id: "p-lemf-link", cat: "suspension", name: "Стойка стабилизатора", brand: "Lemförder", article: "39574 01", original: false, priceMin: 890, priceMax: 1300, avg: 1050, sellers: 8, days: 1, rating: 4.6, specs: { "Длина": "275 мм", "Сторона": "любая" }, tags: "стабилизатор тяга", fits: { brands: ["kia","hyundai"], models: ["rio","solaris","creta"] } },
+    { id: "p-hk-oil", cat: "oils", name: "Масло моторное 5W-30, 4 л", brand: "Hyundai/Kia", article: "05100-00451", original: true, priceMin: 3150, priceMax: 3900, avg: 3450, sellers: 12, days: 0, rating: 4.8, specs: { "Вязкость": "5W-30", "Объём": "4 л", "Допуск": "ACEA C3" }, tags: "масло то", fits: { fuel: ["бензин"] } },
+    { id: "p-shell-oil", cat: "oils", name: "Масло моторное 5W-30, 4 л", brand: "Shell Helix", article: "550046375", original: false, priceMin: 2890, priceMax: 3500, avg: 3100, sellers: 14, days: 0, rating: 4.6, specs: { "Вязкость": "5W-30", "Объём": "4 л", "Допуск": "ACEA A3/B4" }, tags: "масло то", fits: { fuel: ["бензин"] } },
+    { id: "p-atf", cat: "oils", name: "Масло АКПП SP-IV, 1 л", brand: "Hyundai/Kia", article: "04500-00115", original: true, priceMin: 1150, priceMax: 1500, avg: 1300, sellers: 8, days: 1, rating: 4.7, specs: { "Тип": "ATF SP-IV", "Объём": "1 л" }, tags: "акпп коробка", fits: { brands: ["kia","hyundai"], trans: ["AT"] } },
+    { id: "p-ngk-spark", cat: "electrics", name: "Свеча зажигания", brand: "NGK", article: "LZKR6B-10E", original: false, priceMin: 520, priceMax: 720, avg: 600, sellers: 10, days: 0, rating: 4.7, specs: { "Зазор": "1,0 мм", "Резьба": "M14" }, tags: "свечи зажигание то", fits: { engines: ["G4F","G4L"] } },
+    { id: "p-varta-akb", cat: "electrics", name: "Аккумулятор 60 А·ч", brand: "Varta", article: "560 409 054", original: false, priceMin: 8900, priceMax: 11200, avg: 9800, sellers: 9, days: 1, rating: 4.8, specs: { "Ёмкость": "60 А·ч", "Пусковой ток": "540 А", "Полярность": "обратная" }, tags: "акб батарея", fits: { universal: "сверьте ёмкость, полярность и размеры с родным аккумулятором" } },
+    { id: "p-osram-h4", cat: "electrics", name: "Лампа фары H4", brand: "Osram", article: "64193", original: false, priceMin: 390, priceMax: 620, avg: 480, sellers: 11, days: 0, rating: 4.5, specs: { "Цоколь": "H4", "Мощность": "60/55 Вт" }, tags: "лампа свет", fits: { universal: "сверьте тип лампы в руководстве по эксплуатации" } }
   ];
   var TO_KIT = ["p-mann-w811", "p-hk-28113", "p-hk-97133", "p-hk-oil", "p-ngk-spark"];
   var CAT_NAMES = { filters: "Фильтры", brakes: "Тормоза", suspension: "Подвеска", oils: "Масла", electrics: "Электрика" };
@@ -323,6 +328,32 @@
     });
   }
 
+  /* ---------- Совместимость детали с машиной (AUTO-46) ---------- */
+  function lc(x) { return String(x || "").toLowerCase().replace(/ё/g, "е").trim(); }
+  function carFacts(car) {
+    car = car || {}; var s = car.spec || {}, e = s.engine || {}, t = s.transmission || {};
+    var trText = lc(car.transmission);
+    return {
+      brand: lc(s.brand || car.make), model: lc(s.model || car.model), year: +(s.year || car.year) || null,
+      engine: String(e.code || "").toUpperCase(),
+      trans: t.code || (/автомат|акпп/.test(trText) ? "AT" : /механ|мкпп/.test(trText) ? "MT" : /вариатор|cvt/.test(trText) ? "CVT" : /робот/.test(trText) ? "AMT" : ""),
+      fuel: lc(e.fuel || (/дизел/.test(lc(car.engine)) ? "дизель" : /бензин|mpi|gdi|tsi/.test(lc(car.engine)) ? "бензин" : ""))
+    };
+  }
+  function fitPart(part, car) {
+    var f = (part && part.fits) || {}, c = carFacts(car), no = [], miss = [], ok = [];
+    if (f.universal) return { status: "check", text: "Универсальная деталь — " + f.universal };
+    if (f.brands) { if (!c.brand) miss.push("марка"); else if (f.brands.indexOf(c.brand) < 0) no.push("другая марка"); }
+    if (f.models) { if (!c.model) miss.push("модель"); else if (!f.models.some(function (m) { return c.model.indexOf(m) === 0; })) no.push("другая модель"); }
+    if (f.years) { if (!c.year) miss.push("год"); else if (c.year < f.years[0] || c.year > f.years[1]) no.push("для " + f.years[0] + "–" + f.years[1] + " г."); }
+    if (f.engines) { if (!c.engine) miss.push("код двигателя"); else if (!f.engines.some(function (x) { return c.engine.indexOf(x) === 0; })) no.push("другой двигатель (" + c.engine + ")"); else ok.push("двигатель " + c.engine); }
+    if (f.trans) { if (!c.trans) miss.push("тип КПП"); else if (f.trans.indexOf(c.trans) < 0) no.push(c.trans === "MT" ? "только для АКПП" : "не для этой КПП"); else ok.push(c.trans === "AT" ? "АКПП" : c.trans); }
+    if (f.fuel) { if (!c.fuel) miss.push("тип топлива"); else if (f.fuel.indexOf(c.fuel) < 0) no.push("для другого топлива"); else ok.push(c.fuel === "бензин" ? "бензиновый двигатель" : c.fuel === "дизель" ? "дизельный двигатель" : c.fuel); }
+    if (no.length) return { status: "no", text: "Не подходит: " + no.join(", ") };
+    if (miss.length) return { status: "check", text: "Проверьте: неизвестны " + miss.join(", ") + " — определите комплектацию по VIN" };
+    return { status: "fits", text: "Подходит" + (ok.length ? ": " + ok.join(" · ") : " по марке, модели и году") };
+  }
+
   /* ================= ПУБЛИЧНЫЙ API ================= */
   var api = {
     mode: MOCK ? "mock" : "live",
@@ -333,6 +364,7 @@
     userPosition: function () { return MOCK ? ok(USER_POS) : backend("GET", "/v1/me/position"); },
 
     vehicle: {
+      titleCase: titleCase,
       /** VIN → характеристики. Пустые make/model — база не знает этот VIN. */
       decodeVin: function (vin) {
         if (!MOCK) return vpicDecode(vin);
@@ -384,7 +416,8 @@
       /** Поиск запчастей: оригинал и аналоги. params: { query, cat, kit } */
       search: function (params) {
         params = params || {};
-        if (!MOCK) return backend("GET", "/v1/parts/search?" + qs(params));
+        if (!MOCK) return backend("GET", "/v1/parts/search?" + qs({ query: params.query, cat: params.cat, kit: params.kit,
+          vin: params.car && params.car.vin, engine: params.car && params.car.spec && params.car.spec.engine && params.car.spec.engine.code }));
         var n = function (x) { return String(x || "").toLowerCase().replace(/ё/g, "е").replace(/[\s\-\/]/g, ""); };
         var words = String(params.query || "").toLowerCase().replace(/ё/g, "е").split(/\s+/).filter(Boolean);
         var items = M_PARTS.filter(function (p) {
@@ -397,6 +430,9 @@
         });
         return ok({ items: items, source: SRC_MOCK });
       },
+      /** Подходит ли деталь машине — по комплектации (car.spec из AvtoVinCod) или хотя бы по марке, модели и году.
+       * Ответ: { status: "fits" | "no" | "check", text }. "check" — не хватает данных о машине или деталь универсальная. */
+      fit: fitPart,
       /** Деталь из локального демо-каталога (синхронно; корзина). */
       find: function (partId) { return clone(M_PARTS.filter(function (x) { return x.id === partId; })[0] || null); },
       get: function (partId) {

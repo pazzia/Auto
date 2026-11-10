@@ -1,0 +1,79 @@
+{
+ "success": 1,
+ "query": {
+  "vin": "X7TEST00000000001"
+ },
+ "vin": {
+  "requested": "X7TEST00000000001",
+  "normalized": "X7TEST00000000001"
+ },
+ "found": 1,
+ "full": 1,
+ "variants": [
+  {
+   "title": "LADA Vesta sedan 4d 1.6, 2021",
+   "brand": "LADA",
+   "model": "Vesta",
+   "bodyName": "GFL",
+   "generation": "I",
+   "modification": "1.6",
+   "market": "RU",
+   "years": {
+    "start": 2015,
+    "finish": 2022,
+    "current": false,
+    "model": 2021
+   },
+   "body": "SDN",
+   "drive": "FWD",
+   "doors": 4,
+   "transmission": {
+    "code": "MT",
+    "text": "механика",
+    "name": "5MT",
+    "speeds": 5
+   },
+   "engine": {
+    "series": "21129",
+    "fuelCode": "PO",
+    "fuelText": "бензин",
+    "volumeL": 1.6,
+    "volumeCcm": 1596,
+    "powerPs": 106,
+    "powerKw": 78,
+    "torqueNm": 148,
+    "emission": "Euro 5",
+    "layout": "L4",
+    "valves": 16,
+    "aspiration": "N",
+    "compression": 10.5,
+    "fuelRate": "6.4 - 7.0"
+   },
+   "assembly": {
+    "country": "Russia",
+    "region": null,
+    "city": "Togliatti",
+    "plant": null
+   },
+   "checkDigit": "absent",
+   "plant": {
+    "name": "Тестовый завод",
+    "brand": "LADA",
+    "country": "Russia",
+    "registerDate": "01.01.2000",
+    "regionCode": "63"
+   },
+   "registrationMatch": true
+  }
+ ],
+ "confirmed": true,
+ "decoded": true,
+ "testMode": true,
+ "billing": {
+  "charged": 0,
+  "currency": "RUB",
+  "billed": false,
+  "balance": 0,
+  "requestId": null
+ }
+}

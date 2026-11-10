@@ -56,7 +56,12 @@
 
   // Демо-авто из макетов: показывается, пока пользователь не добавил своё
   var DEMO_CAR = { make: "Kia", model: "Rio IV", year: 2019, engine: "1.6 MPI", transmission: "АКПП", body: "седан",
-    plate: "А123ВС", region: "177", vin: "XWEFC41ABKC001234", mileage: 58400, demo: true };
+    plate: "А123ВС", region: "177", vin: "XWEFC41ABKC001234", mileage: 58400, demo: true,
+    // Комплектация демо-машины (в формате AvtoVinCod) — по ней подбираются запчасти
+    spec: { brand: "KIA", model: "Rio", generation: "IV", bodyCode: "FB", modification: "1.6 AT", title: "KIA Rio IV sedan 1.6 AT, 2019", year: 2019, yearsFrom: 2017, yearsTo: 2020,
+      body: "седан", doors: 4, drive: "передний", driveCode: "FWD", transmission: { code: "AT", text: "автомат", name: "6AT", speeds: 6 },
+      engine: { code: "G4FG", fuel: "бензин", fuelCode: "PO", volumeL: 1.6, volumeCcm: 1591, powerPs: 123, powerKw: 90, torqueNm: 151, emission: "Euro 5", layout: "L4", valves: 16 },
+      assembly: "Санкт-Петербург, Россия", source: "демо-данные" } };
 
   var YEAR_CODES = "ABCDEFGHJKLMNPRSTVWXY123456789";
 
@@ -106,6 +111,8 @@
     try { old = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) {}
     if (g && g.cars && g.cars.length) {
       if (old) migrateOld(g, old); // гараж уже есть, но старый ключ 0.4 остался — спасти данные и убрать ключ
+      // демо-машина, сохранённая до 0.19, — без комплектации: подставляем, чтобы подбор запчастей работал
+      g.cars.forEach(function (c) { if (c.demo && !c.spec) c.spec = DEMO_CAR.spec; });
       return g;
     }
     if (old) { // перенос машины из версии 0.4 (одна машина): id выдаётся один раз и сразу сохраняется
@@ -268,8 +275,9 @@
     var nm = [draft.make, draft.model].filter(Boolean).join(" ");
     $("resTitle").textContent = nm ? nm + (draft.year ? ", " + draft.year : "") : "Марка не определена";
     $("resGrid").innerHTML =
-      field("Двигатель", draft.engine) + field("КПП", draft.transmission) +
-      field("Кузов", draft.body) + field("Сборка", draft.plant) +
+      field("Двигатель", draft.engine) + field("КПП", draft.spec && draft.spec.transmission.name ? draft.spec.transmission.name + " · " + draft.spec.transmission.text : draft.transmission) +
+      field("Кузов", draft.body + (draft.spec && draft.spec.bodyCode ? " · " + draft.spec.bodyCode : "")) + field("Сборка", draft.plant) +
+      (draft.spec ? field("Привод", draft.spec.drive) + field("Поколение", [draft.spec.generation, draft.spec.yearsFrom ? draft.spec.yearsFrom + "–" + (draft.spec.yearsTo || "") : ""].filter(Boolean).join(" · ")) : "") +
       (draft.vin ? field("VIN", carView(draft).vinMasked, true) : "") +
       (draft.plate ? field("Госномер", fmtPlate(draft.plate, draft.region), true) : "");
     $("resNote").hidden = !note; $("resNote").textContent = note || "";
@@ -295,8 +303,25 @@
     hideResult();
     // Госномер сохраняем, только если он введён для этой же машины: номер не нашли (VIN нет) или VIN совпал
     var keepPlate = draft.plate && (!draft.vin || draft.vin === v);
-    draft = { vin: v, plate: keepPlate ? draft.plate : undefined, region: keepPlate ? draft.region : undefined, plant: loc.plant };
-    API().vehicle.decodeVin(v).then(function (r) {
+    draft = { vin: v, plate: keepPlate ? draft.plate : undefined, region: keepPlate ? draft.region : undefined, sts: keepPlate ? draft.sts : undefined, plant: loc.plant };
+    var VC = window.AutoHubVinCod;
+    if (VC && VC.ready()) {
+      // Точная комплектация (AUTO-46): код двигателя, КПП, привод — по ней подбираются запчасти
+      VC.decode(v).then(function (r) { return VC.choose(r.variants).then(function (spec) { return { spec: spec, r: r }; }); }).then(function (x) {
+        if (!x.spec) throw Object.assign(new Error("no variant"), { code: x.r.variants.length ? "not_chosen" : "not_found" });
+        renderResult(Object.assign(VC.carFields(x.spec), { plant: x.spec.assembly || loc.plant }), "full",
+          "Источник: AvtoVinCod — комплектация по VIN" + (x.r.test ? " (тестовый режим)" : ""),
+          x.r.variants.length > 1 ? "Вариант выбран вручную — проверьте мощность и объём по СТС." : "");
+      }, function (e) {
+        // Нет денег, бюджета, сети или VIN не расшифрован — открытая база vPIC, как раньше
+        vpicFind(v, loc, e && e.code !== "not_chosen" ? (e.message || "") : "");
+      }).then(function () { busy(btn, false); });
+      return;
+    }
+    vpicFind(v, loc, "").then(function () { busy(btn, false); });
+  }
+  function vpicFind(v, loc, why) {
+    return API().vehicle.decodeVin(v).then(function (r) {
       var c = {
         make: r.make || loc.make, model: r.model, year: r.year || loc.year,
         engine: r.engine, transmission: r.transmission, body: r.body,
@@ -306,14 +331,14 @@
       var mock = API().mode === "mock";
       renderResult(c, full ? "full" : "partial",
         "Источники: " + r.source + " и код производителя в VIN",
-        full ? "" : mock
-          ? "Этого VIN нет в демо-базе. Производитель и год определены по VIN — уточните модель вручную."
-          : "В открытой базе нет модели для этого VIN — так бывает с машинами не для рынка США. Уточните модель вручную, остальное уже заполнено.");
+        (why ? why + " " : "") + (full ? (mock ? "" : "Без кода двигателя запчасти подбираются приблизительно — подключите AvtoVinCod в Профиле.")
+          : mock ? "Этого VIN нет в демо-базе. Производитель и год определены по VIN — уточните модель вручную."
+          : "В открытой базе нет модели для этого VIN — так бывает с машинами не для рынка США. Уточните модель вручную, остальное уже заполнено."));
     }, function () {
       renderResult({ make: loc.make, year: loc.year, plant: loc.plant }, "partial",
         "Источник: код производителя в VIN (без интернета)",
         "Не удалось связаться с базой. Мы определили производителя и год по VIN — уточните модель вручную.");
-    }).then(function () { busy(btn, false); });
+    });
   }
 
   function onPlateFind() {
@@ -326,6 +351,26 @@
     draft = {};
     var btn = $("plateFind");
     busy(btn, true, "Ищем по номеру…");
+    var VC = window.AutoHubVinCod;
+    if (VC && VC.ready()) {
+      // AUTO-46: номер → VIN и СТС (gos2vin), затем VIN → комплектация (decode)
+      VC.byPlate(p, r).then(function (hit) {
+        draft = { vin: hit.vin, plate: p, region: r, sts: hit.sts || undefined, plant: decodeLocal(hit.vin).plant };
+        $("vinInput").value = hit.vin;
+        return VC.decode(hit.vin).then(function (d) { return VC.choose(d.variants); }, function () { return null; }).then(function (spec) {
+          var c = spec ? Object.assign(VC.carFields(spec), { plant: spec.assembly || draft.plant })
+            : { make: hit.brand ? API().vehicle.titleCase(hit.brand) : undefined, model: hit.model, year: hit.year, engine: hit.powerHp ? hit.powerHp + " л.с." : undefined };
+          renderResult(c, spec ? "full" : "partial", "Источник: AvtoVinCod — VIN по госномеру" + (spec ? " и комплектация по VIN" : "") + (hit.test ? " (тестовый режим)" : ""),
+            (hit.isTaxi ? "Машина числится в реестре такси. " : "") + (spec ? "" : "Комплектацию по VIN определить не удалось — уточните модель и двигатель."));
+        });
+      }, function (e) {
+        draft = { plate: p, region: r };
+        $("plateMsgTitle").textContent = e.code === "not_found" ? "Номер не нашли — найдём по VIN" : "Не удалось найти по номеру";
+        $("plateMsgText").textContent = (e.message || "") + " Введите VIN из СТС.";
+        $("plateMsg").hidden = false; $("plateMsg").style.display = "flex";
+      }).then(function () { busy(btn, false); });
+      return;
+    }
     API().vehicle.findByPlate(p, r).then(function (car) {
       var loc = decodeLocal(car.vin || "");
       draft = { vin: car.vin, plate: p, region: r, plant: loc.plant || car.plantCountry, mileage: car.mileage };
@@ -539,6 +584,8 @@
     window.AutoHubUI.sheet({
       title: shortName(c),
       html: '<button class="pick" data-act="mileage" data-action="m"><span class="pick-ic">км</span><span class="pick-txt"><b>Обновить пробег</b><span>сейчас: ' + esc(carView(c).mileage) + "</span></span></button>" +
+        (c.vin && !c.demo ? '<button class="pick" data-act="spec" data-action="m"><span class="pick-ic">VIN</span><span class="pick-txt"><b>Комплектация по VIN</b><span>' +
+          esc(c.spec ? window.AutoHubVinCod.specLine(c.spec) : "код двигателя, КПП, привод — для точного подбора запчастей") + "</span></span></button>" : "") +
         '<button class="pick" data-act="profile" data-action="m"><span class="pick-ic" style="background:#FCEBDF;color:#C2410C">' + window.AutoHubKit.icon("gear", 22) + '</span><span class="pick-txt"><b>Управлять машинами</b><span>добавить, удалить — в личном кабинете</span></span></button>',
       onMount: function (body) {
         body.addEventListener("click", function (e) {
@@ -547,10 +594,23 @@
           window.AutoHubUI.close(function () {
             if (act === "mileage") askMileage();
             if (act === "profile") location.hash = "#Profile";
+            if (act === "spec") specByVin(c);
           });
         });
       }
     });
+  }
+  /** Комплектация существующей машины по VIN (AUTO-46). */
+  function specByVin(c) {
+    var VC = window.AutoHubVinCod, UI = window.AutoHubUI;
+    if (!VC || !VC.ready()) { UI.dialog("Подключите AvtoVinCod", "Точная комплектация по VIN приходит из сервиса AvtoVinCod. Введите ключ в Профиле → «Спецификация по VIN»."); return; }
+    UI.toast("Определяем комплектацию · " + VC.priceLabel("decode", { vin: c.vin }));
+    VC.decode(c.vin).then(function (r) { return VC.choose(r.variants); }).then(function (spec) {
+      if (!spec) return;
+      var f = VC.carFields(spec), patch = { spec: spec, engine: f.engine, transmission: f.transmission, body: f.body || c.body };
+      updateCar(c.id, patch);
+      UI.toast("Комплектация: " + VC.specLine(spec));
+    }, function (e) { UI.toast(e.message || "Не удалось определить комплектацию"); });
   }
   function askMileage() {
     var c = activeCar();
@@ -656,5 +716,5 @@
   function updateCar(id, patch) { var g = loadGarage(); g.cars.forEach(function (c) { if (c.id === id) Object.assign(c, patch); }); saveGarage(g); refresh(); }
   window.AutoHubCar = { init: init, active: function () { return activeCar(); }, cars: function () { return loadGarage().cars; },
     setActive: setActive, remove: removeCar, update: updateCar, status: toStatus, statusKind: statusKind, view: carView, plate: fmtPlate, name: shortName,
-    openPicker: openPicker, startOnboarding: startOnboarding, decodeLocal: decodeLocal, vinError: vinError, normPlate: normPlate, validPlate: validPlate };
+    openPicker: openPicker, specByVin: specByVin, startOnboarding: startOnboarding, decodeLocal: decodeLocal, vinError: vinError, normPlate: normPlate, validPlate: validPlate };
 })();

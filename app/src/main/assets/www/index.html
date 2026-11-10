@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
-<meta name="autohub-build" content="0.18">
+<meta name="autohub-build" content="0.19">
 <title>АвтоХаб</title>
 <style>
 /* Шрифты лежат в web/fonts (OFL, см. OFL.txt); сборка встраивает их в index.html — без сети и без запросов к Google */
@@ -514,6 +514,13 @@ body{position:fixed;inset:0}
 .gov-warn span{color:#9A3412;font-size:13px}
 .chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;color:#17191C;min-height:44px}
 .chk input{width:22px;height:22px;margin:2px 0 0;flex-shrink:0;accent-color:#C2410C}
+
+/* AUTO-46 Совместимость запчастей с комплектацией */
+.fit{font-size:12px;font-weight:600;line-height:1.35}
+.fit-fits{color:#0F6B3A}.fit-check{color:#9A3412}.fit-no{color:#B42318}
+.fit-spec{display:flex;flex-direction:column;gap:2px;background:#FFFFFF;border:1px solid #E2DED6;border-radius:14px;padding:10px 12px;font-size:13px}
+.fit-spec span{color:#5B5F66}.fit-spec .linkbtn{align-self:flex-start;min-height:44px;padding:0}
+.fit-more{align-self:center;min-height:44px}
 
 </style>
 </head>
@@ -1457,12 +1464,13 @@ body{position:fixed;inset:0}
 <g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
 </g>
 </svg></template>
-<script>window.AUTOHUB_BUILD = "0.18";</script>
+<script>window.AUTOHUB_BUILD = "0.19";</script>
 <script src="ui.js"></script>
 <script src="kit.js"></script>
 <script src="device.js"></script>
 <script src="api.js"></script>
 <script src="gov.js"></script>
+<script src="vincod.js"></script>
 <script src="car.js"></script>
 <script src="services.js"></script>
 <script src="cart.js"></script>
@@ -1544,7 +1552,7 @@ body{position:fixed;inset:0}
       el.textContent=el.dataset.dateCase==="upper"?t.toUpperCase():t;
     });
   })();
-  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubAch","AutoHubHub","AutoHubGov"].forEach(function(m){
+  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubAch","AutoHubHub","AutoHubGov","AutoHubVinCod"].forEach(function(m){
     try{ if(window[m]) window[m].init(); }catch(err){ if(window.console) console.error(m,err); }
   });
   show();
