@@ -1,0 +1,2 @@
+    topResumedActivity=ActivityRecord{4d994af u0 ru.autohub.app/.MainActivity t8}
+  ResumedActivity: ActivityRecord{4d994af u0 ru.autohub.app/.MainActivity t8}

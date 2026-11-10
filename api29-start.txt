@@ -1,0 +1,7 @@
+Starting: Intent { cmp=ru.autohub.app/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: ru.autohub.app/.MainActivity
+TotalTime: 730
+WaitTime: 732
+Complete
