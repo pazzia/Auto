@@ -44,10 +44,12 @@ class NativeHttp(private val webView: WebView) {
                 val u = URL(url)
                 require(u.protocol == "https" && u.host in allowedHosts) { "host not allowed" }
                 require(bearer == null || u.host in bearerHosts) { "token not allowed for host" }
-                require(bearer == null || bearer.matches(Regex("[A-Za-z0-9._~+/=-]{8,256}"))) { "bad token" }
+                // видимые ASCII-символы без пробелов: перевод строки в заголовок попасть не может
+                require(bearer == null || bearer.matches(Regex("[\\x21-\\x7E]{8,256}"))) { "bad token" }
                 val conn = (u.openConnection() as HttpURLConnection).apply {
                     connectTimeout = 10_000
-                    readTimeout = 15_000
+                    // платные и государственные источники отвечают долго (проверка идёт в реальном времени)
+                    readTimeout = slowHosts[u.host] ?: 15_000
                     instanceFollowRedirects = false
                     useCaches = false
                     setRequestProperty("Accept", "application/json")
@@ -99,9 +101,10 @@ class NativeHttp(private val webView: WebView) {
         // api.avtovincod.ru — спецификация по VIN и VIN по госномеру по ключу владельца (web/vincod.js, AUTO-46)
         private val allowedHosts = setOf("vpic.nhtsa.dot.gov", "service.api-assist.com", "api.avtovincod.ru")
         private val bearerHosts = setOf("api.avtovincod.ru")
+        private val slowHosts = mapOf("api.avtovincod.ru" to 90_000, "service.api-assist.com" to 60_000)
 
         /** Один пул на процесс: при пересоздании активности потоки не копятся. */
-        private val pool: ExecutorService = Executors.newFixedThreadPool(2) { runnable ->
+        private val pool: ExecutorService = Executors.newFixedThreadPool(4) { runnable ->
             Thread(runnable, "native-http").apply { isDaemon = true }
         }
         private val main = Handler(Looper.getMainLooper())

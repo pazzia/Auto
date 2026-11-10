@@ -328,6 +328,13 @@
     });
   }
 
+  function vpicModels(make) {
+    return httpGetJson(VPIC + "GetModelsForMake/" + encodeURIComponent(make) + "?format=json").then(function (d) {
+      var names = ((d && d.Results) || []).map(function (x) { return x.Model_Name; }).filter(Boolean);
+      return { models: names.filter(function (n, i) { return names.indexOf(n) === i; }).sort(), source: "NHTSA vPIC" };
+    });
+  }
+
   /* ---------- Совместимость детали с машиной (AUTO-46) ---------- */
   function lc(x) { return String(x || "").toLowerCase().replace(/ё/g, "е").trim(); }
   function carFacts(car) {
@@ -369,8 +376,11 @@
       decodeVin: function (vin) {
         if (!MOCK) return vpicDecode(vin);
         var r = M_VINS[vin];
-        return ok(Object.assign({ make: "", model: "", year: null, engine: "", transmission: "", body: "", plantCountry: "" },
-          r || {}, { source: SRC_MOCK }));
+        var demo = function () { return Object.assign({ make: "", model: "", year: null, engine: "", transmission: "", body: "", plantCountry: "" }, r || {}, { source: SRC_MOCK }); };
+        if (r) return ok(demo());
+        // VIN не из демо-базы — значит, это настоящая машина: спрашиваем открытую базу NHTSA vPIC (без ключа).
+        // Нет сети или база не ответила — пустой результат, как раньше: производитель и год определятся по VIN на телефоне.
+        return vpicDecode(vin).then(function (x) { return x; }, function () { return clone(demo()); });
       },
       /** Госномер → VIN и данные авто (в рабочей версии — платный поставщик через бэкенд). */
       findByPlate: function (plate, region) {
@@ -381,14 +391,11 @@
       },
       /** Модели для марки, которой нет в локальном справочнике. */
       modelsForMake: function (make) {
-        if (!MOCK) {
-          return httpGetJson(VPIC + "GetModelsForMake/" + encodeURIComponent(make) + "?format=json").then(function (d) {
-            var names = ((d && d.Results) || []).map(function (x) { return x.Model_Name; }).filter(Boolean);
-            return { models: names.filter(function (n, i) { return names.indexOf(n) === i; }).sort(), source: "NHTSA vPIC" };
-          });
-        }
+        if (!MOCK) return vpicModels(make);
         var key = Object.keys(M_MODELS).filter(function (k) { return k.toLowerCase() === String(make).toLowerCase(); })[0];
-        return ok({ models: key ? M_MODELS[key] : [], source: SRC_MOCK });
+        if (key) return ok({ models: M_MODELS[key], source: SRC_MOCK });
+        // марки нет в справочнике приложения — модели из открытой базы vPIC; без сети — пустой список
+        return vpicModels(make).then(function (x) { return x; }, function () { return { models: [], source: SRC_MOCK }; });
       },
       demoPlates: function () { return Object.keys(M_PLATES); }
     },

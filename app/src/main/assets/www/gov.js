@@ -33,7 +33,7 @@
 
   /* ---------- Настройки ---------- */
   function key() { var k = ls(K.key, ""); return typeof k === "string" ? k : ""; }
-  function validKey(k) { return /^[A-Za-z0-9_\-]{8,128}$/.test(String(k || "")); }
+  function validKey(k) { return /^[\x21-\x7E]{8,256}$/.test(String(k || "")); }
   function consent() { return ls(K.consent, null); }
   function ready() { return validKey(key()) && !!consent(); }
   function usage() { var u = ls(K.usage, null); return u && u.month === monthKey() ? u : { month: monthKey(), n: 0 }; }
@@ -138,7 +138,7 @@
     if (usage().n >= MONTH_LIMIT) return Promise.reject(err("gov_quota", "В этом месяце уже " + usage().n + " запросов к API Assist — бережём бесплатный лимит. Данные обновятся в следующем месяце."));
     var H = http(); if (!H) return Promise.reject(err("gov_off", "Сетевой модуль не загружен."));
     var q = Object.keys(params).map(function (k) { return k + "=" + encodeURIComponent(params[k]); }).join("&");
-    return H.get(BASE + EP[kind] + "?key=" + encodeURIComponent(key()) + "&" + q, 25000).then(function (r) {
+    return H.get(BASE + EP[kind] + "?key=" + encodeURIComponent(key()) + "&" + q, 65000).then(function (r) {
       var json = null; try { json = JSON.parse(r.body); } catch (e) {}
       if (!r.status && !json) throw err("network", "Нет связи с API Assist. Проверьте интернет.");
       var data = parse(kind, r.status, json);
@@ -230,7 +230,7 @@
         function fail(t) { var e = b.querySelector("#gvErr"); e.textContent = t; e.hidden = !t; }
         function saveForm() {
           var nk = b.querySelector("#gvKey").value.trim(), st = b.querySelector("#gvSts"), sts = st ? normSts(st.value) : "";
-          if (nk && !validKey(nk)) { fail("Ключ — латинские буквы, цифры, «-» и «_», от 8 символов."); return false; }
+          if (nk && !validKey(nk)) { fail("Ключ — от 8 символов, без пробелов и русских букв. Скопируйте его из письма целиком."); return false; }
           if (sts && !validSts(sts)) { fail("СТС — 10 знаков: 2 цифры, 2 буквы или цифры, 6 цифр."); return false; }
           if (nk && !b.querySelector("#gvConsent").checked) { fail("Без согласия запросы не отправляются."); return false; }
           fail("");

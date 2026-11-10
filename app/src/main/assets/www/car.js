@@ -328,11 +328,11 @@
         plant: loc.plant || r.plantCountry
       };
       var full = !!(c.make && c.model);
-      var mock = API().mode === "mock";
+      var mock = /Демо/.test(r.source || ""); // ответила демо-база, а не vPIC (нет сети или VIN из демо-набора)
       renderResult(c, full ? "full" : "partial",
         "Источники: " + r.source + " и код производителя в VIN",
         (why ? why + " " : "") + (full ? (mock ? "" : "Без кода двигателя запчасти подбираются приблизительно — подключите AvtoVinCod в Профиле.")
-          : mock ? "Этого VIN нет в демо-базе. Производитель и год определены по VIN — уточните модель вручную."
+          : mock ? "База по VIN сейчас недоступна. Производитель и год определены по самому VIN — уточните модель вручную."
           : "В открытой базе нет модели для этого VIN — так бывает с машинами не для рынка США. Уточните модель вручную, остальное уже заполнено."));
     }, function () {
       renderResult({ make: loc.make, year: loc.year, plant: loc.plant }, "partial",
@@ -350,8 +350,8 @@
     hideResult();
     draft = {};
     var btn = $("plateFind");
-    busy(btn, true, "Ищем по номеру…");
     var VC = window.AutoHubVinCod;
+    busy(btn, true, VC && VC.ready() ? "Ищем по номеру — до минуты…" : "Ищем по номеру…");
     if (VC && VC.ready()) {
       // AUTO-46: номер → VIN и СТС (gos2vin), затем VIN → комплектация (decode)
       VC.byPlate(p, r).then(function (hit) {

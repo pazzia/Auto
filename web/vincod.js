@@ -36,7 +36,7 @@
 
   /* ---------- Настройки и бюджет ---------- */
   function key() { var k = ls(K.key, ""); return typeof k === "string" ? k : ""; }
-  function validKey(k) { return /^[A-Za-z0-9._~+\/=\-]{8,256}$/.test(String(k || "")); }
+  function validKey(k) { return /^[\x21-\x7E]{8,256}$/.test(String(k || "")); }
   function consent() { return ls(K.consent, null); }
   function ready() { return validKey(key()) && !!consent(); }
   function budget() { var b = +ls(K.budget, DEFAULT_BUDGET); return b > 0 ? b : DEFAULT_BUDGET; }
@@ -119,7 +119,7 @@
     }
     var H = window.AutoHubApi && window.AutoHubApi.http; if (!H) return Promise.reject(err("avc_off", "Сетевой модуль не загружен."));
     var q = Object.keys(params).map(function (k) { return k + "=" + encodeURIComponent(params[k]); }).join("&");
-    return H.get(BASE + method + "?" + q, 40000, { bearer: key() }).then(function (r) {
+    return H.get(BASE + method + "?" + q, 95000, { bearer: key() }).then(function (r) {
       var json = null; try { json = JSON.parse(r.body); } catch (e) {}
       var data = parse(r.status, json);
       var charged = data.billing && data.billing.charged != null ? +data.billing.charged : (test ? 0 : PRICE[method]);
@@ -185,7 +185,7 @@
         function fail(t) { var e = b.querySelector("#avErr"); e.textContent = t; e.hidden = !t; }
         function save() {
           var nk = b.querySelector("#avKey").value.trim(), bud = parseInt(b.querySelector("#avBudget").value.replace(/\D/g, ""), 10);
-          if (nk && !validKey(nk)) { fail("Ключ — латинские буквы, цифры и знаки . _ - + / =, от 8 символов."); return false; }
+          if (nk && !validKey(nk)) { fail("Ключ — от 8 символов, без пробелов и русских букв. Скопируйте его из кабинета целиком."); return false; }
           if (nk && !b.querySelector("#avConsent").checked) { fail("Без согласия запросы не отправляются."); return false; }
           fail(""); lsSet(K.key, nk || null); lsSet(K.consent, nk && b.querySelector("#avConsent").checked ? (consent() || { at: Date.now() }) : null);
           if (bud > 0) lsSet(K.budget, Math.min(bud, 100000));
