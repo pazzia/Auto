@@ -128,6 +128,10 @@
       Object.keys(all).sort(function (a, b) { return all[b].at - all[a].at; }).slice(60).forEach(function (x) { delete all[x]; });
       lsSet(K.cache, all);
       return data;
+    }, function (e) {
+      // В браузере сервис недоступен: он не разрешает запросы со страниц (нет CORS). В Android-приложении запросы идут через телефон.
+      if (e && e.code === "network" && !window.NativeHttp) throw err("avc_web", "В веб-версии AvtoVinCod пока недоступен — сервис не принимает запросы из браузера. Работает в Android-приложении.");
+      throw e;
     });
   }
   /** VIN → спецификация. { variants: [spec…], full, confirmed } — несколько вариантов, если VIN не однозначен. */

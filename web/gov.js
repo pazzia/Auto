@@ -144,6 +144,10 @@
       var data = parse(kind, r.status, json);
       countSuccess(); remember(kind, params, data);
       return { data: data, at: now(), cached: false };
+    }, function (e) {
+      // В браузере сервис может быть недоступен (нет CORS); в Android-приложении запросы идут через телефон
+      if (e && e.code === "network" && !window.NativeHttp) throw err("gov_web", "В веб-версии запросы к API Assist могут не проходить — сервис не принимает их из браузера. Работает в Android-приложении.");
+      throw e;
     });
   }
   /** Штрафы по СТС машины. Без СТС — null (экран попросит его ввести). */

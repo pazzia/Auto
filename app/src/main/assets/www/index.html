@@ -4,7 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
-<meta name="autohub-build" content="0.20">
+<meta name="autohub-build" content="0.21">
+<meta name="description" content="АвтоХаб: гараж, ТО, запчасти, сервисы, штрафы и документы автомобиля">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="АвтоХаб">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="pwa/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="pwa/icon-192.png">
+<link rel="apple-touch-icon" href="pwa/apple-touch-icon.png">
 <title>АвтоХаб</title>
 <style>
 /* Шрифты лежат в web/fonts (OFL, см. OFL.txt); сборка встраивает их в index.html — без сети и без запросов к Google */
@@ -547,6 +556,7 @@ body{position:fixed;inset:0}
 <button id="aGo" data-action="auth" class="btn-accent">Войти</button>
 <span style="font-size: 12px; color: #5B5F66; text-align: center">Прототип: подойдут любые логин и пароль</span>
 </div>
+<button type="button" class="linkbtn" data-action="pwa-install" data-pwa-install hidden style="align-self: center; min-height: 44px">Установить приложение на устройство</button>
 <div class="buildinfo" id="welcomeBuild"></div>
 </div>
 </div>
@@ -1464,7 +1474,7 @@ body{position:fixed;inset:0}
 <g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
 </g>
 </svg></template>
-<script>window.AUTOHUB_BUILD = "0.20";</script>
+<script>window.AUTOHUB_BUILD = "0.21";</script>
 <script src="ui.js"></script>
 <script src="kit.js"></script>
 <script src="device.js"></script>
@@ -1493,6 +1503,7 @@ body{position:fixed;inset:0}
 <script src="achievements.js"></script>
 <script src="auth.js"></script>
 <script src="hub.js"></script>
+<script src="pwa.js"></script>
 <script>
 (function(){
   // Показ экрана по адресу (#Экран или #Экран/доп). Без входа доступно только приветствие.
@@ -1552,7 +1563,7 @@ body{position:fixed;inset:0}
       el.textContent=el.dataset.dateCase==="upper"?t.toUpperCase():t;
     });
   })();
-  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubAch","AutoHubHub","AutoHubGov","AutoHubVinCod"].forEach(function(m){
+  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubAch","AutoHubHub","AutoHubGov","AutoHubVinCod","AutoHubPWA"].forEach(function(m){
     try{ if(window[m]) window[m].init(); }catch(err){ if(window.console) console.error(m,err); }
   });
   show();

@@ -15,7 +15,7 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "design")
 if not os.path.isabs(SRC):
     SRC = os.path.join(ROOT, SRC) if not os.path.isdir(SRC) else SRC
 WEB = os.path.join(ROOT, "web")
-JS_FILES = ["ui.js", "kit.js", "device.js", "api.js", "gov.js", "vincod.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js"]
+JS_FILES = ["ui.js", "kit.js", "device.js", "api.js", "gov.js", "vincod.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js", "pwa.js"]
 OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html", "Welcome": "welcome.html", "Profile": "profile.html", "TO": "to.html", "Icons": "icons.html", "Parking": "parking.html", "Mechanic": "mechanic.html", "Fuel": "fuel.html", "Budget": "budget.html", "Wallet": "wallet.html", "Docs": "docs.html", "Season": "season.html", "Checklists": "checklists.html", "DIY": "diy.html", "BodyPhoto": "bodyphoto.html", "Calc": "calc.html", "Achievements": "achievements.html"}  # экраны, свёрстанные вручную
 OUT = os.path.join(ROOT, "app/src/main/assets/www")
 NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Checklists", "DIY", "BodyPhoto", "Calc", "Achievements", "Garage", "AddCar", "History", "Main", "Results", "Offers",
@@ -89,6 +89,15 @@ html = """<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
 <meta name="autohub-build" content="%s">
+<meta name="description" content="АвтоХаб: гараж, ТО, запчасти, сервисы, штрафы и документы автомобиля">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="АвтоХаб">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="pwa/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="pwa/icon-192.png">
+<link rel="apple-touch-icon" href="pwa/apple-touch-icon.png">
 <title>АвтоХаб</title>
 <style>
 %s
@@ -115,4 +124,24 @@ os.makedirs(os.path.join(OUT, "map"), exist_ok=True)
 shutil.copy(os.path.join(WEB, "map", "podmoskovye.svg"), os.path.join(OUT, "map", "podmoskovye.svg"))
 os.makedirs(os.path.join(OUT, "fonts"), exist_ok=True)
 shutil.copy(os.path.join(WEB, "fonts", "OFL.txt"), os.path.join(OUT, "fonts", "OFL.txt"))  # лицензия едет вместе со шрифтами
+# Веб-приложение (PWA): манифест, значки и сервис-воркер со списком всех файлов сборки.
+# Имя кэша — номер сборки + хеш содержимого: любая пересборка обновляет приложение у пользователей.
+import hashlib, json
+os.makedirs(os.path.join(OUT, "pwa"), exist_ok=True)
+for f in sorted(os.listdir(os.path.join(WEB, "pwa"))):
+    shutil.copy(os.path.join(WEB, "pwa", f), os.path.join(OUT, "manifest.webmanifest" if f == "manifest.webmanifest" else os.path.join("pwa", f)))
+files = []
+for d, _, names in os.walk(OUT):
+    for n in sorted(names):
+        rel = os.path.relpath(os.path.join(d, n), OUT).replace(os.sep, "/")
+        if rel != "sw.js":
+            files.append(rel)
+files.sort()
+digest = hashlib.sha256()
+for rel in files:
+    digest.update(rel.encode("utf-8")); digest.update(open(os.path.join(OUT, rel), "rb").read())
+sw = open(os.path.join(WEB, "sw.js"), encoding="utf-8").read()
+sw = sw.replace('"__CACHE__"', json.dumps("autohub-%s-%s" % (BUILD, digest.hexdigest()[:10]))).replace("= __FILES__;", "= %s;" % json.dumps(["./"] + files, ensure_ascii=False))
+assert "__CACHE__" not in sw and "__FILES__" not in sw
+open(os.path.join(OUT, "sw.js"), "w", encoding="utf-8").write(sw)
 print("ok, сборка", BUILD, "->", OUT)

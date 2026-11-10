@@ -56,7 +56,7 @@
       el.textContent=el.dataset.dateCase==="upper"?t.toUpperCase():t;
     });
   })();
-  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubAch","AutoHubHub","AutoHubGov","AutoHubVinCod"].forEach(function(m){
+  ["AutoHubCar","AutoHubServices","AutoHubCart","AutoHubParts","AutoHubScreens","AutoHubTO","AutoHubIcons","AutoHubParking","AutoHubMechanic","AutoHubMoney","AutoHubFuel","AutoHubDocs","AutoHubSeason","AutoHubChecklists","AutoHubDIY","AutoHubBodyPhoto","AutoHubCalc","AutoHubAuth","AutoHubAch","AutoHubHub","AutoHubGov","AutoHubVinCod","AutoHubPWA"].forEach(function(m){
     try{ if(window[m]) window[m].init(); }catch(err){ if(window.console) console.error(m,err); }
   });
   show();

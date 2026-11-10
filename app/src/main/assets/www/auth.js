@@ -143,6 +143,7 @@
       toggle("fines", "Новые штрафы", "проверка каждый день", st.fines) +
       '<button class="prow" data-action="city"><span class="prow-txt"><b>Мой адрес</b><span>' + esc(st.city + (st.address ? ", " + st.address : "") + " · для сервисов рядом") + '</span></span><span class="prow-go">›</span></button>' +
       '<div class="prow"><span class="prow-txt"><b>Данные</b><span>' + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? "Демонстрационные данные" : "Реальные источники") + "</span></span></div>" +
+      (window.AutoHubPWA && window.AutoHubPWA.installMode() ? '<button class="prow" data-action="pwa-install"><span class="prow-txt"><b>Установить приложение</b><span>значок на главном экране, работает без интернета</span></span><span class="prow-go">›</span></button>' : "") +
       '<button class="prow" data-action="vincod"><span class="prow-txt"><b>Спецификация по VIN</b><span>' + (window.AutoHubVinCod && window.AutoHubVinCod.ready() ? "AvtoVinCod подключён · " + window.AutoHubVinCod.spent().n + " платн. запр. в этом месяце" : "AvtoVinCod: двигатель, КПП и привод по VIN — для подбора запчастей") + '</span></span><span class="prow-go">›</span></button>' +
       '<button class="prow" data-action="gov"><span class="prow-txt"><b>Госданные</b><span>' + (window.AutoHubGov && window.AutoHubGov.ready() ? "подключены · штрафы, ОСАГО, техосмотр · " + window.AutoHubGov.usage().n + " запр. в этом месяце" : "штрафы ГИБДД, ОСАГО и техосмотр по ключу API Assist") + '</span></span><span class="prow-go">›</span></button></div>' +
 
