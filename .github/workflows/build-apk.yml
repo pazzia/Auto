@@ -252,26 +252,33 @@ jobs:
           [ -n "$KEY_ALIAS" ] || missing="$missing AUTOHUB_KEY_ALIAS"
           [ -n "$KEY_PASSWORD" ] || missing="$missing AUTOHUB_KEY_PASSWORD"
           if [ -n "$missing" ]; then
-            echo "::error title=Подпись release::Нет секретов репозитория:$missing. Добавьте их в Settings → Secrets and variables → Actions. Релиз не выпущен."
-            exit 1
+            # Не ошибка: до появления секретов APK подписывается вне CI (ветка ci-apk-handoff, tools/sign_handoff.sh)
+            echo "::warning title=Подпись release::Нет секретов репозитория:$missing — релиз не выпущен. Добавьте их в Settings → Secrets and variables → Actions или подпишите сборку через tools/sign_handoff.sh."
+            echo "SIGNING=no" >> "$GITHUB_ENV"
+            exit 0
           fi
+          echo "SIGNING=yes" >> "$GITHUB_ENV"
           printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/autohub-release.jks"
           echo "AUTOHUB_KEYSTORE_FILE=$RUNNER_TEMP/autohub-release.jks" >> "$GITHUB_ENV"
 
       - name: Собрать веб-прототип из design/ и web/
+        if: env.SIGNING == 'yes'
         run: python3 tools/build_prototype.py
 
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        if: env.SIGNING == 'yes'
         with:
           distribution: temurin
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        if: env.SIGNING == 'yes'
         with:
           gradle-version: '8.9'
           cache-read-only: true
 
       - name: Собрать release APK
+        if: env.SIGNING == 'yes'
         env:
           AUTOHUB_KEYSTORE_PASSWORD: ${{ secrets.AUTOHUB_KEYSTORE_PASSWORD }}
           AUTOHUB_KEY_ALIAS: ${{ secrets.AUTOHUB_KEY_ALIAS }}
@@ -286,6 +293,7 @@ jobs:
           cp "$APK" "AutoHub-${BUILD}.apk"
 
       - name: Проверить подпись, debuggable и модели OCR в APK
+        if: env.SIGNING == 'yes'
         run: |
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
           if [ -n "$APKSIGNER" ]; then "$APKSIGNER" verify --print-certs "AutoHub-${BUILD}.apk" | grep -E "Signer #1 certificate (DN|SHA-256)"; fi
@@ -307,18 +315,21 @@ jobs:
         run: rm -f "$RUNNER_TEMP/autohub-release.jks"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: env.SIGNING == 'yes'
         with:
           name: AutoHub-${{ env.BUILD }}
           path: AutoHub-${{ env.BUILD }}.apk
           retention-days: 7
 
       - name: Описание релиза из CHANGELOG.md
+        if: env.SIGNING == 'yes'
         run: |
           awk -v v="## Сборка ${BUILD} " 'index($0, v)==1 {on=1; next} on && /^## / {exit} on {print}' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "Сборка ${BUILD}" > notes.md
           printf '\nФайл для Android: AutoHub-%s.apk. Установка поверх предыдущей версии.\n' "$BUILD" >> notes.md
 
       - name: Релиз «АвтоХаб <номер>»
+        if: env.SIGNING == 'yes'
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           tag_name: v${{ env.BUILD }}

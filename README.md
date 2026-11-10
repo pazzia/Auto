@@ -92,7 +92,7 @@ gh secret set AUTOHUB_KEY_ALIAS -R pazzia/Auto           # autohub
 ```
 
 Или вручную: **Settings → Secrets and variables → Actions → New repository secret**. Без этих секретов CI собирает
-и проверяет APK, но релиз не выпускает (ошибка в задаче release). Локальная подписанная сборка: задать те же
+и проверяет APK, но релиз не выпускает (предупреждение в задаче release). Локальная подписанная сборка: задать те же
 переменные окружения (`AUTOHUB_KEYSTORE_FILE` — путь к .jks) и `gradle :app:assembleRelease`.
 
 **Пока секретов нет** — APK подписывается тем же ключом вне CI: **Actions → Build APK → Run workflow** (ручной запуск)
