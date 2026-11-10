@@ -22,7 +22,7 @@
 | `docs/` | Контекст, дорожная карта, инструкция проекта, описание API ([`docs/api.md`](docs/api.md)), бэклог задач AUTO-№ ([`docs/backlog.md`](docs/backlog.md)) |
 | `tests/` | Тесты разбора документов (`node --test`), проверка предобработки OCR на JVM, эталоны синтетических нарядов |
 | `tools/ocr_replay/` | Повтор OCR-конвейера APK на ПК и сверка с эталонами |
-| `.github/workflows/pages.yml` | Публикация веб-приложения (PWA) на GitHub Pages |
+| `.github/workflows/pages.yml` | Публикация веб-приложения (PWA) на GitHub Pages из ветки `pwa` |
 | `.github/workflows/build-apk.yml` | Тесты, сборка APK, проверка OCR на эмуляторе в авиарежиме, запуск release-сборки на Android 10 и 14, релиз |
 
 ## Как вносить изменения
@@ -57,8 +57,10 @@ git add -A && git commit -m "…" && git push
 - AvtoVinCod и API Assist — эти сервисы не принимают запросы со страниц браузера; для веба нужен свой сервер-прокси (AUTO-22). VIN расшифровывается через открытую базу NHTSA vPIC;
 - напоминания приходят, только пока приложение открыто.
 
-Публикация: `.github/workflows/pages.yml` — при пуше в `main` собирает прототип и выкладывает папку `app/src/main/assets/www` на GitHub Pages.
-**Один раз включить:** Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+Публикация идёт отдельно от `main`: веб-версия живёт в ветке **`pwa`**. Каждый пуш в неё (`.github/workflows/pages.yml`) прогоняет тесты,
+собирает прототип и кладёт папку `app/src/main/assets/www` в служебную ветку `gh-pages`, откуда сайт раздаёт GitHub Pages.
+Выпустить новую веб-версию: `git push origin <ветка-с-изменениями>:pwa`.
+**Один раз включить:** Settings → Pages → Build and deployment → Source: **Deploy from a branch** → `gh-pages` / `(root)`.
 Локально: `python3 tools/build_prototype.py && python3 -m http.server -d app/src/main/assets/www 8000` → http://localhost:8000 (установка работает и с localhost).
 Значки — `web/pwa/` (перерисовать: `node tools/make_pwa_icons.js`), манифест — `web/pwa/manifest.webmanifest`.
 
