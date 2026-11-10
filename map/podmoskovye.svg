@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 335 312" data-lon0="35.0" data-lat0="57.0" data-kx="62.6514" data-ky="111.2000" role="img" aria-label="Схема Московской области">
+<title>Подмосковье — схема для прототипа АвтоХаб</title>
+<style>.map-towns text,.map-roads text{paint-order:stroke;stroke:#F6F4EF;stroke-width:3px;stroke-linejoin:round;vector-effect:non-scaling-stroke}</style>
+<rect x="-400" y="-400" width="1135" height="1112" fill="#E4E0D6"/>
+<path d="M9.4 116.8 L25.1 83.4 L56.4 61.2 L94.0 50.0 L119.0 22.2 L137.8 24.5 L162.9 4.4 L188.0 16.7 L206.7 44.5 L225.5 66.7 L256.9 105.6 L269.4 116.8 L303.9 139.0 L325.8 166.8 L319.5 200.2 L275.7 233.5 L250.6 266.9 L238.1 305.8 L213.0 294.7 L194.2 261.3 L169.2 244.6 L144.1 239.1 L119.0 228.0 L94.0 200.2 L68.9 183.5 L43.9 172.4 L18.8 155.7 Z" fill="#F6F4EF" stroke="#C9C3B6" stroke-width="1.2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+<g fill="none" stroke="#C9DAE8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+<path d="M131.6 235.7 L151.6 233.5 L169.2 239.1 L197.4 239.1 L213.0 228.0 L236.2 213.5 L253.7 222.4 L272.5 239.1" vector-effect="non-scaling-stroke"><title>Ока</title></path>
+<path d="M56.4 161.2 L75.2 146.8 L94.0 150.1 L116.5 142.3 L137.8 135.7 L150.4 139.0 L164.1 140.1 L178.6 150.1 L188.0 161.2 L204.2 175.7 L219.3 183.5 L230.6 186.8 L236.8 211.3" vector-effect="non-scaling-stroke"><title>Москва-река</title></path>
+</g>
+<circle cx="164.0" cy="138.9" r="55.0" fill="none" stroke="#D8D2C6" stroke-width="2" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/>
+<g fill="none" stroke="#D8D2C6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M151.7 126.6 L137.2 112.3 L124.0 91.2 L108.4 74.5 L95.2 52.3" vector-effect="non-scaling-stroke"/>
+<path d="M160.8 121.8 L159.8 116.8 L157.9 73.4 L136.0 30.0" vector-effect="non-scaling-stroke"/>
+<path d="M170.4 122.7 L171.0 121.2 L178.6 110.1 L196.1 76.7 L213.0 53.4" vector-effect="non-scaling-stroke"/>
+<path d="M177.9 128.4 L178.6 127.9 L186.1 120.1 L203.6 114.5" vector-effect="non-scaling-stroke"/>
+<path d="M180.8 134.3 L184.2 133.4 L215.5 127.9 L228.7 135.7 L253.7 124.5" vector-effect="non-scaling-stroke"/>
+<path d="M179.9 146.0 L181.7 146.8 L204.2 174.6 L234.9 211.3 L266.3 235.7" vector-effect="non-scaling-stroke"/>
+<path d="M168.2 155.8 L172.3 172.4 L184.8 222.4 L197.4 241.3 L206.7 272.4" vector-effect="non-scaling-stroke"/>
+<path d="M162.0 156.2 L159.8 174.6 L154.7 206.8 L152.2 230.2 L154.7 241.3" vector-effect="non-scaling-stroke"/>
+<path d="M149.4 148.4 L129.7 161.2 L108.4 179.0 L84.6 194.6" vector-effect="non-scaling-stroke"/>
+<path d="M147.7 145.0 L142.8 146.8 L106.5 157.9 L64.5 167.9 L31.3 170.1" vector-effect="non-scaling-stroke"/>
+<path d="M147.8 132.6 L144.1 131.2 L116.5 121.2 L60.1 111.2 L15.7 113.4" vector-effect="non-scaling-stroke"/>
+</g>
+<g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+<path d="M151.7 126.6 L137.2 112.3 L124.0 91.2 L108.4 74.5 L95.2 52.3" vector-effect="non-scaling-stroke"/>
+<path d="M160.8 121.8 L159.8 116.8 L157.9 73.4 L136.0 30.0" vector-effect="non-scaling-stroke"/>
+<path d="M170.4 122.7 L171.0 121.2 L178.6 110.1 L196.1 76.7 L213.0 53.4" vector-effect="non-scaling-stroke"/>
+<path d="M177.9 128.4 L178.6 127.9 L186.1 120.1 L203.6 114.5" vector-effect="non-scaling-stroke"/>
+<path d="M180.8 134.3 L184.2 133.4 L215.5 127.9 L228.7 135.7 L253.7 124.5" vector-effect="non-scaling-stroke"/>
+<path d="M179.9 146.0 L181.7 146.8 L204.2 174.6 L234.9 211.3 L266.3 235.7" vector-effect="non-scaling-stroke"/>
+<path d="M168.2 155.8 L172.3 172.4 L184.8 222.4 L197.4 241.3 L206.7 272.4" vector-effect="non-scaling-stroke"/>
+<path d="M162.0 156.2 L159.8 174.6 L154.7 206.8 L152.2 230.2 L154.7 241.3" vector-effect="non-scaling-stroke"/>
+<path d="M149.4 148.4 L129.7 161.2 L108.4 179.0 L84.6 194.6" vector-effect="non-scaling-stroke"/>
+<path d="M147.7 145.0 L142.8 146.8 L106.5 157.9 L64.5 167.9 L31.3 170.1" vector-effect="non-scaling-stroke"/>
+<path d="M147.8 132.6 L144.1 131.2 L116.5 121.2 L60.1 111.2 L15.7 113.4" vector-effect="non-scaling-stroke"/>
+</g>
+<circle cx="164.0" cy="138.9" r="17.4" fill="#E7E3DB" stroke="#17191C" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+<g class="map-roads" font-size="3.5" font-family="JetBrains Mono, monospace" fill="#5B5F66" text-anchor="middle">
+<text x="101.8" y="63.4" data-rank="2">М-10</text>
+<text x="146.9" y="51.7" data-rank="2">А-104</text>
+<text x="204.6" y="65.0" data-rank="2">М-8</text>
+<text x="194.8" y="117.3" data-rank="2">А-103</text>
+<text x="241.2" y="130.1" data-rank="2">М-7</text>
+<text x="250.6" y="223.5" data-rank="2">М-5</text>
+<text x="202.1" y="256.9" data-rank="2">М-4</text>
+<text x="153.4" y="235.8" data-rank="2">М-2</text>
+<text x="96.5" y="186.8" data-rank="2">М-3</text>
+<text x="47.9" y="169.0" data-rank="2">М-1</text>
+<text x="37.9" y="112.3" data-rank="2">М-9</text>
+</g>
+<g class="map-towns" font-size="4.5" font-family="Manrope, sans-serif" fill="#17191C">
+<g data-rank="1"><circle cx="153.2" cy="123.5" r="1" fill="#5B5F66"/><text x="153.2" y="123.5" data-dx="1" data-dy="-1">Химки</text></g>
+<g data-rank="1"><circle cx="171.0" cy="121.1" r="1" fill="#5B5F66"/><text x="171.0" y="121.1" data-dx="1" data-dy="-1">Мытищи</text></g>
+<g data-rank="1"><circle cx="184.1" cy="133.9" r="1" fill="#5B5F66"/><text x="184.1" y="133.9" data-dx="1" data-dy="-1">Балашиха</text></g>
+<g data-rank="1"><circle cx="181.3" cy="147.2" r="1" fill="#5B5F66"/><text x="181.3" y="147.2" data-dx="1" data-dy="-1">Люберцы</text></g>
+<g data-rank="1"><circle cx="159.4" cy="174.5" r="1" fill="#5B5F66"/><text x="159.4" y="174.5" data-dx="1" data-dy="-1">Подольск</text></g>
+<g data-rank="1"><circle cx="142.7" cy="147.0" r="1" fill="#5B5F66"/><text x="142.7" y="147.0" data-dx="1" data-dy="-1">Одинцово</text></g>
+<g data-rank="1"><circle cx="146.0" cy="130.0" r="1" fill="#5B5F66"/><text x="146.0" y="130.0" data-dx="1" data-dy="-1">Красногорск</text></g>
+<g data-rank="2"><circle cx="178.8" cy="119.9" r="1" fill="#5B5F66"/><text x="178.8" y="119.9" data-dx="1" data-dy="-1">Королёв</text></g>
+<g data-rank="2"><circle cx="138.7" cy="112.2" r="1" fill="#5B5F66"/><text x="138.7" y="112.2" data-dx="1" data-dy="-1">Зеленоград</text></g>
+<g data-rank="1"><circle cx="173.3" cy="173.8" r="1" fill="#5B5F66"/><text x="173.3" y="173.8" data-dx="1" data-dy="-1">Домодедово</text></g>
+<g data-rank="1"><circle cx="196.5" cy="76.2" r="1" fill="#5B5F66"/><text x="196.5" y="76.2" data-dx="1" data-dy="-1">Сергиев Посад</text></g>
+<g data-rank="1"><circle cx="235.1" cy="210.9" r="1" fill="#5B5F66"/><text x="235.1" y="210.9" data-dx="1" data-dy="-1">Коломна</text></g>
+<g data-rank="1"><circle cx="151.1" cy="232.1" r="1" fill="#5B5F66"/><text x="151.1" y="232.1" data-dx="1" data-dy="-1">Серпухов</text></g>
+<g data-rank="1"><circle cx="108.3" cy="74.4" r="1" fill="#5B5F66"/><text x="108.3" y="74.4" data-dx="1" data-dy="-1">Клин</text></g>
+<g data-rank="1"><circle cx="157.9" cy="72.9" r="1" fill="#5B5F66"/><text x="157.9" y="72.9" data-dx="1" data-dy="-1">Дмитров</text></g>
+<g data-rank="1"><circle cx="215.6" cy="127.4" r="1" fill="#5B5F66"/><text x="215.6" y="127.4" data-dx="1" data-dy="-1">Ногинск</text></g>
+<g data-rank="1"><circle cx="248.2" cy="132.8" r="1" fill="#5B5F66"/><text x="248.2" y="132.8" data-dx="1" data-dy="-1">Орехово-Зуево</text></g>
+<g data-rank="1"><circle cx="108.6" cy="179.5" r="1" fill="#5B5F66"/><text x="108.6" y="179.5" data-dx="1" data-dy="-1">Наро-Фоминск</text></g>
+<g data-rank="1"><circle cx="64.2" cy="165.9" r="1" fill="#5B5F66"/><text x="64.2" y="165.9" data-dx="1" data-dy="-1">Можайск</text></g>
+<g data-rank="1"><circle cx="60.1" cy="107.3" r="1" fill="#5B5F66"/><text x="60.1" y="107.3" data-dx="1" data-dy="-1">Волоколамск</text></g>
+<g data-rank="2"><circle cx="116.6" cy="120.7" r="1" fill="#5B5F66"/><text x="116.6" y="120.7" data-dx="1" data-dy="-1">Истра</text></g>
+<g data-rank="1"><circle cx="135.8" cy="29.8" r="1" fill="#5B5F66"/><text x="135.8" y="29.8" data-dx="1" data-dy="-1">Дубна</text></g>
+<g data-rank="1"><circle cx="252.9" cy="179.8" r="1" fill="#5B5F66"/><text x="252.9" y="179.8" data-dx="1" data-dy="-1">Егорьевск</text></g>
+<g data-rank="1"><circle cx="197.4" cy="240.9" r="1" fill="#5B5F66"/><text x="197.4" y="240.9" data-dx="1" data-dy="-1">Кашира</text></g>
+<g data-rank="2"><circle cx="154.7" cy="206.5" r="1" fill="#5B5F66"/><text x="154.7" y="206.5" data-dx="1" data-dy="-1">Чехов</text></g>
+<g data-rank="2"><circle cx="202.4" cy="159.3" r="1" fill="#5B5F66"/><text x="202.4" y="159.3" data-dx="1" data-dy="-1">Раменское</text></g>
+<g data-rank="2"><circle cx="186.2" cy="119.7" r="1" fill="#5B5F66"/><text x="186.2" y="119.7" data-dx="1" data-dy="-1">Щёлково</text></g>
+<g data-rank="2"><circle cx="178.4" cy="110.0" r="1" fill="#5B5F66"/><text x="178.4" y="110.0" data-dx="1" data-dy="-1">Пушкино</text></g>
+<g data-rank="1"><circle cx="284.7" cy="158.2" r="1" fill="#5B5F66"/><text x="284.7" y="158.2" data-dx="1" data-dy="-1">Шатура</text></g>
+<g data-rank="2"><circle cx="230.6" cy="186.5" r="1" fill="#5B5F66"/><text x="230.6" y="186.5" data-dx="1" data-dy="-1">Воскресенск</text></g>
+<g data-rank="2"><circle cx="123.9" cy="90.6" r="1" fill="#5B5F66"/><text x="123.9" y="90.6" data-dx="1" data-dy="-1">Солнечногорск</text></g>
+<g data-rank="2"><circle cx="74.9" cy="144.4" r="1" fill="#5B5F66"/><text x="74.9" y="144.4" data-dx="1" data-dy="-1">Руза</text></g>
+<g data-rank="2"><circle cx="243.3" cy="248.9" r="1" fill="#5B5F66"/><text x="243.3" y="248.9" data-dx="1" data-dy="-1">Зарайск</text></g>
+<g data-rank="2"><circle cx="158.3" cy="29.9" r="1" fill="#5B5F66"/><text x="158.3" y="29.9" data-dx="1" data-dy="-1">Талдом</text></g>
+<g data-rank="2"><circle cx="155.1" cy="109.9" r="1" fill="#5B5F66"/><text x="155.1" y="109.9" data-dx="1" data-dy="-1">Лобня</text></g>
+<g data-rank="2"><circle cx="157.5" cy="118.7" r="1" fill="#5B5F66"/><text x="157.5" y="118.7" data-dx="1" data-dy="-1">Долгопрудный</text></g>
+<g data-rank="2"><circle cx="169.7" cy="161.1" r="1" fill="#5B5F66"/><text x="169.7" y="161.1" data-dx="1" data-dy="-1">Видное</text></g>
+<g data-rank="2"><circle cx="178.9" cy="138.0" r="1" fill="#5B5F66"/><text x="178.9" y="138.0" data-dx="1" data-dy="-1">Реутов</text></g>
+<g data-rank="2"><circle cx="195.3" cy="155.8" r="1" fill="#5B5F66"/><text x="195.3" y="155.8" data-dx="1" data-dy="-1">Жуковский</text></g>
+<g data-rank="2"><circle cx="215.8" cy="135.1" r="1" fill="#5B5F66"/><text x="215.8" y="135.1" data-dx="1" data-dy="-1">Электросталь</text></g>
+<g data-rank="2"><circle cx="192.8" cy="235.1" r="1" fill="#5B5F66"/><text x="192.8" y="235.1" data-dx="1" data-dy="-1">Ступино</text></g>
+<g data-rank="2"><circle cx="116.2" cy="141.2" r="1" fill="#5B5F66"/><text x="116.2" y="141.2" data-dx="1" data-dy="-1">Звенигород</text></g>
+<g data-rank="2"><circle cx="136.8" cy="128.8" r="1" fill="#5B5F66"/><text x="136.8" y="128.8" data-dx="1" data-dy="-1">Нахабино</text></g>
+<g data-rank="2"><circle cx="132.9" cy="125.7" r="1" fill="#5B5F66"/><text x="132.9" y="125.7" data-dx="1" data-dy="-1">Дедовск</text></g>
+<g data-rank="0"><text x="164.0" y="138.9" text-anchor="middle" font-weight="700" font-size="5" data-fs="12" font-family="Unbounded, sans-serif">МОСКВА</text></g>
+<g data-rank="1"><text x="164.0" y="82.4" text-anchor="middle" fill="#9A958B" font-size="4" data-fs="9">ЦКАД</text></g>
+</g>
+</svg>
