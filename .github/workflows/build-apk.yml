@@ -117,29 +117,7 @@ jobs:
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w -e class ru.autohub.app.RealDocumentAcceptanceTest ru.autohub.app.test/androidx.test.runner.AndroidJUnitRunner | tee acceptance-instrument.txt
             adb pull /storage/emulated/0/Android/data/ru.autohub.app/files/ocr-acceptance.json ocr-acceptance.json
-            adb uninstall ru.autohub.app.test || true
-            adb uninstall ru.autohub.app
-            adb install smoke-release.apk
-            adb logcat -c
-            adb shell am start -W -n ru.autohub.app/.MainActivity | tee handoff/smoke-start.txt
-            sleep 15
-            adb exec-out screencap -p > handoff/smoke-1-start.png
-            adb shell settings put system accelerometer_rotation 0
-            adb shell settings put system user_rotation 1
-            sleep 5
-            adb exec-out screencap -p > handoff/smoke-2-landscape.png
-            adb shell settings put system user_rotation 0
-            adb shell cmd uimode night yes
-            sleep 5
-            adb shell input keyevent KEYCODE_HOME
-            sleep 3
-            adb shell am start -W -n ru.autohub.app/.MainActivity
-            sleep 5
-            adb exec-out screencap -p > handoff/smoke-3-dark-resumed.png
-            adb shell cmd uimode night no
-            adb shell dumpsys activity activities | grep -E "mResumedActivity|ResumedActivity" | tee handoff/smoke-resumed.txt
-            adb shell pidof ru.autohub.app | tee handoff/smoke-pid.txt
-            adb logcat -d > smoke-logcat.txt
+            bash tools/ci_smoke.sh handoff/api29
 
       - name: Приёмка OCR на эмуляторе — сверка с эталонами синтетических нарядов
         run: |
@@ -147,16 +125,16 @@ jobs:
           node tools/ocr_replay/compare.cjs ocr-acceptance.json tests/fixtures/synthetic/synthetic-golden.json --only synth- --annotate
           node tools/ocr_replay/compare.cjs ocr-acceptance.json tests/fixtures/synthetic/synthetic-b-golden.json --only synthb- --annotate
 
-      - name: Проверка запуска release-сборки на эмуляторе
-        run: |
-          grep -E "FATAL EXCEPTION|AndroidRuntime: |CONSOLE\(|chromium.*Uncaught" smoke-logcat.txt | grep -v "^--------- " | head -60 > handoff/smoke-log.txt || true
-          cat handoff/smoke-start.txt handoff/smoke-resumed.txt handoff/smoke-pid.txt
-          grep -q "Status: ok" handoff/smoke-start.txt || { echo "::error title=smoke::Приложение не запустилось"; exit 1; }
-          grep -q "ru.autohub.app/.MainActivity" handoff/smoke-resumed.txt || { echo "::error title=smoke::MainActivity не на экране после поворота, тёмной темы и возврата из фона"; exit 1; }
-          [ -s handoff/smoke-pid.txt ] || { echo "::error title=smoke::Процесс приложения не жив"; exit 1; }
-          if grep -q "FATAL EXCEPTION" smoke-logcat.txt; then grep -A12 "FATAL EXCEPTION" smoke-logcat.txt | head -30 | while IFS= read -r l; do echo "::error title=smoke crash::$l"; done; exit 1; fi
-          if grep -E "CONSOLE\(" smoke-logcat.txt | grep -q "Uncaught"; then grep -E "CONSOLE\(" smoke-logcat.txt | grep "Uncaught" | head -5 | while IFS= read -r l; do echo "::error title=smoke js::$l"; done; exit 1; fi
-          echo "Release-сборка запускается: старт, поворот, тёмная тема, возврат из фона — без падений и ошибок JS"
+      # Тот же запуск — на Android 14 с современным WebView, как на телефонах пользователей
+      - name: Проверить запуск release-сборки на Android 14
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash tools/ci_smoke.sh handoff/api34
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
