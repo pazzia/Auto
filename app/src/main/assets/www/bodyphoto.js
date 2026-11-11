@@ -33,7 +33,7 @@
       body.innerHTML = '<div class="to-note" style="font-size:14px">Сфотографируйте машину по шаблону перед сервисом, мойкой или арендой. На каждом кадре — дата, время и место: если появится царапина, будет чем доказать.</div>' +
         '<div class="to-sec">ДЛЯ ЧЕГО СЪЁМКА</div><div class="pk-timers">' + PURPOSES.map(function (p) { return '<button data-purpose="' + p + '" data-action="p" class="' + (p === purpose ? "on" : "") + '">' + p + "</button>"; }).join("") + "</div>" +
         (sets.length ? '<div class="to-sec">ПРОШЛЫЕ СЪЁМКИ</div><div class="kv">' + sets.map(function (s) {
-          return '<button class="dc-row" data-set="' + s.id + '" data-action="open"><span class="dc-t"><b>' + esc(s.purpose) + "</b><small>" + stamp(s.at) + " · " + esc(s.place) + '</small></span><b class="dc-s ok">' + Object.keys(s.shots).length + " фото</b></button>";
+          return '<button class="dc-row" data-set="' + esc(s.id) + '" data-action="open"><span class="dc-t"><b>' + esc(s.purpose) + "</b><small>" + stamp(s.at) + " · " + esc(s.place) + '</small></span><b class="dc-s ok">' + Object.keys(s.shots || {}).length + " фото</b></button>";
         }).join("") + "</div>" : "");
       foot.hidden = false; foot.innerHTML = '<button class="btn-accent" data-action="start">Начать съёмку · 6 кадров</button>';
       return;
@@ -41,7 +41,7 @@
     var n = Object.keys(a.shots).length, next = SHOTS.filter(function (s) { return !a.shots[s[0]]; })[0];
     body.innerHTML = '<div class="to-card to-row"><div><b>' + esc(a.purpose) + '</b><span class="mono">' + stamp(a.at) + " · " + esc(a.place) + '</span></div><b style="color:#C2410C">' + n + " из 6</b></div>" +
       '<div class="bp-grid">' + SHOTS.map(function (s) {
-        var img = a.shots[s[0]], now = next && next[0] === s[0];
+        var img = UI.safeImg(a.shots[s[0]]), now = next && next[0] === s[0]; // только data:image/… и blob:
         if (img) return '<button class="bp-slot done" data-shot="' + s[0] + '" data-action="shot" aria-label="' + s[1] + ': переснять"><img src="' + img + '" alt=""><span>' + s[1] + " ✓</span></button>";
         return '<button class="bp-slot' + (now ? " now" : "") + '" data-shot="' + s[0] + '" data-action="shot">' + outline(s[2]) + "<span>" + s[1] + (now ? " — снять" : "") + "</span></button>";
       }).join("") + "</div>" +
@@ -60,11 +60,12 @@
     var s = load().filter(function (x) { return x.id === id; })[0]; if (!s) return;
     UI.sheet({ title: s.purpose + " · " + stamp(s.at),
       html: '<div class="bp-grid">' + SHOTS.filter(function (x) { return s.shots[x[0]]; }).map(function (x) {
-        return '<div class="bp-slot done"><img src="' + s.shots[x[0]] + '" alt="' + x[1] + '"><span>' + x[1] + "</span></div>"; }).join("") + "</div>" +
+        return '<div class="bp-slot done"><img src="' + UI.safeImg(s.shots[x[0]]) + '" alt="' + x[1] + '"><span>' + x[1] + "</span></div>"; }).join("") + "</div>" +
         '<p class="ic-note">' + esc(s.place) + " · " + stamp(s.at) + '</p><button class="linkbtn" data-action="del" style="align-self:center">Удалить съёмку</button>',
       onMount: function (b) { b.querySelector("[data-action=del]").addEventListener("click", function () {
-        if (!window.confirm("Удалить эту съёмку?")) return;
-        save(load().filter(function (x) { return x.id !== id; })); UI.close(render);
+        window.AutoHubKit.confirm({ title: "Удалить эту съёмку?", text: "Фото удалятся с телефона.", ok: "Удалить", danger: true }, function () {
+          save(load().filter(function (x) { return x.id !== id; })); render();
+        });
       }); } });
   }
   function init() {
@@ -80,7 +81,7 @@
         sets.push({ id: "b" + Date.now().toString(36), at: Date.now(), purpose: purpose, place: place, shots: {}, done: false });
         if (save(sets)) render();
       }
-      if (a.dataset.action === "cancel" && window.confirm("Отменить съёмку? Снятые кадры удалятся.")) { save(load().filter(function (x) { return x.done; })); render(); }
+      if (a.dataset.action === "cancel") window.AutoHubKit.confirm({ title: "Отменить съёмку?", text: "Снятые кадры удалятся.", ok: "Отменить съёмку", cancel: "Продолжить", danger: true }, function () { save(load().filter(function (x) { return x.done; })); render(); });
       if (a.dataset.action === "finish") {
         var all = load(), cur = all.filter(function (x) { return !x.done; })[0]; cur.done = true; save(all);
         UI.track("photos_done", cur.id); UI.toast("Съёмка сохранена"); render();

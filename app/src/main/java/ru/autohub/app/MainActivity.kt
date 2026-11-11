@@ -2,8 +2,6 @@ package ru.autohub.app
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -18,6 +16,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
+import android.view.ViewGroup
 import android.webkit.ValueCallback
 import androidx.core.content.FileProvider
 import java.io.File
@@ -37,11 +36,16 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var webView: WebView
     private lateinit var offlineOcr: NativeOcr
+    private lateinit var nativeHttp: NativeHttp
     private val main = Handler(Looper.getMainLooper())
+    private var destroyed = false
 
-    // Ожидающие ответа запросы из веб-интерфейса
+    // Ожидающие ответа запросы из веб-интерфейса (сохраняются в onSaveInstanceState)
     private var pendingLocation: String? = null
     private var pendingPhoto: String? = null
+    private val pendingNotify = ArrayList<String>()
+    // Активные подписки на координаты — снимаются в onDestroy, чтобы GPS не работал после закрытия
+    private val locationListeners = mutableSetOf<LocationListener>()
 
     private val locationPermission =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -66,25 +70,54 @@ class MainActivity : ComponentActivity() {
         }
 
     // Document capture is separate from the low-resolution parking preview.
+    // Снимок документа лежит в cacheDir/documents, пока его не прочитает веб-интерфейс:
+    // удаляется при отмене съёмки, если отдать его некому, по releaseDocumentCaptures() и при запуске.
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private var documentCameraUri: Uri? = null
+    private var documentCameraFile: File? = null
     private val documentPicker = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         fileCallback?.onReceiveValue(uris.takeIf { it.isNotEmpty() }?.toTypedArray())
         fileCallback = null
     }
     private val documentCamera = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        fileCallback?.onReceiveValue(if (ok) documentCameraUri?.let { arrayOf(it) } else null)
+        val callback = fileCallback
+        val uri = documentCameraUri
+        val file = documentCameraFile
         fileCallback = null
         documentCameraUri = null
+        documentCameraFile = null
+        if (ok && callback != null && uri != null && file != null && file.length() > 0) {
+            callback.onReceiveValue(arrayOf(uri))
+        } else {
+            // Съёмку отменили, или активность пересоздана и окно выбора файла в WebView уже закрыто
+            callback?.onReceiveValue(null)
+            file?.delete()
+        }
     }
 
     private val notificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+            val ids = ArrayList(pendingNotify)
+            pendingNotify.clear()
+            val enabled = Reminders.notificationsEnabled(this)
+            ids.forEach { notifyCallback(it, enabled) }
+        }
 
     @SuppressLint("SetJavaScriptEnabled")
     @Suppress("DEPRECATION") // statusBarColor/navigationBarColor устарели только с API 35
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) {
+            pendingLocation = savedInstanceState.getString(STATE_PENDING_LOCATION)
+            pendingPhoto = savedInstanceState.getString(STATE_PENDING_PHOTO)
+            savedInstanceState.getStringArrayList(STATE_PENDING_NOTIFY)?.let { pendingNotify.addAll(it) }
+            documentCameraUri = savedInstanceState.getString(STATE_CAMERA_URI)?.let { Uri.parse(it) }
+            documentCameraFile = savedInstanceState.getString(STATE_CAMERA_FILE)?.let { File(it) }
+        }
+        // Старые снимки документов: страница загружается заново, ссылок на них в JS уже нет
+        releaseDocumentCaptures()
+        // Будильники не переживают перезагрузку и «Остановить» в настройках — ставим будущие напоминания заново
+        Reminders.restore(this)
         // Страница занимает место строго между статус-баром и панелью навигации.
         // (При переходе на targetSdk 35 Android включит edge-to-edge принудительно —
         // тогда нужно будет отдать отступы через WindowInsets.)
@@ -100,26 +133,35 @@ class MainActivity : ComponentActivity() {
             setBackgroundColor(Color.parseColor("#F3F1EC"))
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-            settings.allowFileAccess = true
+            // file:///android_asset/ грузится и без доступа к файловой системе; origin страницы не меняется
+            // (на нём localStorage и IndexedDB пользователей)
+            settings.allowFileAccess = false
             overScrollMode = WebView.OVER_SCROLL_NEVER
             // Диалоги JS (подтверждения, ввод пробега)
             webChromeClient = object : WebChromeClient() {
                 override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
                     fileCallback?.onReceiveValue(null)
                     fileCallback = callback
+                    var photo: File? = null
                     try {
                         if (params.isCaptureEnabled) {
-                            val folder = File(cacheDir, "documents").apply { mkdirs() }
+                            val folder = documentsFolder().apply { mkdirs() }
                             folder.listFiles()?.filter { System.currentTimeMillis() - it.lastModified() > 86400000 }?.forEach { it.delete() }
-                            val photo = File.createTempFile("capture-", ".jpg", folder)
-                            documentCameraUri = FileProvider.getUriForFile(this@MainActivity, "$packageName.files", photo)
-                            documentCamera.launch(documentCameraUri!!)
+                            val file = File.createTempFile("capture-", ".jpg", folder)
+                            photo = file
+                            val uri = FileProvider.getUriForFile(this@MainActivity, "$packageName.files", file)
+                            documentCameraFile = file
+                            documentCameraUri = uri
+                            documentCamera.launch(uri)
                         } else {
                             documentPicker.launch(arrayOf("image/jpeg", "image/png", "image/webp", "application/pdf"))
                         }
                     } catch (_: Exception) {
                         fileCallback?.onReceiveValue(null)
                         fileCallback = null
+                        photo?.delete()
+                        documentCameraFile = null
+                        documentCameraUri = null
                     }
                     return true
                 }
@@ -150,17 +192,16 @@ class MainActivity : ComponentActivity() {
             }
         }
         // Доступ к открытым API (NHTSA vPIC) и к возможностям телефона из веб-интерфейса
-        webView.addJavascriptInterface(NativeHttp(webView), "NativeHttp")
+        nativeHttp = NativeHttp(webView)
+        webView.addJavascriptInterface(nativeHttp, "NativeHttp")
         offlineOcr = NativeOcr(webView)
         webView.addJavascriptInterface(offlineOcr, "NativeOcr")
         webView.addJavascriptInterface(NativeDevice(this), "NativeDevice")
         setContentView(webView)
 
-        if (savedInstanceState != null) {
-            webView.restoreState(savedInstanceState)
-        } else {
-            webView.loadUrl("file:///android_asset/www/index.html#Garage")
-        }
+        // restoreState() возвращает null, если восстановить нечего (или формат состояния не подошёл) — тогда с начала
+        val restored = savedInstanceState?.let { webView.restoreState(it) }
+        if (restored == null || restored.size == 0) webView.loadUrl(START_URL)
 
         // Кнопка «Назад» возвращает на предыдущий экран прототипа
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -170,14 +211,46 @@ class MainActivity : ComponentActivity() {
         })
     }
 
+    override fun onResume() {
+        super.onResume()
+        webView.resumeTimers()
+        webView.onResume()
+    }
+
+    override fun onPause() {
+        // JS-таймеры (опрос координат на экране парковки) и отрисовка не работают в фоне
+        webView.onPause()
+        webView.pauseTimers()
+        super.onPause()
+    }
+
     override fun onDestroy() {
+        destroyed = true
+        main.removeCallbacksAndMessages(null)
+        val lm = getSystemService(LOCATION_SERVICE) as? LocationManager
+        locationListeners.forEach { listener -> runCatching { lm?.removeUpdates(listener) } }
+        locationListeners.clear()
         if (::offlineOcr.isInitialized) offlineOcr.close()
+        if (::nativeHttp.isInitialized) nativeHttp.close()
+        if (::webView.isInitialized) {
+            fileCallback?.onReceiveValue(null)
+            fileCallback = null
+            webView.stopLoading()
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.removeAllViews()
+            webView.destroy()
+        }
         super.onDestroy()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         webView.saveState(outState)
+        outState.putString(STATE_PENDING_LOCATION, pendingLocation)
+        outState.putString(STATE_PENDING_PHOTO, pendingPhoto)
+        outState.putStringArrayList(STATE_PENDING_NOTIFY, ArrayList(pendingNotify))
+        outState.putString(STATE_CAMERA_URI, documentCameraUri?.toString())
+        outState.putString(STATE_CAMERA_FILE, documentCameraFile?.absolutePath)
     }
 
     private fun openExternal(intent: Intent): Boolean = try {
@@ -193,6 +266,7 @@ class MainActivity : ComponentActivity() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     fun requestLocation(callbackId: String) {
+        if (destroyed) return
         if (hasLocationPermission()) {
             readLocation(callbackId)
         } else {
@@ -222,6 +296,7 @@ class MainActivity : ComponentActivity() {
                 if (done) return
                 done = true
                 lm.removeUpdates(this)
+                locationListeners.remove(this)
                 geoCallback(callbackId, location, "")
             }
             // Явные реализации нужны для Android 8–10: там эти методы без реализации по умолчанию
@@ -231,12 +306,14 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
         }
+        locationListeners.add(listener)
         providers.forEach { lm.requestLocationUpdates(it, 0L, 0f, listener, Looper.getMainLooper()) }
         // Не дольше 25 секунд: иначе — последняя известная точка или ошибка
         main.postDelayed({
             if (!done) {
                 done = true
                 lm.removeUpdates(listener)
+                locationListeners.remove(listener)
                 val last = providers.mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
                 geoCallback(callbackId, last, if (last == null) "timeout" else "stale")
             }
@@ -244,6 +321,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun geoCallback(id: String, loc: Location?, error: String) {
+        if (destroyed) return
         val js = if (loc == null) {
             "window.__nativeGeoCb(${JSONObject.quote(id)}, false, 0, 0, 0, ${JSONObject.quote(error)})"
         } else {
@@ -255,6 +333,7 @@ class MainActivity : ComponentActivity() {
     /* ---------- Фото ---------- */
 
     fun takePhoto(callbackId: String) {
+        if (destroyed) return
         pendingPhoto = callbackId
         try {
             photoCapture.launch(null)
@@ -265,35 +344,56 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun photoCallback(id: String, dataUrl: String?) {
+        if (destroyed) return
         val arg = if (dataUrl == null) "null" else JSONObject.quote(dataUrl)
         webView.evaluateJavascript("window.__nativePhotoCb(${JSONObject.quote(id)}, $arg)", null)
     }
 
-    /* ---------- Напоминания ---------- */
+    /* ---------- Уведомления и снимки документов ---------- */
 
-    private fun reminderIntent(id: Int, title: String = "", text: String = ""): PendingIntent =
-        PendingIntent.getBroadcast(
-            this, id,
-            Intent(this, ReminderReceiver::class.java)
-                .putExtra(ReminderReceiver.EXTRA_ID, id)
-                .putExtra(ReminderReceiver.EXTRA_TITLE, title)
-                .putExtra(ReminderReceiver.EXTRA_TEXT, text),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-    fun scheduleReminder(id: Int, atMillis: Long, title: String, text: String) {
-        if (Build.VERSION.SDK_INT >= 33 &&
+    /** Ответ JS: покажет ли система напоминания. На Android 13+ при необходимости спрашивает разрешение. */
+    fun requestNotifications(callbackId: String) {
+        if (destroyed) return
+        if (Reminders.notificationsEnabled(this)) { notifyCallback(callbackId, true); return }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
-            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            pendingNotify.add(callbackId)
+            // Несколько напоминаний подряд (парковка ставит два) — один системный диалог
+            if (pendingNotify.size == 1) {
+                try {
+                    notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } catch (_: Exception) {
+                    val ids = ArrayList(pendingNotify)
+                    pendingNotify.clear()
+                    ids.forEach { notifyCallback(it, false) }
+                }
+            }
+            return
         }
-        val am = getSystemService(ALARM_SERVICE) as AlarmManager
-        // Неточный будильник: не требует особого разрешения, в режиме сна может сдвинуться на несколько минут
-        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMillis, reminderIntent(id, title, text))
+        // Уведомления выключены в настройках телефона — системным диалогом их не включить
+        notifyCallback(callbackId, false)
     }
 
-    fun cancelReminder(id: Int) {
-        val am = getSystemService(ALARM_SERVICE) as AlarmManager
-        am.cancel(reminderIntent(id))
+    private fun notifyCallback(id: String, enabled: Boolean) {
+        if (destroyed) return
+        webView.evaluateJavascript("window.__nativeNotifyCb && window.__nativeNotifyCb(${JSONObject.quote(id)}, $enabled)", null)
+    }
+
+    private fun documentsFolder() = File(cacheDir, "documents")
+
+    /** Удалить снимки документов, кроме того, что камера снимает прямо сейчас. */
+    fun releaseDocumentCaptures() {
+        val keep = documentCameraFile?.absolutePath
+        documentsFolder().listFiles()?.filter { it.absolutePath != keep }?.forEach { it.delete() }
+    }
+
+    private companion object {
+        const val START_URL = "file:///android_asset/www/index.html#Garage"
+        const val STATE_PENDING_LOCATION = "autohub.pendingLocation"
+        const val STATE_PENDING_PHOTO = "autohub.pendingPhoto"
+        const val STATE_PENDING_NOTIFY = "autohub.pendingNotify"
+        const val STATE_CAMERA_URI = "autohub.documentCameraUri"
+        const val STATE_CAMERA_FILE = "autohub.documentCameraFile"
     }
 }

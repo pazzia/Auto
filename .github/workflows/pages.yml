@@ -1,0 +1,142 @@
+name: Web app (PWA)
+
+# Веб-версия приложения (PWA) на своём сервере: открывается в любом браузере и ставится на главный экран,
+# после первого открытия работает офлайн. Выпускается отдельно от main — пушем в ветку pwa.
+#
+# Сервер настраивается один раз скриптом deploy/server/setup.sh (Docker + Caddy, HTTPS Let's Encrypt).
+# Он печатает секреты, которые нужно добавить в Settings → Secrets and variables → Actions:
+#   AUTOHUB_SERVER_HOST, AUTOHUB_SERVER_PORT, AUTOHUB_SERVER_KNOWN_HOSTS, AUTOHUB_SERVER_SSH_KEY, AUTOHUB_SERVER_URL.
+# Ключ на сервере ограничен rrsync: им можно только залить файлы в папку сайта.
+# В сайт добавляется движок распознавания для браузера (tools/web_ocr.py), а Caddyfile проверяется на настоящем Caddy.
+# Все actions закреплены по SHA коммита (в комментарии — тег).
+
+on:
+  push:
+    branches: [pwa]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-app
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Собрать веб-приложение из design/ и web/
+        run: python3 tools/build_prototype.py
+      - name: Тесты, в том числе состав веб-приложения
+        run: node --test tests/document-parser.test.cjs tests/web-logic.test.cjs tests/gov.test.cjs tests/vincod.test.cjs tests/pwa.test.cjs tests/ocr-web.test.cjs
+      - name: Движок распознавания для браузера (версии и хеши закреплены в tools/web-ocr/package-lock.json)
+        run: |
+          cp -r app/src/main/assets/www site
+          python3 tools/web_ocr.py site
+      - name: Проверить Caddy — конфигурация с сервера, сайт и посредник API
+        # Тот же образ и тот же Caddyfile, что на сервере, только без HTTPS (адрес :8080)
+        run: |
+          docker run -d --name caddy-check -p 8080:8080 -e AUTOHUB_HOST=":8080" \
+            -v "$PWD/site:/srv:ro" -v "$PWD/deploy/server/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.8.4 >/dev/null
+          B=http://localhost:8080
+          for i in $(seq 30); do curl -fsS -o /dev/null "$B/index.html" && break; sleep 1; done
+          code() { curl -s -o /dev/null -w '%{http_code}' --max-time 100 "$@"; }
+          OCR=$(grep -o 'AUTOHUB_OCR_DIR = "[^"]*"' site/index.html | cut -d'"' -f2)
+          fail() { echo "::error title=Caddy::$1"; docker logs caddy-check 2>&1 | tail -20; exit 1; }
+          [ "$(code "$B/index.html")" = 200 ] || fail "сайт не открывается"
+          [ "$(code "$B/${OCR}lang/rus.traineddata")" = 200 ] || fail "нет моделей распознавания"
+          curl -sI "$B/${OCR}worker.min.js" | grep -qi "cache-control: public, max-age=31536000, immutable" || fail "движок без долгого кэша"
+          [ "$(code -X POST "$B/x/vpic/api/")" = 405 ] || fail "посредник принимает не только GET"
+          [ "$(code "$B/x/other/")" = 404 ] || fail "посредник отвечает на неизвестный адрес"
+          # Внешние сервисы: недоступность — предупреждение, а не ошибка (это не наш сбой)
+          vp=$(curl -s -D vpic.h --max-time 60 "$B/x/vpic/api/vehicles/DecodeVinValues/1HGCM82633A004352?format=json" || true)
+          if echo "$vp" | grep -q '"Make":"HONDA"'; then
+            grep -qi "cache-control: no-store" vpic.h || fail "ответы посредника кэшируются"
+            echo "vPIC через посредника: ок"
+          else echo "::warning title=Caddy::vPIC через посредника не ответил — проверить позже"; fi
+          avc=$(code "$B/x/avc/balance")
+          echo "AvtoVinCod через посредника, без ключа: HTTP $avc"
+          case "$avc" in 401|403) ;; *) echo "::warning title=Caddy::AvtoVinCod без ключа ответил $avc (ожидался 401)";; esac
+          docker rm -f caddy-check >/dev/null
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: web-app
+          retention-days: 7
+          path: site/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: web-app
+          path: site
+
+      - name: Секреты сервера
+        env:
+          HOST: ${{ secrets.AUTOHUB_SERVER_HOST }}
+          KNOWN: ${{ secrets.AUTOHUB_SERVER_KNOWN_HOSTS }}
+          KEY: ${{ secrets.AUTOHUB_SERVER_SSH_KEY }}
+        run: |
+          missing=""
+          [ -n "$HOST" ] || missing="$missing AUTOHUB_SERVER_HOST"
+          [ -n "$KNOWN" ] || missing="$missing AUTOHUB_SERVER_KNOWN_HOSTS"
+          [ -n "$KEY" ] || missing="$missing AUTOHUB_SERVER_SSH_KEY"
+          if [ -n "$missing" ]; then
+            echo "::warning title=Веб-приложение::Нет секретов:$missing — сайт не выложен. Запустите deploy/server/setup.sh на сервере и добавьте секреты, которые он напечатает."
+            echo "DEPLOY=no" >> "$GITHUB_ENV"
+          else
+            echo "DEPLOY=yes" >> "$GITHUB_ENV"
+          fi
+
+      - name: Выложить на сервер
+        if: env.DEPLOY == 'yes'
+        env:
+          HOST: ${{ secrets.AUTOHUB_SERVER_HOST }}
+          PORT: ${{ secrets.AUTOHUB_SERVER_PORT }}
+          KNOWN: ${{ secrets.AUTOHUB_SERVER_KNOWN_HOSTS }}
+          KEY: ${{ secrets.AUTOHUB_SERVER_SSH_KEY }}
+        run: |
+          [ -f site/index.html ] && [ -f site/sw.js ] && [ -f site/manifest.webmanifest ] || { echo "::error title=Веб-приложение::Сборка неполная"; exit 1; }
+          echo "${GITHUB_SHA}" > site/COMMIT
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/autohub && chmod 600 ~/.ssh/autohub
+          printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts
+          # Сначала всё, кроме sw.js, потом sw.js: телефоны не получат новый сервис-воркер раньше файлов, на которые он ссылается
+          SSH="ssh -i $HOME/.ssh/autohub -p ${PORT:-22} -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+          rsync -rlt --delete --exclude /sw.js --chmod=D755,F644 -e "$SSH" site/ "autohub-deploy@$HOST:./"
+          rsync -rlt --chmod=F644 -e "$SSH" site/sw.js "autohub-deploy@$HOST:./sw.js"
+
+      - name: Удалить ключ
+        if: always()
+        run: rm -f ~/.ssh/autohub
+
+      - name: Проверить сайт
+        if: env.DEPLOY == 'yes'
+        env:
+          URL: ${{ secrets.AUTOHUB_SERVER_URL }}
+        run: |
+          [ -n "$URL" ] || { echo "AUTOHUB_SERVER_URL не задан — проверка пропущена"; exit 0; }
+          for i in 1 2 3 4 5 6; do
+            got=$(curl -fsS --max-time 15 "$URL/COMMIT" || true)
+            [ "$got" = "$GITHUB_SHA" ] && break
+            sleep 10
+          done
+          [ "$got" = "$GITHUB_SHA" ] || { echo "::error title=Веб-приложение::Сайт $URL не отдаёт новую версию (получено: ${got:-ничего})"; exit 1; }
+          echo "Выложено: $URL"; echo "### Веб-приложение: $URL" >> "$GITHUB_STEP_SUMMARY"
+          # Посредник API (VIN, госданные) настраивается на сервере скриптом setup.sh — напомнить, если сервер ещё на старой версии
+          avc=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL/x/avc/balance" || true)
+          echo "Посредник AvtoVinCod на сервере: HTTP $avc"
+          case "$avc" in
+            401|403) echo "Посредник API: работает" >> "$GITHUB_STEP_SUMMARY" ;;
+            404) echo "::warning title=Веб-приложение::На сервере нет посредника API — VIN и госданные в браузере не заработают. Запустите на сервере обновлённый deploy/server/setup.sh" ;;
+            *) echo "::warning title=Веб-приложение::Посредник AvtoVinCod ответил $avc (ожидался 401 без ключа)" ;;
+          esac

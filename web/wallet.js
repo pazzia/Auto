@@ -35,7 +35,13 @@
 
   /* ================= Данные для бюджета ================= */
   function carId() { var c = window.AutoHubCar && window.AutoHubCar.active(); return (c && c.id) || "demo"; }
-  var FINES = { f1: 250, f2: 500 }; // суммы со скидкой, как на экране штрафов
+  var LEGACY_FINES = { f1: 250, f2: 500 }; // записи до 0.17 хранили только время оплаты
+  // Полис и штрафы привязаны к машине; записи до 0.17 без машины считаем один раз — в первой машине гаража
+  function ownerOf(rec) {
+    if (rec && rec.carId) return rec.carId;
+    var cars = window.AutoHubCar ? window.AutoHubCar.cars() : [];
+    return cars[0] ? cars[0].id : "demo";
+  }
   function expenses(fromTs) {
     var id = carId(), rows = [];
     (load("fuel.v1", {})[id] || []).forEach(function (f) { rows.push({ cat: "fuel", at: new Date(f.date).getTime(), sum: f.sum }); });
@@ -43,8 +49,13 @@
       if (!h.cost || h.kind === "booking") return;
       rows.push({ cat: h.kind === "purchase" ? "parts" : "service", at: new Date(h.date + "T12:00:00").getTime(), sum: h.cost });
     });
-    var osago = load("osago.v1", null); if (osago && osago.price) rows.push({ cat: "insurance", at: osago.at || Date.now(), sum: osago.price });
-    var paid = load("fines.v1", {}); Object.keys(paid).forEach(function (k) { if (paid[k] && FINES[k]) rows.push({ cat: "fines", at: typeof paid[k] === "number" ? paid[k] : Date.now(), sum: FINES[k] }); });
+    var osago = load("osago.v1", null); if (osago && osago.price && ownerOf(osago) === id) rows.push({ cat: "insurance", at: osago.at || Date.now(), sum: osago.price });
+    var paid = load("fines.v1", {});
+    Object.keys(paid).forEach(function (k) {
+      var p = paid[k]; if (!p) return;
+      if (typeof p === "number") { if (LEGACY_FINES[k] && ownerOf(null) === id) rows.push({ cat: "fines", at: p, sum: LEGACY_FINES[k] }); return; }
+      if (ownerOf(p) === id && p.amount) rows.push({ cat: "fines", at: p.at || Date.now(), sum: p.amount });
+    });
     return rows.filter(function (r) { return r.at >= fromTs; });
   }
   var CATS = [["fuel", "Топливо", "из журнала заправок"], ["service", "Обслуживание", "ТО и визиты из истории"], ["parts", "Запчасти", "покупки из истории"],
@@ -76,6 +87,10 @@
         '<div class="kv-total"><span>Итого</span><b>≈ ' + rub(f.total) + "</b></div>";
       $("bdFoot").innerHTML = '<button class="btn-dark" data-action="piggy">Копить на ТО — ' + rub(Math.ceil(f.toCost / 12 / 100) * 100) + " в месяц</button>";
       $("bdFoot").hidden = false; $("bdFoot").dataset.goal = f.toCost; $("bdFoot").dataset.km = f.toKm;
+    }, function (e) {
+      var el = $("bdForecast"); if (!el) return;
+      el.innerHTML = "<div><span>Прогноз недоступен<small>" + esc(API.errorText(e)) + "</small></span><b>—</b></div>";
+      $("bdFoot").hidden = true;
     });
   }
   // Прогноз: ТО по регламенту (работы + запчасти «оптимально»), ОСАГО, сезонная смена шин, топливо по расходу
@@ -115,7 +130,7 @@
     body.innerHTML = html;
   }
   function startPiggy(goal, km) {
-    if (!goal) { forecast().then(function (f) { startPiggy(f.toCost, f.toKm); }); return; }
+    if (!goal) { forecast().then(function (f) { startPiggy(f.toCost, f.toKm); }, function (e) { UI.toast(API.errorText(e)); }); return; }
     save("piggy.v1", { goal: Math.round(goal), km: km, saved: (load("piggy.v1", null) || {}).saved || 0 });
     if (location.hash === "#Wallet") renderWallet(); else location.hash = "#Wallet"; // тот же экран — просто перерисовать
     UI.toast("Копилка на ТО создана");

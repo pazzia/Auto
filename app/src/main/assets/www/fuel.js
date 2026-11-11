@@ -53,7 +53,7 @@
     var l = list(), s = stats(), c = car();
     $("fuSub").textContent = window.AutoHubCar.name(c) + " · расход по вашим чекам";
     if (!l.length) {
-      body.innerHTML = '<div class="pk-empty"><span class="pk-big" aria-hidden="true">⛽</span><b>Записей пока нет</b><span>После заправки введите сумму, литры и пробег — это 10 секунд. Посчитаем реальный расход и цену километра, а пробег сам обновится для ТО.</span></div>';
+      body.innerHTML = '<div class="pk-empty"><span class="pk-big" aria-hidden="true">' + window.AutoHubKit.icon("fuel", 40, "#C2410C") + '</span><b>Записей пока нет</b><span>После заправки введите сумму, литры и пробег — это 10 секунд. Посчитаем реальный расход и цену километра, а пробег сам обновится для ТО.</span></div>';
       return;
     }
     var max = Math.max.apply(null, [1].concat(s.chart.map(function (x) { return x.sum; })));
@@ -62,12 +62,12 @@
       "<div><span>Цена км</span><b>" + (s.perKm ? fmt1(s.perKm) + " ₽" : "—") + "</b><small>только топливо</small></div>" +
       '<div><span>' + MON[new Date().getMonth()] + "</span><b class=\"acc\">" + rub(s.month) + "</b><small>" + s.monthCount + " запр.</small></div></div>" +
       '<div class="fu-chart" aria-label="Траты на топливо по месяцам">' + s.chart.map(function (x) {
-        return '<div><i style="height:' + Math.max(4, Math.round(x.sum / max * 100)) + '%"' + (x.cur ? ' class="cur"' : "") + '></i><span>' + x.label + "</span></div>";
+        return '<div><i style="height:' + Math.max(4, Math.round(x.sum / max * 100)) + '%"' + (x.cur ? ' class="cur"' : "") + '></i><span>' + esc(x.label) + "</span></div>";
       }).join("") + "</div></div>";
     html += '<div class="to-sec">ИСТОРИЯ</div><div class="kv">' + l.map(function (e) {
       var d = new Date(e.date);
-      return '<div class="fu-row"><span><b>' + d.getDate() + " " + MON[d.getMonth()] + "</b><small>" + fmt1(e.liters) + " л · " + esc(e.type) + (e.full ? " · полный бак" : "") + '</small><small class="mono">' + e.km.toLocaleString("ru-RU") + " км</small></span>" +
-        '<span class="r"><b>' + rub(e.sum) + '</b><small class="' + (s.cons[e.id] ? "ok" : "") + '">' + (s.cons[e.id] ? fmt1(s.cons[e.id]) + " л/100" : "—") + '</small><button class="linkbtn" data-del="' + e.id + '" data-action="del" aria-label="Удалить запись">Удалить</button></span></div>';
+      return '<div class="fu-row"><span><b>' + d.getDate() + " " + MON[d.getMonth()] + "</b><small>" + fmt1(+e.liters || 0) + " л · " + esc(e.type) + (e.full ? " · полный бак" : "") + '</small><small class="mono">' + Number(e.km).toLocaleString("ru-RU") + " км</small></span>" +
+        '<span class="r"><b>' + rub(e.sum) + '</b><small class="' + (s.cons[e.id] ? "ok" : "") + '">' + (s.cons[e.id] ? fmt1(s.cons[e.id]) + " л/100" : "—") + '</small><button class="linkbtn" data-del="' + esc(e.id) + '" data-action="del" aria-label="Удалить запись">Удалить</button></span></div>';
     }).join("") + "</div>";
     body.innerHTML = html;
   }
@@ -75,7 +75,7 @@
   function addSheet() {
     var c = car(), last = list()[0], type = (last && last.type) || "АИ-95";
     UI.sheet({ title: "Новая заправка",
-      html: '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fld">Сумма, ₽<input id="fuSum" inputmode="decimal" placeholder="2 450" autocomplete="off"></label>' +
+      html: '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label class="fld">Сумма, ₽<input id="fuSum" inputmode="decimal" placeholder="2 450" autocomplete="off"></label>' +
         '<label class="fld">Литры<input id="fuLit" inputmode="decimal" placeholder="42,5" autocomplete="off"><span id="fuPpl" class="fu-hint"></span></label></div>' +
         '<label class="fld">Пробег, км<input id="fuKm" inputmode="numeric" placeholder="' + (c.mileage || "") + '" autocomplete="off"><span id="fuKmHint" class="fu-hint"></span></label>' +
         '<div class="pk-timers">' + TYPES.map(function (t) { return '<button data-type="' + t + '" data-action="t" class="' + (t === type ? "on" : "") + '">' + t + "</button>"; }).join("") + "</div>" +
@@ -104,7 +104,9 @@
             (last && km < last.km) ? "Пробег меньше, чем в прошлой записи (" + last.km.toLocaleString("ru-RU") + " км)." : "";
           if (err) { var er = b.querySelector("#fuErr"); er.textContent = err; er.hidden = false; return; }
           var l = list(); l.push({ id: "f" + Date.now().toString(36), date: new Date().toISOString(), sum: sum, liters: lit, km: km, type: type, full: b.querySelector("#fuFull").checked, photo: photo });
-          l.slice(10).forEach(function (x) { delete x.photo; }); // фото чеков — только у 10 последних, чтобы хватило памяти
+          // Фото чеков — только у 10 последних (по пробегу), чтобы хватило памяти: новая запись в начале, фото теряют самые старые
+          l.sort(function (a, b) { return b.km - a.km || (b.date > a.date ? 1 : -1); });
+          l.slice(10).forEach(function (x) { delete x.photo; });
           saveList(l);
           var upd = km > (c.mileage || 0);
           if (upd) window.AutoHubCar.update(c.id, { mileage: km });
@@ -118,7 +120,7 @@
     scr.addEventListener("click", function (e) {
       if (e.target.closest("[data-action=add]")) { addSheet(); return; }
       var d = e.target.closest("[data-del]");
-      if (d && window.confirm("Удалить эту заправку?")) { saveList(list().filter(function (x) { return x.id !== d.dataset.del; })); render(); }
+      if (d) window.AutoHubKit.confirm({ title: "Удалить эту заправку?", ok: "Удалить", danger: true }, function () { saveList(list().filter(function (x) { return x.id !== d.dataset.del; })); render(); });
     });
     window.addEventListener("hashchange", function () { if (location.hash === "#Fuel") render(); });
     window.addEventListener("autohub:car", function () { if (location.hash === "#Fuel") render(); });

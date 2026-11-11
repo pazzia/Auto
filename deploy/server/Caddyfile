@@ -1,0 +1,64 @@
+# АвтоХаб: веб-приложение (PWA) на своём сервере. Caddy сам получает и продлевает HTTPS-сертификат Let's Encrypt.
+# {$AUTOHUB_HOST} — адрес сайта: по умолчанию <IP-через-дефисы>.sslip.io (задаёт setup.sh), можно свой домен.
+
+# Посредник к внешнему API: браузер не может обращаться к нему напрямую (сервис не разрешает CORS).
+# Только чтение (GET); ключ пользователь хранит у себя и передаёт в самом запросе — сервер его не хранит,
+# журнал запросов не ведётся. Cookie, реферер и адрес посетителя наружу не уходят, ответы не кэшируются.
+(api_proxy) {
+	@write not method GET
+	respond @write 405
+	reverse_proxy https://{args[0]} {
+		header_up Host {args[0]}
+		header_up -Cookie
+		header_up -Referer
+		header_up -Origin
+		header_up -X-Forwarded-For
+		header_up -X-Forwarded-Host
+		header_up -X-Forwarded-Proto
+		header_down -Set-Cookie
+		header_down Cache-Control "no-store"
+		transport http {
+			dial_timeout 10s
+			response_header_timeout 100s
+		}
+	}
+}
+
+{$AUTOHUB_HOST} {
+	root * /srv
+	encode zstd gzip
+
+	# Оболочка приложения и сервис-воркер — всегда свежие: иначе обновление не дойдёт до установленных копий
+	@shell path / /index.html /sw.js /manifest.webmanifest
+	header @shell Cache-Control "no-cache"
+	@manifest path /manifest.webmanifest
+	header @manifest Content-Type "application/manifest+json"
+	# Движок распознавания и модели лежат в папке с номером версии — их можно кэшировать надолго
+	header /ocr/* Cache-Control "public, max-age=31536000, immutable"
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
+		-Server
+	}
+
+	# Спецификация по VIN и VIN по госномеру
+	handle_path /x/avc/* {
+		import api_proxy api.avtovincod.ru
+	}
+	# Госданные: штрафы, ОСАГО, пробег по ЕАИСТО
+	handle_path /x/gov/* {
+		import api_proxy service.api-assist.com
+	}
+	# Открытая база VIN (NHTSA vPIC) — запасной источник
+	handle_path /x/vpic/* {
+		import api_proxy vpic.nhtsa.dot.gov
+	}
+	handle /x/* {
+		respond 404
+	}
+	handle {
+		file_server
+	}
+}

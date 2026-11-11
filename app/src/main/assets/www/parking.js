@@ -92,8 +92,8 @@
         : st === "error" ? '<div class="pk-loc err"><b>Координаты не определились</b><span>' + esc(draft.error) + '</span><button class="linkbtn" data-pk="retry" data-action="pk">Попробовать ещё раз</button></div>'
         : '<div class="pk-loc ok"><b>Место определено' + (st === "stale" ? " (последняя точка)" : "") + "</b><span>точность ±" + draft.accuracy + " м · " + clock(draft.at) + "</span></div>";
       body.innerHTML = where +
-        '<button class="pk-photo" data-pk="photo" data-action="pk">' + (draft.photo ? '<img src="' + draft.photo + '" alt="Фото места"><span>Переснять</span>' : '<span class="pk-cam">📷</span><b>Сфотографировать место</b><span>номер места, колонну или вывеску рядом</span>') + "</button>" +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fld">Этаж / ряд<input id="pkFloor" placeholder="-2, ряд C" autocomplete="off" value="' + esc(draft.floor) + '"></label>' +
+        '<button class="pk-photo" data-pk="photo" data-action="pk">' + (draft.photo ? '<img src="' + draft.photo + '" alt="Фото места"><span>Переснять</span>' : '<span class="pk-cam" aria-hidden="true">' + window.AutoHubKit.icon("camera", 28) + '</span><b>Сфотографировать место</b><span>номер места, колонну или вывеску рядом</span>') + "</button>" +
+        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px"><label class="fld">Этаж / ряд<input id="pkFloor" placeholder="-2, ряд C" autocomplete="off" value="' + esc(draft.floor) + '"></label>' +
         '<label class="fld">Заметка<input id="pkNote" placeholder="у ТЦ, вход 3" autocomplete="off" value="' + esc(draft.note) + '"></label></div>' +
         '<div class="to-sec">ТАЙМЕР ПАРКОВКИ</div><div class="pk-timers">' + [[0, "Без таймера"], [30, "30 мин"], [60, "1 ч"], [120, "2 ч"], [180, "3 ч"]].map(function (t) {
           return '<button class="' + (draft.minutes === t[0] ? "on" : "") + '" data-min="' + t[0] + '" data-action="pk">' + t[1] + "</button>";
@@ -106,7 +106,7 @@
     var s = spot();
     if (!s) {
       var log = load(LOG, []);
-      body.innerHTML = '<div class="pk-empty"><span class="pk-big">🅿️</span><b>Машина не отмечена</b><span>Когда припаркуетесь в незнакомом месте — нажмите кнопку. Приложение запомнит точку по GPS, фото и этаж, а потом приведёт обратно.</span></div>' +
+      body.innerHTML = '<div class="pk-empty"><span class="pk-big" aria-hidden="true">' + window.AutoHubKit.icon("parking", 40, "#C2410C") + '</span><b>Машина не отмечена</b><span>Когда припаркуетесь в незнакомом месте — нажмите кнопку. Приложение запомнит точку по GPS, фото и этаж, а потом приведёт обратно.</span></div>' +
         (log.length ? '<div class="to-sec">НЕДАВНИЕ ПАРКОВКИ</div><div class="kv">' + log.map(function (l) {
           var d = new Date(l.at);
           return "<div><span>" + d.getDate() + "." + ("0" + (d.getMonth() + 1)).slice(-2) + ", " + clock(l.at) + "–" + clock(l.left) + "</span><b>" + esc(l.floor || l.note || "без заметки") + "</b></div>";
@@ -119,7 +119,7 @@
     var left = s.until ? s.until - Date.now() : null;
     body.innerHTML = '<div class="pk-card"><div class="pk-card-h"><div><b>Стоит ' + dur(Date.now() - s.at) + '</b><span>с ' + clock(s.at) + (s.car ? " · " + esc(s.car) : "") + "</span></div>" +
         (s.accuracy != null ? '<span class="to-mk">±' + s.accuracy + " м</span>" : "") + "</div>" +
-        (s.photo ? '<img class="pk-img" src="' + s.photo + '" alt="Фото места парковки">' : "") +
+        (UI.safeImg(s.photo) ? '<img class="pk-img" src="' + UI.safeImg(s.photo) + '" alt="Фото места парковки">' : "") +
         (s.floor || s.note ? '<div class="pk-meta">' + (s.floor ? "<span>Этаж / ряд: <b>" + esc(s.floor) + "</b></span>" : "") + (s.note ? "<span>" + esc(s.note) + "</span>" : "") + "</div>" : "") + "</div>" +
       (s.until ? '<div class="pk-timer' + (left <= 10 * 60000 ? " soon" : "") + '"><div><b>' + (left > 0 ? "Осталось " + dur(left) : "Время вышло " + dur(-left) + " назад") + "</b><span>оплачено до " + clock(s.until) + '</span></div><button class="btn-light" data-pk="extend" data-action="pk">+30 мин</button></div>' : "") +
       (s.lat != null ? '<div class="pk-finder" id="pkFinder"></div><button class="btn-light" data-pk="map" data-action="pk" style="height:48px">Маршрут в картах</button>'
@@ -136,7 +136,7 @@
     switch (b.dataset.pk) {
       case "mark": startMark(); break;
       case "retry": keepInputs(); draft.status = "locating"; render(); startMarkRetry(); break;
-      case "photo": keepInputs(); DEV.takePhoto().then(function (d) { if (d && draft) { draft.photo = d; render(); } }); break;
+      case "photo": keepInputs(); DEV.takePhoto().then(function (d) { d = UI.safeImg(d); if (d && draft) { draft.photo = d; render(); } }); break; // только data:image/… и blob:
       case "save": saveMark(); break;
       case "cancel": draft = null; render(); break;
       case "extend":
@@ -163,9 +163,9 @@
     }
     var s = spot();
     row.innerHTML =
-      '<a href="#Parking" class="q3"><span class="q3-ic">🅿️</span><b>Где машина</b><span>' + (s ? "стоит " + dur(Date.now() - s.at) : "запомнить место") + "</span></a>" +
-      '<a href="#Icons" class="q3"><span class="q3-ic">⚠️</span><b>Значки</b><span>что горит на панели</span></a>' +
-      '<a href="#Mechanic" class="q3"><span class="q3-ic">💬</span><b>AI-механик</b><span>спросить о машине</span></a>';
+      '<a href="#Parking" class="q3"><span class="q3-ic">' + window.AutoHubKit.icon("parking", 22) + '</span><b>Где машина</b><span>' + (s ? "стоит " + dur(Date.now() - s.at) : "запомнить место") + "</span></a>" +
+      '<a href="#Icons" class="q3"><span class="q3-ic">' + window.AutoHubKit.icon("alert", 22) + '</span><b>Значки</b><span>что горит на панели</span></a>' +
+      '<a href="#Mechanic" class="q3"><span class="q3-ic">' + window.AutoHubKit.icon("chat", 22) + '</span><b>Механик-помощник</b><span>спросить о машине</span></a>';
   }
 
   function init() {
@@ -178,5 +178,7 @@
     });
     render(); renderGarage();
   }
-  window.AutoHubParking = { init: init, spot: spot };
+  /** Снять напоминания о парковке (удаление аккаунта). */
+  function cancelReminders() { DEV.cancel(REMIND_ID); DEV.cancel(REMIND_END); }
+  window.AutoHubParking = { init: init, spot: spot, cancelReminders: cancelReminders };
 })();

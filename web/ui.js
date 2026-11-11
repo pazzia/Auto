@@ -7,7 +7,28 @@
 
   var open = null, afterClose = null;
 
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  /** Адрес картинки из хранилища: только data:image/… или blob:, иначе пустая строка. */
+  function safeImg(src) {
+    src = String(src || "");
+    return /^data:image\/(png|jpe?g|gif|webp|bmp);base64,[A-Za-z0-9+\/=\s]+$/i.test(src) || /^blob:[\w:\/.\-]+$/i.test(src) ? src : "";
+  }
+
+  /* ---------- Даты: всегда по местному времени телефона, не UTC ---------- */
+  var MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+  var MON = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+  var WD = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
+  /** Дата ГГГГ-ММ-ДД по местному времени (по умолчанию — сегодня). */
+  function isoDate(d) {
+    d = d == null ? new Date() : new Date(d);
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  /** Дата из ГГГГ-ММ-ДД (полдень, чтобы переход на летнее время не сдвигал день) или из Date/числа. */
+  function toDate(v) { return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v + "T12:00:00") : new Date(v == null ? Date.now() : v); }
+  function addDays(d, n) { var x = toDate(d); x.setDate(x.getDate() + n); return x; }
+  /** «6 ноября» (с годом, если year). */
+  function dayMonth(d, year) { d = toDate(d); return d.getDate() + " " + MONTHS[d.getMonth()] + (year ? " " + d.getFullYear() : ""); }
+  var dates = { MONTHS: MONTHS, MON: MON, WD: WD, iso: isoDate, toDate: toDate, addDays: addDays, dayMonth: dayMonth };
   function baseHash() { return (location.hash || "#Garage").replace(/\/sheet$/, ""); }
 
   function remove() {
@@ -153,5 +174,5 @@
     try { window.dispatchEvent(new CustomEvent("autohub:event", { detail: name })); } catch (x) {}
   }
 
-  window.AutoHubUI = { track: track, events: events, sheet: sheet, close: close, dialog: dialog, toast: toast, esc: esc, suggest: suggest, norm: norm };
+  window.AutoHubUI = { track: track, events: events, sheet: sheet, close: close, dialog: dialog, toast: toast, esc: esc, safeImg: safeImg, dates: dates, suggest: suggest, norm: norm };
 })();

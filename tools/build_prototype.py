@@ -1,7 +1,11 @@
 """Собирает веб-прототип в app/src/main/assets/www/ из экранов макета и кода в web/.
 
 Запуск: python3 tools/build_prototype.py [папка с .dc.html, по умолчанию design]
-Результат: index.html (все 25 экранов) + api.js, car.js, services.js, map/podmoskovye.svg.
+Результат: index.html — 37 экранов (NAMES): 19 из design/*.dc.html и 18 из web/*.html (OVERRIDES;
+AddCar, Cart, Wallet и Budget заменяют одноимённые макеты), — плюс модули JS_FILES, map/podmoskovye.svg
+и fonts/OFL.txt. Шрифты из web/fonts встраиваются в CSS как data: (без запросов в сеть).
+Макеты Reminders и OneTapTO в сборку не входят: их заменил сценарий #TO, старые адреса app.js
+перенаправляет на #TO.
 Та же папка публикуется на GitHub Pages и упаковывается в APK.
 """
 import re, os, sys
@@ -11,10 +15,10 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "design")
 if not os.path.isabs(SRC):
     SRC = os.path.join(ROOT, SRC) if not os.path.isdir(SRC) else SRC
 WEB = os.path.join(ROOT, "web")
-JS_FILES = ["ui.js", "device.js", "api.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js"]
+JS_FILES = ["ui.js", "kit.js", "device.js", "api.js", "gov.js", "vincod.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "ocr-web.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js", "pwa.js"]
 OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html", "Welcome": "welcome.html", "Profile": "profile.html", "TO": "to.html", "Icons": "icons.html", "Parking": "parking.html", "Mechanic": "mechanic.html", "Fuel": "fuel.html", "Budget": "budget.html", "Wallet": "wallet.html", "Docs": "docs.html", "Season": "season.html", "Checklists": "checklists.html", "DIY": "diy.html", "BodyPhoto": "bodyphoto.html", "Calc": "calc.html", "Achievements": "achievements.html"}  # экраны, свёрстанные вручную
 OUT = os.path.join(ROOT, "app/src/main/assets/www")
-NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Checklists", "DIY", "BodyPhoto", "Calc", "Achievements", "Garage", "AddCar", "Reminders", "History", "OneTapTO", "Main", "Results", "Offers",
+NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Checklists", "DIY", "BodyPhoto", "Calc", "Achievements", "Garage", "AddCar", "History", "Main", "Results", "Offers",
          "Compare", "Cart", "Services", "ServiceBooking", "BookingDone",
          "Fines", "Tires", "Insurance", "SOS", "Subscription", "Wallet", "Budget",
          "RepairLive", "Warranty", "CarPassport", "Family", "Community"]
@@ -69,9 +73,20 @@ def screen(name):
 
 BUILD = open(os.path.join(ROOT, "VERSION"), encoding="utf-8").read().strip()
 CSS = open(os.path.join(WEB, "app.css"), encoding="utf-8").read()
+# Шрифты (web/fonts/*.woff2) встраиваются в CSS как data: — работают из file:// в WebView и офлайн, без Google Fonts
+import base64
+def _font(m):
+    data = open(os.path.join(WEB, "fonts", m.group(1)), "rb").read()
+    return 'url("data:font/woff2;base64,%s")' % base64.b64encode(data).decode("ascii")
+CSS = re.sub(r'url\("fonts/([\w.-]+\.woff2)"\)', _font, CSS)
 APP = open(os.path.join(WEB, "app.js"), encoding="utf-8").read()
 MAP = open(os.path.join(WEB, "map", "podmoskovye.svg"), encoding="utf-8").read().strip()
 SCRIPTS = "\n".join('<script src="%s"></script>' % f for f in JS_FILES)
+# Распознавание в браузере (web/ocr-web.js): движок и модели кладёт на сервер tools/web_ocr.py в папку OCR_DIR.
+# ocr-prep.js — веб-воркер подготовки снимка, подключается из ocr-web.js, а не тегом script.
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+from web_ocr import ocr_dir
+OCR_DIR = ocr_dir()
 html = """<!doctype html>
 <html lang="ru">
 <head>
@@ -79,8 +94,16 @@ html = """<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F3F1EC">
 <meta name="autohub-build" content="%s">
+<meta name="description" content="АвтоХаб: гараж, ТО, запчасти, сервисы, штрафы и документы автомобиля">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="АвтоХаб">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="pwa/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="pwa/icon-192.png">
+<link rel="apple-touch-icon" href="pwa/apple-touch-icon.png">
 <title>АвтоХаб</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 %s
 </style>
@@ -89,19 +112,41 @@ html = """<!doctype html>
 %s
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <template id="map-podmoskovye">%s</template>
-<script>window.AUTOHUB_BUILD = "%s";</script>
+<script>window.AUTOHUB_BUILD = "%s"; window.AUTOHUB_OCR_DIR = "%s";</script>
 %s
 <script>
 %s
 </script>
 </body>
 </html>
-""" % (BUILD, CSS, "\n".join(screen(n) for n in NAMES), MAP, BUILD, SCRIPTS, APP)
+""" % (BUILD, CSS, "\n".join(screen(n) for n in NAMES), MAP, BUILD, OCR_DIR, SCRIPTS, APP)
 os.makedirs(OUT, exist_ok=True)
 open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 import shutil
-for f in JS_FILES:
+for f in JS_FILES + ["ocr-prep.js"]:
     shutil.copy(os.path.join(WEB, f), os.path.join(OUT, f))
 os.makedirs(os.path.join(OUT, "map"), exist_ok=True)
 shutil.copy(os.path.join(WEB, "map", "podmoskovye.svg"), os.path.join(OUT, "map", "podmoskovye.svg"))
+os.makedirs(os.path.join(OUT, "fonts"), exist_ok=True)
+shutil.copy(os.path.join(WEB, "fonts", "OFL.txt"), os.path.join(OUT, "fonts", "OFL.txt"))  # лицензия едет вместе со шрифтами
+# Веб-приложение (PWA): манифест, значки и сервис-воркер со списком всех файлов сборки.
+# Имя кэша — номер сборки + хеш содержимого: любая пересборка обновляет приложение у пользователей.
+import hashlib, json
+os.makedirs(os.path.join(OUT, "pwa"), exist_ok=True)
+for f in sorted(os.listdir(os.path.join(WEB, "pwa"))):
+    shutil.copy(os.path.join(WEB, "pwa", f), os.path.join(OUT, "manifest.webmanifest" if f == "manifest.webmanifest" else os.path.join("pwa", f)))
+files = []
+for d, _, names in os.walk(OUT):
+    for n in sorted(names):
+        rel = os.path.relpath(os.path.join(d, n), OUT).replace(os.sep, "/")
+        if rel != "sw.js" and not rel.startswith("ocr/"):  # движок распознавания кэшируется отдельно, по требованию
+            files.append(rel)
+files.sort()
+digest = hashlib.sha256()
+for rel in files:
+    digest.update(rel.encode("utf-8")); digest.update(open(os.path.join(OUT, rel), "rb").read())
+sw = open(os.path.join(WEB, "sw.js"), encoding="utf-8").read()
+sw = sw.replace('"__CACHE__"', json.dumps("autohub-%s-%s" % (BUILD, digest.hexdigest()[:10]))).replace("= __FILES__;", "= %s;" % json.dumps(["./"] + files, ensure_ascii=False)).replace('"__OCR_DIR__"', json.dumps(OCR_DIR))
+assert "__CACHE__" not in sw and "__FILES__" not in sw and "__OCR_DIR__" not in sw
+open(os.path.join(OUT, "sw.js"), "w", encoding="utf-8").write(sw)
 print("ok, сборка", BUILD, "->", OUT)

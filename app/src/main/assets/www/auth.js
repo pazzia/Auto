@@ -36,6 +36,7 @@
         mode = t.dataset.auth;
         scr.querySelectorAll("[data-auth]").forEach(function (b) { b.classList.toggle("on", b === t); b.setAttribute("aria-selected", String(b === t)); });
         $("aNameWrap").hidden = mode !== "reg";
+        scr.classList.toggle("reg", mode === "reg"); // в регистрации прячем список возможностей — кнопка видна без прокрутки
         $("aGo").textContent = mode === "reg" ? "Создать аккаунт" : "Войти";
         $("aPass").setAttribute("autocomplete", mode === "reg" ? "new-password" : "current-password");
         $("aErr").hidden = true;
@@ -107,15 +108,16 @@
     var body = $("profileBody"); if (!body) return;
     var s = session() || {}, st = settings(), C = window.AutoHubCar;
     var cars = C ? C.cars() : [], active = C ? C.active() : null, own = cars.filter(function (c) { return !c.demo; });
-    var hist = 0; try { var h = JSON.parse(localStorage.getItem("autohub.history.v1") || "{}"); Object.keys(h).forEach(function (k) { hist += h[k].length; }); } catch (e) {}
+    var S = window.AutoHubScreens, hist = cars.reduce(function (n, c) { return n + (S && S.historyCount ? S.historyCount(c.id) : 0); }, 0); // только машины гаража
     var plus = null; try { plus = JSON.parse(localStorage.getItem("autohub.plus.v1") || "null"); } catch (e) {}
     var pts = window.AutoHubTO ? window.AutoHubTO.points() : 1240;
-    var since = s.since ? new Date(s.since + "T12:00:00").toLocaleDateString("ru-RU", { month: "long", year: "numeric" }) : "";
+    var K = window.AutoHubKit, MGEN = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+    var sd = s.since ? new Date(s.since + "T12:00:00") : null, since = sd && !isNaN(sd) ? MGEN[sd.getMonth()] + " " + sd.getFullYear() + " г." : ""; // «с нами с ноября 2026 г.»
     var html =
       '<div class="pcard"><span class="pav">' + esc(initials(s.name)) + '</span><div class="pinfo"><b>' + esc(s.name || "Без имени") + "</b>" +
       "<span>" + esc(s.email || "e-mail не указан") + "</span><span>" + esc(s.phone || "телефон не указан") + "</span>" +
       '<span class="pmeta">' + esc(st.city) + (since ? " · с нами с " + esc(since) : "") + "</span></div></div>" +
-      '<div class="pstats"><div><b>' + own.length + "</b><span>машин</span></div><div><b>" + hist + '</b><span>записей</span></div><div><b>' + pts.toLocaleString("ru-RU") + '</b><span>баллов</span></div></div>' +
+      '<div class="pstats"><div><b>' + own.length + "</b><span>" + K.plural(own.length, "машина", "машины", "машин") + "</span></div><div><b>" + hist + "</b><span>" + K.plural(hist, "запись", "записи", "записей") + "</span></div><div><b>" + pts.toLocaleString("ru-RU") + "</b><span>" + K.plural(pts, "балл", "балла", "баллов") + "</span></div></div>" +
 
       '<div class="psec">МОИ МАШИНЫ</div><div class="pcars">' +
       (own.length ? own.map(function (c) {
@@ -127,20 +129,28 @@
       }).join("") : '<div class="pempty">Машин пока нет — в гараже показана демо-машина.</div>') +
       '<a href="#AddCar" class="padd"><span>+</span>Добавить автомобиль<small>госномер, VIN или марка</small></a></div>' +
 
+      // Подключения — сразу под машинами: от них зависит подбор запчастей и проверки (раньше прятались внизу «Настроек»)
+      '<div class="psec">ПОДКЛЮЧЕНИЯ</div><div class="pgroup">' +
+      '<button class="prow" data-action="vincod"><span class="prow-txt"><b>Спецификация по VIN</b><span>' + (window.AutoHubVinCod && window.AutoHubVinCod.ready() ? "AvtoVinCod подключён · " + window.AutoHubVinCod.spent().n + " платн. запр. в этом месяце" : "AvtoVinCod: двигатель, КПП и привод по VIN — для подбора запчастей") + '</span></span><span class="prow-go">›</span></button>' +
+      '<button class="prow" data-action="gov"><span class="prow-txt"><b>Госданные</b><span>' + (window.AutoHubGov && window.AutoHubGov.ready() ? "подключены · штрафы, ОСАГО, техосмотр · " + window.AutoHubGov.usage().n + " запр. в этом месяце" : "штрафы ГИБДД, ОСАГО и техосмотр по ключу API Assist") + '</span></span><span class="prow-go">›</span></button>' +
+      '</div>' +
+
       '<div class="psec">СЕРВИСЫ</div><div class="pgroup">' +
-      row("#Subscription", "★", "АвтоХаб Плюс", plus ? "активна до " + plus.until : "тариф «Базовый»", "") +
-      row("#Wallet", "₽", "Баллы и копилка", pts.toLocaleString("ru-RU") + " баллов · 1 балл = 1 ₽", "") +
-      row("#History", "≡", "История обслуживания", "визиты, покупки, заказ-наряды", "") +
-      row("#Family", "♥", "Семейный гараж", "доступ для близких", "") +
-      row("#CarPassport", "▣", "Паспорт автомобиля", "история для продажи", "") +
-      row("#Warranty", "✓", "Гарантии", "работы и запчасти", "") + "</div>" +
+      row("#Subscription", window.AutoHubKit.icon("star"), "АвтоХаб Плюс", plus ? "активна до " + plus.until : "тариф «Базовый»", "") +
+      row("#Wallet", window.AutoHubKit.icon("coin"), "Баллы и копилка", window.AutoHubKit.count(pts, "балл", "балла", "баллов") + " · 1 балл = 1 ₽", "") +
+      row("#History", window.AutoHubKit.icon("history"), "История обслуживания", "визиты, покупки, заказ-наряды", "") +
+      row("#Family", window.AutoHubKit.icon("heart"), "Семейный гараж", "доступ для близких", "") +
+      row("#CarPassport", window.AutoHubKit.icon("passport"), "Паспорт автомобиля", "история для продажи", "") +
+      row("#Warranty", window.AutoHubKit.icon("shield"), "Гарантии", "работы и запчасти", "") + "</div>" +
 
       '<div class="psec">НАСТРОЙКИ</div><div class="pgroup">' +
-      toggle("push", "Пуш-уведомления", "записи, заказы, акции", st.push) +
+      toggle("push", "Уведомления", "записи, заказы, акции", st.push) +
       toggle("to", "Напоминания о ТО", "по пробегу и сроку", st.to) +
       toggle("fines", "Новые штрафы", "проверка каждый день", st.fines) +
       '<button class="prow" data-action="city"><span class="prow-txt"><b>Мой адрес</b><span>' + esc(st.city + (st.address ? ", " + st.address : "") + " · для сервисов рядом") + '</span></span><span class="prow-go">›</span></button>' +
-      '<div class="prow"><span class="prow-txt"><b>Данные</b><span>' + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? "демо-режим: заглушки API" : "реальные источники") + "</span></span></div></div>" +
+      '<div class="prow"><span class="prow-txt"><b>Данные</b><span>' + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? "Демонстрационные данные" : "Реальные источники") + "</span></span></div>" +
+      (window.AutoHubPWA && window.AutoHubPWA.installMode() ? '<button class="prow" data-action="pwa-install"><span class="prow-txt"><b>Установить приложение</b><span>значок на главном экране, работает без интернета</span></span><span class="prow-go">›</span></button>' : "") +
+      '</div>' +
 
       '<div class="pgroup">' +
       '<button class="prow" data-action="export"><span class="prow-txt"><b>Выгрузить мои данные</b><span>машины, история, настройки</span></span><span class="prow-go">›</span></button>' +
@@ -149,13 +159,16 @@
 
       '<div class="buildinfo">АвтоХаб · сборка ' + esc(BUILD) + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? " · демо-данные" : "") + "<br>© 2026 АвтоХаб</div>";
     body.innerHTML = html;
+    // Машин в гараже — фактически, вместе с демо-машиной, пока своей нет
+    var stat = body.querySelector(".pstats > div"), n = cars.length;
+    if (stat) { stat.firstElementChild.textContent = n; stat.lastElementChild.textContent = n % 10 === 1 && n % 100 !== 11 ? "машина" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? "машины" : "машин"; }
   }
 
   function carMenu(id) {
     var C = window.AutoHubCar, c = C.cars().filter(function (x) { return x.id === id; })[0]; if (!c) return;
     var v = C.view(c), isMain = C.active().id === id;
     UI.sheet({ title: v.name,
-      html: (isMain ? "" : '<button class="pick" data-act="main" data-action="m"><span class="pick-ic">★</span><span class="pick-txt"><b>Сделать основной</b><span>будет выбрана в гараже и поиске</span></span></button>') +
+      html: (isMain ? "" : '<button class="pick" data-act="main" data-action="m"><span class="pick-ic">' + window.AutoHubKit.icon("star", 22) + '</span><span class="pick-txt"><b>Сделать основной</b><span>будет выбрана в гараже и поиске</span></span></button>') +
         '<button class="pick" data-act="mileage" data-action="m"><span class="pick-ic">км</span><span class="pick-txt"><b>Обновить пробег</b><span>сейчас: ' + esc(v.mileage) + "</span></span></button>" +
         '<button class="pick" data-act="delete" data-action="m"><span class="pick-ic" style="background:#FCEBDF;color:#9A3412">×</span><span class="pick-txt"><b>Убрать из гаража</b><span>история этой машины будет удалена</span></span></button>',
       onMount: function (b) {
@@ -168,7 +181,8 @@
               var val = window.prompt("Текущий пробег, км", c.mileage || ""), n = parseInt(String(val || "").replace(/\D/g, ""), 10);
               if (n) C.update(id, { mileage: n });
             }
-            if (act === "delete" && window.confirm("Убрать " + v.name + " из гаража?")) { C.remove(id); UI.toast("Автомобиль убран из гаража"); }
+            if (act === "delete") window.AutoHubKit.confirm({ title: "Убрать " + v.name + " из гаража?", text: "История обслуживания этой машины тоже удалится.", ok: "Убрать", danger: true },
+              function () { C.remove(id); UI.toast("Автомобиль убран из гаража"); renderProfile(); });
             renderProfile();
           });
         });
@@ -214,14 +228,18 @@
             (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { UI.toast("Скопировано"); }, function () { UI.toast("Копирование недоступно"); });
           }); } });
       }
-      if (a === "logout" && window.confirm("Выйти из аккаунта? Машины и история останутся на телефоне.")) {
+      if (a === "logout") window.AutoHubKit.confirm({ title: "Выйти из аккаунта?", text: "Машины и история останутся на телефоне.", ok: "Выйти" }, function () {
         localStorage.removeItem(KEY); location.hash = "#Welcome"; UI.toast("Вы вышли из аккаунта");
-      }
-      if (a === "delete" && window.confirm("Удалить аккаунт и все данные на этом телефоне? Отменить нельзя.")) {
+      });
+      if (a === "delete") window.AutoHubKit.confirm({ title: "Удалить аккаунт?", text: "Удалятся все данные на этом телефоне: машины, история, документы. Отменить нельзя.", ok: "Удалить навсегда", danger: true }, async function () {
         try { if (window.AutoHubDocuments) await window.AutoHubDocuments.clear(); } catch (e) { UI.toast("Не удалось удалить документы. Повторите удаление."); return; }
+        if (window.AutoHubDevice && window.AutoHubDevice.releaseDocumentCaptures) window.AutoHubDevice.releaseDocumentCaptures(); // снимки камеры во временной папке
+        // Напоминания на телефоне (сроки документов, парковка) не должны приходить после удаления
+        try { if (window.AutoHubDocs && window.AutoHubDocs.cancelAll) window.AutoHubDocs.cancelAll(); if (window.AutoHubParking && window.AutoHubParking.cancelReminders) window.AutoHubParking.cancelReminders(); } catch (x) {}
         Object.keys(localStorage).filter(function (k) { return k.indexOf("autohub.") === 0; }).forEach(function (k) { localStorage.removeItem(k); });
+        try { Object.keys(sessionStorage).filter(function (k) { return k.indexOf("autohub.") === 0; }).forEach(function (k) { sessionStorage.removeItem(k); }); } catch (x) {}
         location.hash = "#Welcome"; setTimeout(function () { location.reload(); }, 50);
-      }
+      });
     });
     window.addEventListener("hashchange", function () { if (location.hash === "#Profile") renderProfile(); });
     window.addEventListener("autohub:car", function () { if (location.hash === "#Profile") renderProfile(); });
@@ -254,5 +272,5 @@
   function init() {
     addNavTab(); renderAvatar(); initWelcome(); initProfile();
   }
-  window.AutoHubAuth = { init: init, guard: guard, session: session, location: location_, editAddress: editAddress };
+  window.AutoHubAuth = { init: init, guard: guard, session: session, location: location_, editAddress: editAddress, renderProfile: renderProfile };
 })();

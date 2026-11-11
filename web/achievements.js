@@ -41,20 +41,26 @@
   function badges() {
     var orders = load("orders.v1", {}), done = 0, rated = 0;
     Object.keys(orders).forEach(function (k) { if (orders[k].stage >= 4) done++; if (orders[k].rated) rated++; });
-    var finesPaid = load("fines.v1", {}), unpaid = ["f1", "f2"].filter(function (k) { return !finesPaid[k]; }).length;
+    // Штрафы: хотя бы один оплачен в приложении и неоплаченных у машины не осталось
+    var finesPaid = Object.keys(load("fines.v1", {})).length, unpaid = window.AutoHubScreens && window.AutoHubScreens.finesUnpaid ? window.AutoHubScreens.finesUnpaid() : null;
+    // Заправки — по всем машинам гаража: уровень не зависит от того, какая машина выбрана
+    var fuelAll = load("fuel.v1", {}), ids = window.AutoHubCar ? window.AutoHubCar.cars().map(function (c) { return c.id; }) : Object.keys(fuelAll);
+    var fuelN = ids.reduce(function (n, id) { return n + ((fuelAll[id] || []).length); }, 0);
+    // Полученное достижение остаётся полученным (autohub.ach.v1), даже если условие потом перестало выполняться
+    var un = load("ach.v1", { unlocked: {} }).unlocked || {};
     var s = (load("session.v1", {}) || {}).since, days = s ? Math.floor((Date.now() - new Date(s + "T12:00:00")) / 864e5) : 0;
     return [
       ["to", "ТО вовремя", "ok", "пройдите ТО через приложение", [Math.min(done, 1), 1], "#TO"],
       ["streak", "Серия пробега", "flame", "обновляйте пробег 3 месяца подряд", [Math.min(streak().months, 3), 3], "#Fuel"],
-      ["fuel", "Журнал заправок", "fuel", "10 заправок в журнале", [Math.min(window.AutoHubFuel ? window.AutoHubFuel.count() : 0, 10), 10], "#Fuel"],
-      ["fines", "Штрафы закрыты", "shield", "оплатите все штрафы", [unpaid ? 0 : 1, 1], "#Fines"],
+      ["fuel", "Журнал заправок", "fuel", "10 заправок в журнале", [Math.min(fuelN, 10), 10], "#Fuel"],
+      ["fines", "Штрафы закрыты", "shield", "оплатите все штрафы", [finesPaid && unpaid === 0 ? 1 : 0, 1], "#Fines"],
       ["checklist", "Готов к дороге", "check", "пройдите чек-лист целиком", [Math.min(ev("checklist_done"), 1), 1], "#Checklists"],
       ["diy", "Сделал сам", "wrench", "3 инструкции «Сделай сам»", [Math.min(ev("diy_done"), 3), 3], "#DIY"],
       ["review", "Честный отзыв", "star", "оцените сервис после ТО", [Math.min(rated, 1), 1], "#TO"],
       ["photo", "Под защитой", "camera", "сделайте фото кузова", [Math.min(ev("photos_done"), 1), 1], "#BodyPhoto"],
       ["parking", "Паркуюсь с умом", "pin", "3 раза отметьте парковку", [Math.min(load("parking.log.v1", []).length, 3), 3], "#Parking"],
       ["year", "Год с АвтоХабом", "cal", "пользуйтесь приложением год", [Math.min(days, 365), 365], "#Garage"]
-    ].map(function (b) { return { id: b[0], title: b[1], icon: b[2], how: b[3], cur: b[4][0], need: b[4][1], href: b[5], got: b[4][0] >= b[4][1] }; });
+    ].map(function (b) { return { id: b[0], title: b[1], icon: b[2], how: b[3], cur: b[4][0], need: b[4][1], href: b[5], got: b[4][0] >= b[4][1] || !!un[b[0]] }; });
   }
   function score(list) { return list.filter(function (b) { return b.got; }).length * 100 + streak().months * 20; }
   function level() {
@@ -81,9 +87,9 @@
     var l = level(), s = streak(), list = badges();
     var pct = l.next ? Math.round((l.score - l.prev) / (l.next - l.prev) * 100) : 100;
     var html = '<div class="ac-level"><div class="ac-top"><span class="ac-n">' + l.n + '</span><span><b>' + esc(l.name) + "</b><small>" +
-      (l.next ? "до уровня «" + esc(l.nextName) + "» — " + (l.next - l.score) + " очков · +200 баллов" : "максимальный уровень") + '</small></span></div><div class="to-bar"><div style="width:' + pct + '%"></div></div></div>' +
+      (l.next ? "до уровня «" + esc(l.nextName) + "» — ещё " + window.AutoHubKit.count(l.next - l.score, "балл", "балла", "баллов") + " · награда +200 баллов" : "максимальный уровень") + '</small></span></div><div class="to-bar"><div style="width:' + pct + '%"></div></div></div>' +
       '<a class="ac-streak" href="#Fuel"><span>' + icon("flame", "#C2410C") + "</span><span><b>" + (s.months ? "Серия: пробег " + s.months + " мес. подряд" : "Начните серию пробега") + "</b><small>" +
-      (s.thisMonth ? "в этом месяце уже обновлён — отлично" : s.months ? "обновите пробег в этом месяце, чтобы не прервать · +20 очков" : "обновляйте пробег каждый месяц: через заправку или вручную") + "</small></span></a>" +
+      (s.thisMonth ? "в этом месяце уже обновлён — отлично" : s.months ? "обновите пробег в этом месяце, чтобы не прервать · +20 баллов" : "обновляйте пробег каждый месяц: через заправку или вручную") + "</small></span></a>" +
       '<div class="ac-grid">' + list.map(function (b) {
         return '<button class="ac-b' + (b.got ? " got" : "") + '" data-badge="' + b.id + '" data-action="b"><span class="ac-ic">' + icon(b.icon, b.got ? "#FFFFFF" : "#9A958B") + "</span><b>" + esc(b.title) + "</b><small>" +
           (b.got ? "получено" : b.need > 1 ? b.cur + " из " + b.need : esc(b.how)) + "</small>" + (!b.got && b.need > 1 ? '<i><em style="width:' + Math.round(b.cur / b.need * 100) + '%"></em></i>' : "") + "</button>";

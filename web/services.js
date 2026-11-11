@@ -11,7 +11,7 @@
   var state = { items: [], origin: null, selected: null, filters: { online: true }, view: "map" };
   var small = null, full = null;
 
-  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function esc(s) { return window.AutoHubUI.esc(s); }
   function fmtKm(k) { return (k < 10 ? k.toFixed(1) : Math.round(k)).toString().replace(".", ",") + " км"; }
   function fmtRub(n) { return Number(n).toLocaleString("ru-RU") + " ₽"; }
 
@@ -166,17 +166,21 @@
   }
 
   /* ================= Список ================= */
+  // Цена — работы по ближайшему ТО выбранной машины (AutoHubApi.maintenance.worksPrice): та же, что в «Записи» и сценарии ТО
   function badge(s) {
     if (!s.priceTO) return '<span style="padding: 3px 8px; border-radius: 6px; background: #EFECE6; font-weight: 600">Шиномонтаж и хранение</span>';
-    if (s.priceVerdict === "high")
-      return '<span style="padding: 3px 8px; border-radius: 6px; background: #FCEBDF; color: #9A3412; font-weight: 700">ТО ' + fmtRub(s.priceTO) + " · выше рынка на " + s.priceDiffPct + "%</span>";
-    if (s.priceVerdict === "low")
-      return '<span style="padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; font-weight: 700">ТО ' + fmtRub(s.priceTO) + " · ниже рынка на " + Math.abs(s.priceDiffPct) + "%</span>";
-    return '<span style="padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; font-weight: 700">ТО ' + fmtRub(s.priceTO) + " · цена в норме</span>";
+    var M = window.AutoHubApi.maintenance, t = M.nextTO((window.AutoHubCar && window.AutoHubCar.active()) || {});
+    var price = M.worksPrice(s, t.items), v = M.priceVerdict(price, M.worksPrice({ priceTO: state.market || 4600 }, t.items));
+    var label = (t.noMileage ? "ТО " : "ТО-" + t.km.toLocaleString("ru-RU") + " · ") + fmtRub(price);
+    if (v.verdict === "high")
+      return '<span style="padding: 3px 8px; border-radius: 6px; background: #FCEBDF; color: #9A3412; font-weight: 700">' + label + " · выше рынка на " + v.diffPct + "%</span>";
+    if (v.verdict === "low")
+      return '<span style="padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; font-weight: 700">' + label + " · ниже рынка на " + Math.abs(v.diffPct) + "%</span>";
+    return '<span style="padding: 3px 8px; border-radius: 6px; background: #DDF0E4; color: #0F6B3A; font-weight: 700">' + label + " · цена в норме</span>";
   }
   function card(s) {
     var on = s.id === state.selected;
-    return '<div data-card="' + s.id + '" style="background: #FFFFFF; border: ' + (on ? "1.5px solid " + ACC : "1px solid " + LINE) +
+    return '<div data-card="' + esc(s.id) + '" style="background: #FFFFFF; border: ' + (on ? "1.5px solid " + ACC : "1px solid " + LINE) +
       '; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px">' +
       '<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">' +
       '<div style="display: flex; flex-direction: column; gap: 3px"><span style="font-weight: 700; font-size: 16px">' + esc(s.name) + "</span>" +
@@ -189,7 +193,7 @@
       '<div><div style="font-size: 12px; color: ' + MUTED + '">' + (s.online ? "Ближайшее окно" : "Запись по телефону") + "</div>" +
       '<div style="font-weight: 700; font-size: 15px' + (s.today ? "; color: #0F6B3A" : "") + '">' + esc(s.next) + "</div></div>" +
       (s.online
-        ? '<a href="#ServiceBooking" data-book="' + s.id + '" style="height: 44px; padding: 0 18px; border-radius: 12px; background: ' + (on ? ACC : "#F3F1EC") +
+        ? '<a href="#ServiceBooking" data-book="' + esc(s.id) + '" style="height: 44px; padding: 0 18px; border-radius: 12px; background: ' + (on ? ACC : "#F3F1EC") +
           "; color: " + (on ? "#FFFFFF" : INK) + '; font-weight: 700; font-size: 14px; display: flex; align-items: center; text-decoration: none">Записаться</a>'
         : '<button style="height: 44px; padding: 0 18px; border-radius: 12px; background: #F3F1EC; color: ' + INK + '; border: none; font-weight: 700; font-size: 14px">Позвонить</button>') +
       "</div></div>";
@@ -243,14 +247,15 @@
     var f = state.filters;
     return window.AutoHubApi.services.list({ lat: state.origin && state.origin.lat, lng: state.origin && state.origin.lng,
       online: f.online, to: f.to, today: f.today, tires: f.tires }).then(function (r) {
-      state.items = r.items; state.origin = r.origin || state.origin; ui.source = r.source;
+      state.items = r.items; state.origin = r.origin || state.origin; ui.source = r.source; state.market = r.marketPriceTO;
       if (!state.items.some(function (s) { return s.id === state.selected; })) state.selected = state.items[0] ? state.items[0].id : null;
       renderList();
       if (small) small.fit(small.points());
       if (full) { full.drawPins(); renderSheet(); }
     }, function (e) {
       state.items = []; ui.list.innerHTML = '<div style="padding: 24px 8px; text-align: center; color: #9A3412; font-size: 14px">' +
-        (e.code === "not_configured" ? "Бэкенд не подключён. Откройте прототип в демо-режиме." : "Не удалось загрузить сервисы. Попробуйте ещё раз.") + "</div>";
+        esc(window.AutoHubApi.errorText(e)) + "</div>";
+      if (small) small.drawPins();
     });
   }
 
@@ -358,6 +363,7 @@
     });
 
     window.addEventListener("hashchange", syncHash);
+    window.addEventListener("autohub:car", function () { if (state.items.length) { renderList(); if (full) renderSheet(); } });
     window.addEventListener("resize", function () { if (small && location.hash.indexOf("#Services") === 0) small.render(); if (full && ui.full && ui.full.style.display !== "none") full.render(); });
 
     // Точка отсчёта — адрес из личного кабинета

@@ -34,15 +34,15 @@
     if (tab === "trip") {
       html += field("cDist", "Расстояние в одну сторону, км", st.dist, "", "numeric") +
         '<label class="to-points"><input type="checkbox" id="cRound"' + (st.round ? " checked" : "") + '><span><b>Туда и обратно</b></span></label>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + field("cCons", "Расход, л/100 км", st.cons || d.cons[0], d.cons[1]) + field("cPrice", "Цена литра, ₽", st.price || d.price[0], d.price[1]) + "</div>" +
+        '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">' + field("cCons", "Расход, л/100 км", st.cons || d.cons[0], d.cons[1]) + field("cPrice", "Цена литра, ₽", st.price || d.price[0], d.price[1]) + "</div>" +
         '<div class="cc-people"><span><b>Сколько человек едет</b><small>поделим бензин поровну</small></span><div class="qty"><button data-p="-1" data-action="p" aria-label="Меньше">−</button><span>' + st.people + '</span><button data-p="1" data-action="p" aria-label="Больше">+</button></div></div>' +
         '<div class="cc-res" id="cRes"></div>';
     } else if (tab === "tax") {
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + field("cHp", "Мощность, л.с.", st.hp || d.hp, st.hp || !d.hp ? "" : "из данных машины", "numeric") + field("cMonths", "Месяцев владения", st.months, "в этом году", "numeric") + "</div>" +
+      html += '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">' + field("cHp", "Мощность, л.с.", st.hp || d.hp, st.hp || !d.hp ? "" : "из данных машины", "numeric") + field("cMonths", "Месяцев владения", st.months, "в этом году", "numeric") + "</div>" +
         '<label class="fld">Регион регистрации<select id="cRegion">' + Object.keys(RATES).map(function (k) { return '<option value="' + k + '"' + (k === st.region ? " selected" : "") + ">" + RATES[k].name + "</option>"; }).join("") + "</select></label>" +
         '<div class="cc-res" id="cRes"></div><div class="to-note">Справочно: ставки региона могут меняться — точную сумму налоговая пришлёт в уведомлении. Для машин дороже 10 млн ₽ действует повышающий коэффициент.</div>';
     } else {
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + field("cLimit", "Ограничение, км/ч", st.limit, "", "numeric") + field("cSpeed", "Ваша скорость, км/ч", st.speed, "", "numeric") + "</div>" +
+      html += '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">' + field("cLimit", "Ограничение, км/ч", st.limit, "", "numeric") + field("cSpeed", "Ваша скорость, км/ч", st.speed, "", "numeric") + "</div>" +
         '<div class="cc-res" id="cRes"></div><div class="to-note">Справочно, по статье 12.9 КоАП для штрафов с камер. Суммы могут измениться — проверяйте постановление. Скидка 50% действует при оплате в течение 20 дней, кроме повторных нарушений.</div>';
     }
     body.innerHTML = html;
@@ -58,7 +58,7 @@
         : "<span>Введите расстояние — посчитаем стоимость бензина</span>";
     } else if (tab === "tax") {
       st.hp = $("cHp").value; st.months = $("cMonths").value; st.region = $("cRegion").value;
-      var hp = num(st.hp), m = Math.min(12, Math.max(1, num(st.months) || 12)), rows = RATES[st.region].rows;
+      var hp = num(st.hp), m = String(st.months == null ? "" : st.months).trim() === "" ? 12 : Math.min(12, Math.max(0, Math.round(num(st.months)))), rows = RATES[st.region].rows; // пусто — год; 0 месяцев — 0
       var rate = (rows.filter(function (x) { return hp <= x[0]; })[0] || rows[rows.length - 1])[1];
       r.innerHTML = hp ? "<span>Транспортный налог за год · " + RATES[st.region].name + "</span><b>≈ " + rub(hp * rate * m / 12) + "</b><span>" + hp + " л.с. × " + rate + " ₽" + (m < 12 ? " × " + m + "/12 мес" : "") + "</span>"
         : "<span>Укажите мощность — она есть в СТС</span>";

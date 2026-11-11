@@ -89,15 +89,38 @@
     });
     res.list.addEventListener("click", function (e) {
       var a = e.target.closest("[data-offers]"); if (a) st.partId = a.dataset.offers;
+      if (e.target.closest("[data-action=fit-all]")) { st.showAll = !st.showAll; drawResults(); }
+      if (e.target.closest("[data-action=fit-spec]")) {
+        var C = window.AutoHubCar, car = C && C.active(), VC = window.AutoHubVinCod;
+        if (car && car.demo) { UI.dialog("Добавьте свою машину", "Комплектацию по VIN определяем для своей машины: добавьте её в гараж по VIN или госномеру."); return; }
+        if (!car || !car.vin) { UI.dialog("Нужен VIN", "Укажите VIN машины в гараже — по нему определим двигатель, КПП и привод."); return; }
+        if (VC && VC.ready()) C.specByVin(car); else if (VC) VC.open();
+      }
     });
+    window.addEventListener("autohub:car", function () { if (st.items) drawResults(); });
     var cmp = res.bar.querySelector('a[href="#Compare"]');
     cmp.addEventListener("click", function (e) {
       if (st.compare.length < 2) { e.preventDefault(); UI.toast("Отметьте две детали «К сравнению»"); }
     });
   }
+  function errBox(e, retry) {
+    return '<div class="empty"><b>Не удалось загрузить</b><span>' + esc(API.errorText(e)) + '</span><button class="btn-light" data-action="retry" data-retry="' + retry + '" style="height:48px">Повторить</button></div>';
+  }
+  var searchReq = 0;
   function load() {
+    var req = ++searchReq;
+    st.loading = true; st.error = null;
     res.list.innerHTML = '<div class="loading">Ищем в каталогах магазинов…</div>';
-    return API.parts.search({ query: st.query, cat: st.cat, kit: st.kit }).then(function (d) { st.items = d.items; drawResults(); });
+    res.count.textContent = "Ищем…"; res.bar.hidden = true; // пока ищем — ни «ничего не нашлось», ни панели сравнения
+    return API.parts.search({ query: st.query, cat: st.cat, kit: st.kit }).then(function (d) {
+      if (req !== searchReq) return;
+      st.loading = false; st.items = d.items || []; drawResults();
+    }, function (e) {
+      if (req !== searchReq) return;
+      st.loading = false; st.items = []; st.error = e;
+      res.count.textContent = "Поиск не удался";
+      res.list.innerHTML = errBox(e, "results");
+    });
   }
   function renderResults() {
     res.chips[0].textContent = st.sortDesc ? "Цена ↓" : "Цена ↑";
@@ -106,31 +129,45 @@
     drawResults();
   }
   function drawResults() {
+    if (st.loading || st.error) { res.title.textContent = st.kit ? "Комплект к ТО" : st.cat ? API.parts.categories[st.cat] : (st.query || "Все запчасти"); return; }
     var title = st.kit ? "Комплект к ТО" : st.cat ? API.parts.categories[st.cat] : (st.query || "Все запчасти");
     res.title.textContent = title;
+    // AUTO-46: совместимость с машиной — по комплектации (код двигателя, КПП) или хотя бы по марке, модели и году
+    var car = window.AutoHubCar ? window.AutoHubCar.active() : null, fits = {};
+    st.items.forEach(function (p) { fits[p.id] = API.parts.fit(p, car); });
+    var hiddenNo = 0;
     var items = st.items.filter(function (p) {
-      return (!st.stock || p.days <= 1) && (!st.fast || p.days <= 2) && (!st.orig || p.original);
-    }).sort(function (a, b) { return st.sortDesc ? b.priceMin - a.priceMin : a.priceMin - b.priceMin; });
+      if (!((!st.stock || p.days <= 1) && (!st.fast || p.days <= 2) && (!st.orig || p.original))) return false;
+      if (fits[p.id].status === "no" && !st.showAll) { hiddenNo++; return false; }
+      return true;
+    }).sort(function (a, b) { var r = { fits: 0, check: 1, no: 2 }; return r[fits[a.id].status] - r[fits[b.id].status] || (st.sortDesc ? b.priceMin - a.priceMin : a.priceMin - b.priceMin); });
+    var VC = window.AutoHubVinCod, spec = car && car.spec;
+    var specBox = '<div class="fit-spec">' + (spec
+      ? "<b>Подбор по комплектации</b><span>" + esc((spec.title || carName()) + " · " + (VC ? VC.specLine(spec) : "")) + "</span>"
+      : '<b>Комплектация не определена</b><span>Подбираем по марке, модели и году — детали с разными двигателями и КПП помечены «Проверьте».</span><button class="linkbtn" data-action="fit-spec">Определить по VIN</button>') + "</div>";
+    var moreBox = hiddenNo || st.showAll ? '<button class="linkbtn fit-more" data-action="fit-all">' + (st.showAll ? "Скрыть неподходящие" : "Показать неподходящие (" + hiddenNo + ")") + "</button>" : "";
     var offers = items.reduce(function (n, p) { return n + p.sellers; }, 0);
     res.count.innerHTML = items.length
-      ? '<b style="color: #17191C">' + items.length + " " + plural(items.length, "деталь", "детали", "деталей") + "</b> " + plural(items.length, "подходит", "подходят", "подходят") + " к " + esc(carName()) + " · " + offers + " " + plural(offers, "предложение", "предложения", "предложений")
-      : "Ничего не нашлось";
+      ? '<b style="color: #17191C">' + items.length + " " + plural(items.length, "деталь", "детали", "деталей") + "</b> для " + esc(carName()) + " · " + offers + " " + plural(offers, "предложение", "предложения", "предложений")
+      : ""; // при пустой выдаче заголовок один — в блоке ниже
+    res.count.hidden = !items.length; res.bar.hidden = !items.length;
     if (!items.length) {
-      res.list.innerHTML = '<div class="empty"><b>По запросу ничего нет</b><span>Попробуйте другое название или артикул, либо снимите фильтры.</span><a href="#Main" class="btn-light" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Изменить поиск</a></div>';
+      res.list.innerHTML = specBox + '<div class="empty"><b>' + (hiddenNo ? "Подходящих деталей нет" : "По запросу ничего нет") + "</b><span>" + (hiddenNo ? "Найдено " + hiddenNo + " " + plural(hiddenNo, "деталь", "детали", "деталей") + ", но они не для этой комплектации." : "Попробуйте другое название или артикул, либо снимите фильтры.") + '</span><a href="#Main" class="btn-light" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Изменить поиск</a></div>' + moreBox;
     } else {
-      res.list.innerHTML = items.map(function (p) {
+      res.list.innerHTML = specBox + items.map(function (p) {
         var on = st.compare.indexOf(p.id) >= 0;
         return '<div style="background: #FFFFFF; border: ' + (on ? "1.5px solid " + ACC : "1px solid #E2DED6") + '; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px">' +
           '<div style="display: flex; gap: 12px"><div class="photo">' + esc(p.brand.split(/[\s/-]/)[0]) + '</div>' +
           '<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">' +
           '<div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap"><span style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: ' + (p.original ? "#17191C; color: #FFFFFF" : "#EDEAE3; color: #17191C") + '">' + (p.original ? "ОРИГИНАЛ" : "АНАЛОГ") + '</span><span style="font-family: \'JetBrains Mono\', monospace; font-size: 12px; color: #5B5F66">' + esc(p.article) + "</span></div>" +
           '<div style="font-weight: 700; font-size: 15px; line-height: 1.3">' + esc(p.name + " " + p.brand) + "</div>" +
-          '<div style="font-size: 12px; color: #0F6B3A; font-weight: 600">✓ Подходит к ' + esc(carName()) + " · " + whenText(p.days) + "</div></div></div>" +
+          '<div class="fit fit-' + fits[p.id].status + '">' + ({ fits: "✓ ", check: "? ", no: "✕ " })[fits[p.id].status] + esc(fits[p.id].text) + "</div>" +
+          '<div style="font-size: 12px; color: #5B5F66">' + whenText(p.days) + "</div></div></div>" +
           '<div style="display: flex; align-items: flex-end; justify-content: space-between">' +
           '<div><div style="font-size: 12px; color: #5B5F66">' + p.sellers + " " + plural(p.sellers, "продавец", "продавца", "продавцов") + '</div><div style="font-size: 20px; font-weight: 700">' + p.priceMin.toLocaleString("ru-RU") + " – " + rub(p.priceMax) + "</div></div>" +
           '<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; min-height: 44px"><input type="checkbox" data-cmp="' + p.id + '"' + (on ? " checked" : "") + ' style="width: 20px; height: 20px; accent-color: ' + ACC + '">К сравнению</label></div>' +
           '<a href="#Offers" data-offers="' + p.id + '" style="height: 44px; border-radius: 12px; background: #F3F1EC; color: #17191C; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none">Сравнить цены продавцов</a></div>';
-      }).join("");
+      }).join("") + moreBox;
     }
     var n = st.compare.length, bar = res.bar.querySelector("span");
     if (bar) bar.textContent = n + " " + plural(n, "деталь выбрана", "детали выбрано", "деталей выбрано");
@@ -173,7 +210,14 @@
   var offData = null;
   function loadOffers() {
     off.list.innerHTML = '<div class="loading">Собираем цены продавцов…</div>';
-    return API.parts.offers(st.partId).then(function (d) { offData = d; drawOffers(); });
+    offData = null;
+    var id = st.partId;
+    return API.parts.offers(id).then(function (d) { if (id === st.partId) { offData = d; drawOffers(); } },
+      function (e) {
+        if (id !== st.partId) return;
+        off.list.innerHTML = errBox(e, "offers");
+        Array.prototype.forEach.call(off.sum.firstElementChild.children, function (v) { v.lastElementChild.textContent = "—"; });
+      });
   }
   function drawOffers() {
     if (!offData) return;
@@ -183,7 +227,8 @@
     var totals = o.map(function (x) { return x.total; }), best = Math.min.apply(null, totals), worst = Math.max.apply(null, totals);
     var vals = off.sum.firstElementChild.children;
     vals[0].lastElementChild.textContent = rub(best); vals[1].lastElementChild.textContent = rub(worst); vals[2].lastElementChild.textContent = rub(worst - best);
-    off.sum.lastElementChild.textContent = "Цены с доставкой до: Красногорск, [адрес] · демо";
+    var w = window.AutoHubAuth ? window.AutoHubAuth.location() : { city: "Красногорск", address: "" };
+    off.sum.lastElementChild.textContent = "Цены с доставкой до: " + w.city + (w.address ? ", " + w.address : "") + " · демо";
     var modes = ["total", "fast", "rel"];
     off.sorts.forEach(function (b, i) {
       var on = modes[i] === st.offerSort;
@@ -225,7 +270,8 @@
   var cmpParts = [];
   function loadCompare() {
     var ids = st.compare.length === 2 ? st.compare : ["p-hk-26300", "p-mann-w811"];
-    return Promise.all(ids.map(function (id) { return API.parts.get(id); })).then(function (ps) { cmpParts = ps; drawCompare(); });
+    return Promise.all(ids.map(function (id) { return API.parts.get(id); })).then(function (ps) { cmpParts = ps; drawCompare(); },
+      function (e) { cmpParts = []; cmp.body.innerHTML = errBox(e, "compare"); });
   }
   function drawCompare() {
     if (cmpParts.length < 2) return;
@@ -276,6 +322,11 @@
     }
   }
 
+  // «Повторить» после ошибки загрузки
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-retry]"); if (!b) return;
+    if (b.dataset.retry === "results") load(); else if (b.dataset.retry === "offers") loadOffers(); else if (b.dataset.retry === "compare") loadCompare();
+  });
   function onHash() {
     var h = location.hash.split("/")[0];
     if (h === "#Results" && res.list) { renderResults(); load(); }
