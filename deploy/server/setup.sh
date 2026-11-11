@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# АвтоХаб: веб-приложение на своём сервере — один раз, от root, на Ubuntu/Debian с Docker.
+# АвтоХаб: веб-приложение на своём сервере — один раз, от root, на Ubuntu/Debian (Docker поставится сам, если его нет).
 #   bash setup.sh                 — адрес https://<IP-через-дефисы>.sslip.io
 #   AUTOHUB_HOST=app.example.ru bash setup.sh   — свой домен (A-запись уже на этот сервер)
 # Ставит контейнер Caddy (HTTPS по Let's Encrypt) на порты 80/443 и пользователя autohub-deploy,
@@ -7,6 +7,17 @@
 set -euo pipefail
 DIR=/srv/autohub; U=autohub-deploy
 [ "$(id -u)" = 0 ] || { echo "Запустите от root: sudo bash setup.sh"; exit 1; }
+. /etc/os-release 2>/dev/null || true
+case "${ID:-}${ID_LIKE:-}" in *debian*|*ubuntu*) ;; *) echo "Скрипт рассчитан на Ubuntu или Debian, а здесь: ${PRETTY_NAME:-неизвестная система}"; exit 1 ;; esac
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq
+apt-get install -y -qq rsync curl ca-certificates iproute2 >/dev/null
+# Docker: на чистом сервере — пакет docker.io из репозитория системы
+if ! command -v docker >/dev/null; then
+  echo "Ставлю Docker…"; apt-get install -y -qq docker.io >/dev/null
+fi
+systemctl enable --now docker >/dev/null 2>&1 || service docker start >/dev/null 2>&1 || true
+docker info >/dev/null 2>&1 || { echo "Docker не запустился: проверьте «systemctl status docker»"; exit 1; }
 IP=$(curl -fsS4 --max-time 10 https://api.ipify.org || hostname -I | awk '{print $1}')
 HOST="${AUTOHUB_HOST:-${IP//./-}.sslip.io}"
 PORT=$(sshd -T 2>/dev/null | awk '$1=="port"{print $2; exit}'); PORT=${PORT:-22}
@@ -17,7 +28,6 @@ if ss -ltnH '( sport = :80 or sport = :443 )' | grep -q . && ! docker ps --forma
   echo; echo "Ничего не изменено. Пришлите этот вывод — подключу АвтоХаб к уже работающему веб-серверу."; exit 1
 fi
 
-apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq rsync curl >/dev/null
 id "$U" >/dev/null 2>&1 || useradd -m -s /bin/sh "$U"
 install -d -o "$U" -g "$U" -m 755 "$DIR/site"
 [ -f "$DIR/site/index.html" ] || echo '<!doctype html><meta charset="utf-8"><title>АвтоХаб</title><p>АвтоХаб скоро будет здесь.</p>' > "$DIR/site/index.html"
