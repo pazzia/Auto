@@ -14,7 +14,13 @@ HASHES = {
 }
 
 def main():
-    folder = ASSETS / 'tessdata'
+    fetch(ASSETS / 'tessdata')
+    (ASSETS / 'ocr-models.json').write_text(json.dumps(dict(revision=REVISION, **HASHES), indent=2) + '\n')
+    print('Verified bundled OCR models: rus + eng')
+
+def fetch(folder):
+    """Скачать модели в folder (или оставить уже скачанные) и проверить SHA-256. Нужен и APK, и веб-версии (tools/web_ocr.py)."""
+    folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
     for language, expected in HASHES.items():
         dest = folder / (language + '.traineddata')
@@ -28,8 +34,6 @@ def main():
         temp = dest.with_suffix('.tmp')
         temp.write_bytes(data)
         os.replace(temp, dest)
-    (ASSETS / 'ocr-models.json').write_text(json.dumps(dict(revision=REVISION, **HASHES), indent=2) + '\n')
-    print('Verified bundled OCR models: rus + eng')
 
 if __name__ == '__main__':
     main()

@@ -37,18 +37,17 @@
   window.__nativeOcrProgress = function (id, page) { if (callbacks[id]) callbacks[id].progress(page); };
   function cancelPending() {
     if (window.NativeOcr) window.NativeOcr.cancel();
+    if (window.AutoHubWebOcr) window.AutoHubWebOcr.cancel();
     Object.keys(callbacks).forEach(function (id) { callbacks[id].finish(499, JSON.stringify({detail: 'Распознавание отменено. Данные не сохранены.'})); });
   }
-  async function request(body, progress) {
-    if (!window.NativeOcr || !window.NativeOcr.isOffline) throw new Error('Распознавание на устройстве доступно только в Android-приложении «АвтоХаб» (APK из раздела Releases).');
-    var response = await new Promise(function (resolve) {
-      var id = 'ocr' + (++nativeSeq), timer = setTimeout(cancelPending, 900000);
-      callbacks[id] = {progress: progress, finish: function (status, text) { clearTimeout(timer); delete callbacks[id]; resolve({status: status, text: text}); }};
-      try { window.NativeOcr.recognize(JSON.stringify(body), id); }
-      catch (e) { callbacks[id].finish(500, JSON.stringify({detail: 'Не удалось запустить локальное распознавание.'})); }
-    });
-    var result; try { result = JSON.parse(response.text); } catch (e) { throw new Error('Ошибка локального распознавания. Попробуйте меньше страниц.'); }
-    if (response.status !== 200) throw new Error(typeof result.detail === 'string' ? result.detail : 'Не удалось распознать документ.');
+  /** Движок: Android-приложение (NativeOcr) или браузер (web/ocr-web.js) — ответ одного формата. */
+  function nativeOcr() { return !!(window.NativeOcr && window.NativeOcr.isOffline); }
+  function webOcr() { return !nativeOcr() && !!(window.AutoHubWebOcr && window.AutoHubWebOcr.available()); }
+  async function request(body, progress, entries) {
+    var result;
+    if (nativeOcr()) result = await nativeRequest(body, progress);
+    else if (webOcr()) result = await window.AutoHubWebOcr.recognize(entries, progress);
+    else throw new Error('Этот браузер не умеет распознавать документы. Обновите его или откройте АвтоХаб в свежем Chrome, Safari или в Android-приложении.');
     // Несколько проходов OCR (масштаб/разметка) — поля и строки выбираются голосованием
     var parsed = window.AutoHubDocumentParser.extractBest(result.passes && result.passes.length ? result.passes : [result.lines]);
     // Диагностика для разбора случаев по скриншоту: сборка, проходы и размер снимка
@@ -59,6 +58,17 @@
     if (small) parsed.warnings.unshift('Снимок очень мелкий: цифры и буквы могут быть прочитаны неверно. Сверьте поля или переснимите документ ближе.');
     delete result.passes;
     return Object.assign(result, parsed);
+  }
+  async function nativeRequest(body, progress) {
+    var response = await new Promise(function (resolve) {
+      var id = 'ocr' + (++nativeSeq), timer = setTimeout(cancelPending, 900000);
+      callbacks[id] = {progress: progress, finish: function (status, text) { clearTimeout(timer); delete callbacks[id]; resolve({status: status, text: text}); }};
+      try { window.NativeOcr.recognize(JSON.stringify(body), id); }
+      catch (e) { callbacks[id].finish(500, JSON.stringify({detail: 'Не удалось запустить локальное распознавание.'})); }
+    });
+    var result; try { result = JSON.parse(response.text); } catch (e) { throw new Error('Ошибка локального распознавания. Попробуйте меньше страниц.'); }
+    if (response.status !== 200) throw new Error(typeof result.detail === 'string' ? result.detail : 'Не удалось распознать документ.');
+    return result;
   }
   function base64(file) {
     return new Promise(function (resolve, reject) {
@@ -78,7 +88,8 @@
       '<label class="btn-light ocr-pick">Сфотографировать<input id="ocrCamera" type="file" accept="image/*" capture="environment"></label>' +
       '<label class="btn-light ocr-pick">Выбрать фото или PDF<input id="ocrFiles" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple></label>' +
       '<div id="ocrSelected" aria-live="polite"></div>' +
-      '<p class="sheet-text">Распознавание выполняется на телефоне. Документы никуда не отправляются. Интернет не нужен.</p>' +
+      '<p class="sheet-text">Распознавание выполняется на этом устройстве. Документы никуда не отправляются. ' +
+        (webOcr() ? 'В первый раз загрузится модуль распознавания (около 12 МБ), дальше интернет не нужен.' : 'Интернет не нужен.') + '</p>' +
       '<label class="fld">Поворот страниц перед распознаванием<select id="ocrRotation"><option value="0">Без поворота</option><option value="90">90° по часовой</option><option value="180">180°</option><option value="270">90° против часовой</option></select></label>' +
       '<p id="ocrStatus" role="status" aria-live="polite"></p><button id="ocrRun" class="btn-accent">Распознать на устройстве</button><button id="ocrCancel" class="btn-light" hidden>Отменить распознавание</button><button class="btn-light" data-close="1">Закрыть</button>',
       onMount: function (b) {
@@ -105,8 +116,12 @@
             b.querySelectorAll('input, select, [data-remove]').forEach(function (x) { x.disabled = true; });
             b.querySelector('#ocrCancel').hidden = false;
             status.textContent = 'Распознаём на устройстве… Не закрывайте приложение.';
-            var payload = []; for (var f of selected) { var file = await base64(f); if (stopped) throw new Error('Распознавание отменено.'); file.rotation = +b.querySelector('#ocrRotation').value; payload.push(file); }
-            var result = await request({ files: payload }, function (page) { status.textContent = 'Распознаём страницу ' + page + ' на устройстве…'; });
+            var rotation = +b.querySelector('#ocrRotation').value, payload = [];
+            // Android получает файлы в base64 через мост; браузер работает с файлами напрямую
+            if (nativeOcr()) for (var f of selected) { var file = await base64(f); if (stopped) throw new Error('Распознавание отменено.'); file.rotation = rotation; payload.push(file); }
+            var result = await request({ files: payload }, function (page) {
+              status.textContent = typeof page === 'string' ? page : 'Распознаём страницу ' + page + ' на устройстве…';
+            }, selected.map(function (f) { return { file: f, rotation: rotation }; }));
             // Closing the sheet abandons the result; it must not reopen over another screen.
             if (!stopped && b.isConnected && b.closest('.sheet-wrap').classList.contains('show') && /\/sheet$/.test(location.hash)) review(car, selected, result);
           } catch (e) { status.textContent = e.message || 'Ошибка локального распознавания.'; }

@@ -15,7 +15,7 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "design")
 if not os.path.isabs(SRC):
     SRC = os.path.join(ROOT, SRC) if not os.path.isdir(SRC) else SRC
 WEB = os.path.join(ROOT, "web")
-JS_FILES = ["ui.js", "kit.js", "device.js", "api.js", "gov.js", "vincod.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js", "pwa.js"]
+JS_FILES = ["ui.js", "kit.js", "device.js", "api.js", "gov.js", "vincod.js", "car.js", "services.js", "cart.js", "parts.js", "screens.js", "document-parser.js", "ocr-web.js", "documents.js", "to.js", "icons.js", "parking.js", "mechanic.js", "wallet.js", "fuel.js", "docs.js", "season.js", "checklists.js", "diy.js", "bodyphoto.js", "calc.js", "achievements.js", "auth.js", "hub.js", "pwa.js"]
 OVERRIDES = {"AddCar": "addcar.html", "Cart": "cart.html", "Welcome": "welcome.html", "Profile": "profile.html", "TO": "to.html", "Icons": "icons.html", "Parking": "parking.html", "Mechanic": "mechanic.html", "Fuel": "fuel.html", "Budget": "budget.html", "Wallet": "wallet.html", "Docs": "docs.html", "Season": "season.html", "Checklists": "checklists.html", "DIY": "diy.html", "BodyPhoto": "bodyphoto.html", "Calc": "calc.html", "Achievements": "achievements.html"}  # экраны, свёрстанные вручную
 OUT = os.path.join(ROOT, "app/src/main/assets/www")
 NAMES = ["Welcome", "Profile", "TO", "Icons", "Parking", "Mechanic", "Fuel", "Docs", "Season", "Checklists", "DIY", "BodyPhoto", "Calc", "Achievements", "Garage", "AddCar", "History", "Main", "Results", "Offers",
@@ -82,6 +82,11 @@ CSS = re.sub(r'url\("fonts/([\w.-]+\.woff2)"\)', _font, CSS)
 APP = open(os.path.join(WEB, "app.js"), encoding="utf-8").read()
 MAP = open(os.path.join(WEB, "map", "podmoskovye.svg"), encoding="utf-8").read().strip()
 SCRIPTS = "\n".join('<script src="%s"></script>' % f for f in JS_FILES)
+# Распознавание в браузере (web/ocr-web.js): движок и модели кладёт на сервер tools/web_ocr.py в папку OCR_DIR.
+# ocr-prep.js — веб-воркер подготовки снимка, подключается из ocr-web.js, а не тегом script.
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+from web_ocr import ocr_dir
+OCR_DIR = ocr_dir()
 html = """<!doctype html>
 <html lang="ru">
 <head>
@@ -107,18 +112,18 @@ html = """<!doctype html>
 %s
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <template id="map-podmoskovye">%s</template>
-<script>window.AUTOHUB_BUILD = "%s";</script>
+<script>window.AUTOHUB_BUILD = "%s"; window.AUTOHUB_OCR_DIR = "%s";</script>
 %s
 <script>
 %s
 </script>
 </body>
 </html>
-""" % (BUILD, CSS, "\n".join(screen(n) for n in NAMES), MAP, BUILD, SCRIPTS, APP)
+""" % (BUILD, CSS, "\n".join(screen(n) for n in NAMES), MAP, BUILD, OCR_DIR, SCRIPTS, APP)
 os.makedirs(OUT, exist_ok=True)
 open(os.path.join(OUT, "index.html"), "w", encoding="utf-8").write(html)
 import shutil
-for f in JS_FILES:
+for f in JS_FILES + ["ocr-prep.js"]:
     shutil.copy(os.path.join(WEB, f), os.path.join(OUT, f))
 os.makedirs(os.path.join(OUT, "map"), exist_ok=True)
 shutil.copy(os.path.join(WEB, "map", "podmoskovye.svg"), os.path.join(OUT, "map", "podmoskovye.svg"))
@@ -134,14 +139,14 @@ files = []
 for d, _, names in os.walk(OUT):
     for n in sorted(names):
         rel = os.path.relpath(os.path.join(d, n), OUT).replace(os.sep, "/")
-        if rel != "sw.js":
+        if rel != "sw.js" and not rel.startswith("ocr/"):  # движок распознавания кэшируется отдельно, по требованию
             files.append(rel)
 files.sort()
 digest = hashlib.sha256()
 for rel in files:
     digest.update(rel.encode("utf-8")); digest.update(open(os.path.join(OUT, rel), "rb").read())
 sw = open(os.path.join(WEB, "sw.js"), encoding="utf-8").read()
-sw = sw.replace('"__CACHE__"', json.dumps("autohub-%s-%s" % (BUILD, digest.hexdigest()[:10]))).replace("= __FILES__;", "= %s;" % json.dumps(["./"] + files, ensure_ascii=False))
-assert "__CACHE__" not in sw and "__FILES__" not in sw
+sw = sw.replace('"__CACHE__"', json.dumps("autohub-%s-%s" % (BUILD, digest.hexdigest()[:10]))).replace("= __FILES__;", "= %s;" % json.dumps(["./"] + files, ensure_ascii=False)).replace('"__OCR_DIR__"', json.dumps(OCR_DIR))
+assert "__CACHE__" not in sw and "__FILES__" not in sw and "__OCR_DIR__" not in sw
 open(os.path.join(OUT, "sw.js"), "w", encoding="utf-8").write(sw)
 print("ok, сборка", BUILD, "->", OUT)

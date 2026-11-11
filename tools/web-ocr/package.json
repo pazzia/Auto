@@ -1,0 +1,11 @@
+{
+  "name": "autohub-web-ocr",
+  "private": true,
+  "description": "Распознавание документов в веб-версии АвтоХаба: движок Tesseract (WebAssembly) и pdf.js. Версии закреплены в package-lock.json, собирает tools/web_ocr.py.",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "pdfjs-dist": "5.4.394",
+    "tesseract.js": "7.0.0",
+    "tesseract.js-core": "7.0.0"
+  }
+}

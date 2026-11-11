@@ -145,8 +145,12 @@
       countSuccess(); remember(kind, params, data);
       return { data: data, at: now(), cached: false };
     }, function (e) {
-      // В браузере сервис может быть недоступен (нет CORS); в Android-приложении запросы идут через телефон
-      if (e && e.code === "network" && !window.NativeHttp) throw err("gov_web", "В веб-версии запросы к API Assist могут не проходить — сервис не принимает их из браузера. Работает в Android-приложении.");
+      // Браузер: сервис не принимает запросы со страниц (нет CORS). Веб-версия на своём сервере ходит через посредника /x/gov/
+      if (e && e.code === "network" && !window.NativeHttp) {
+        var A = window.AutoHubApi;
+        if (A && A.http.viaProxy && A.http.viaProxy(BASE) !== BASE) throw err("gov_network", "Нет связи с API Assist. Проверьте интернет и попробуйте ещё раз.");
+        throw err("gov_web", "При локальном просмотре запросы к API Assist не проходят — сервис не принимает их из браузера. Работает в Android-приложении и в веб-версии на сервере.");
+      }
       throw e;
     });
   }

@@ -106,6 +106,22 @@
 
 В рабочей версии карту заменит коммерческая лицензия 2ГИС или Яндекса (см. риски в дорожной карте).
 
+## Веб-версия: посредник API
+
+Android-приложение обращается к внешним API через нативный мост (`NativeHttp`), где ограничений CORS нет. Браузер так не может:
+AvtoVinCod, API Assist (и на всякий случай NHTSA vPIC) не разрешают запросы со страниц. Поэтому веб-версия на своём сервере (HTTPS)
+ходит к ним через посредника на том же сервере — `AutoHubApi.http.viaProxy(url)` переписывает адрес:
+
+| Сервис | Адрес в коде | Через посредника |
+|---|---|---|
+| AvtoVinCod | `https://api.avtovincod.ru/…` | `/x/avc/…` |
+| API Assist | `https://service.api-assist.com/…` | `/x/gov/…` |
+| NHTSA vPIC | `https://vpic.nhtsa.dot.gov/…` | `/x/vpic/…` |
+
+Посредник — `reverse_proxy` в `deploy/server/Caddyfile`: только GET, без cookie, реферера и адреса посетителя, ответы с `Cache-Control: no-store`,
+журнал запросов не ведётся. Ключи хранятся на устройстве и идут в самом запросе (Bearer у AvtoVinCod, `key=` у API Assist); сервер их не хранит.
+Сервис-воркер ответы посредника не кэширует. По http/file (локальный просмотр) адреса не переписываются.
+
 ## Госданные (API Assist)
 
 С 0.18 (AUTO-45). Модуль `web/gov.js` (`window.AutoHubGov`) ходит в [API Assist](https://api-assist.com/) — посредник, который

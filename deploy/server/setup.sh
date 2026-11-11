@@ -4,8 +4,11 @@
 #   AUTOHUB_HOST=app.example.ru bash setup.sh   — свой домен (A-запись уже на этот сервер)
 # Ставит контейнер Caddy (HTTPS по Let's Encrypt) на порты 80/443 и пользователя autohub-deploy,
 # чей SSH-ключ может только заливать файлы в /srv/autohub/site. В конце печатает секреты для GitHub.
+# Повторный запуск обновляет конфигурацию Caddy и ничего не ломает: ключ не пересоздаётся, секреты прежние
+# (напечатать их снова: bash setup.sh --secrets).
 set -euo pipefail
 DIR=/srv/autohub; U=autohub-deploy
+SHOW_SECRETS=no; [ "${1:-}" = "--secrets" ] && SHOW_SECRETS=yes
 [ "$(id -u)" = 0 ] || { echo "Запустите от root: sudo bash setup.sh"; exit 1; }
 . /etc/os-release 2>/dev/null || true
 case "${ID:-}${ID_LIKE:-}" in *debian*|*ubuntu*) ;; *) echo "Скрипт рассчитан на Ubuntu или Debian, а здесь: ${PRETTY_NAME:-неизвестная система}"; exit 1 ;; esac
@@ -32,9 +35,34 @@ fi
 id "$U" >/dev/null 2>&1 || useradd -m -s /bin/sh "$U"
 install -d -o "$U" -g "$U" -m 755 "$DIR/site"
 [ -f "$DIR/site/index.html" ] || echo '<!doctype html><meta charset="utf-8"><title>АвтоХаб</title><p>АвтоХаб скоро будет здесь.</p>' > "$DIR/site/index.html"
-cat > "$DIR/Caddyfile" <<'CADDY'
+# Новая конфигурация пишется рядом и заменяет рабочую только после проверки (ниже)
+cat > "$DIR/Caddyfile.new" <<'CADDY'
 # АвтоХаб: веб-приложение (PWA) на своём сервере. Caddy сам получает и продлевает HTTPS-сертификат Let's Encrypt.
 # {$AUTOHUB_HOST} — адрес сайта: по умолчанию <IP-через-дефисы>.sslip.io (задаёт setup.sh), можно свой домен.
+
+# Посредник к внешнему API: браузер не может обращаться к нему напрямую (сервис не разрешает CORS).
+# Только чтение (GET); ключ пользователь хранит у себя и передаёт в самом запросе — сервер его не хранит,
+# журнал запросов не ведётся. Cookie, реферер и адрес посетителя наружу не уходят, ответы не кэшируются.
+(api_proxy) {
+	@write not method GET
+	respond @write 405
+	reverse_proxy https://{args[0]} {
+		header_up Host {args[0]}
+		header_up -Cookie
+		header_up -Referer
+		header_up -Origin
+		header_up -X-Forwarded-For
+		header_up -X-Forwarded-Host
+		header_up -X-Forwarded-Proto
+		header_down -Set-Cookie
+		header_down Cache-Control "no-store"
+		transport http {
+			dial_timeout 10s
+			response_header_timeout 100s
+		}
+	}
+}
+
 {$AUTOHUB_HOST} {
 	root * /srv
 	encode zstd gzip
@@ -44,6 +72,8 @@ cat > "$DIR/Caddyfile" <<'CADDY'
 	header @shell Cache-Control "no-cache"
 	@manifest path /manifest.webmanifest
 	header @manifest Content-Type "application/manifest+json"
+	# Движок распознавания и модели лежат в папке с номером версии — их можно кэшировать надолго
+	header /ocr/* Cache-Control "public, max-age=31536000, immutable"
 
 	header {
 		X-Content-Type-Options "nosniff"
@@ -51,7 +81,25 @@ cat > "$DIR/Caddyfile" <<'CADDY'
 		Permissions-Policy "camera=(self), geolocation=(self), microphone=()"
 		-Server
 	}
-	file_server
+
+	# Спецификация по VIN и VIN по госномеру
+	handle_path /x/avc/* {
+		import api_proxy api.avtovincod.ru
+	}
+	# Госданные: штрафы, ОСАГО, пробег по ЕАИСТО
+	handle_path /x/gov/* {
+		import api_proxy service.api-assist.com
+	}
+	# Открытая база VIN (NHTSA vPIC) — запасной источник
+	handle_path /x/vpic/* {
+		import api_proxy vpic.nhtsa.dot.gov
+	}
+	handle /x/* {
+		respond 404
+	}
+	handle {
+		file_server
+	}
 }
 CADDY
 
@@ -65,7 +113,7 @@ if [ -z "$RR" ]; then
   done
 fi
 [ -n "$RR" ] || { echo "Не найден rrsync (входит в пакет rsync)"; exit 1; }
-[ -f "$DIR/deploy_key" ] || ssh-keygen -q -t ed25519 -N "" -C "github-actions-autohub" -f "$DIR/deploy_key"
+[ -f "$DIR/deploy_key" ] || { ssh-keygen -q -t ed25519 -N "" -C "github-actions-autohub" -f "$DIR/deploy_key"; SHOW_SECRETS=yes; }
 chmod 600 "$DIR/deploy_key"
 install -d -o "$U" -g "$U" -m 700 "/home/$U/.ssh"
 echo "command=\"$RR $DIR/site\",restrict $(cat "$DIR/deploy_key.pub")" > "/home/$U/.ssh/authorized_keys"
@@ -74,8 +122,9 @@ chown "$U:$U" "/home/$U/.ssh/authorized_keys"; chmod 600 "/home/$U/.ssh/authoriz
 command -v ufw >/dev/null && ufw status | grep "Status: active" >/dev/null && { ufw allow 80/tcp; ufw allow 443/tcp; ufw allow 443/udp; } >/dev/null || true
 
 # Проверить конфигурацию до запуска: ошибка — остановка, работающий контейнер не трогаем
-docker run --rm -e AUTOHUB_HOST="$HOST" -v "$DIR/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.8.4 \
-  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || { echo "Ошибка в $DIR/Caddyfile"; exit 1; }
+docker run --rm -e AUTOHUB_HOST="$HOST" -v "$DIR/Caddyfile.new:/etc/caddy/Caddyfile:ro" caddy:2.8.4 \
+  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null || { rm -f "$DIR/Caddyfile.new"; echo "Ошибка в конфигурации Caddy — работающий сайт не тронут"; exit 1; }
+mv -f "$DIR/Caddyfile.new" "$DIR/Caddyfile"
 docker rm -f autohub-web >/dev/null 2>&1 || true
 docker run -d --name autohub-web --restart unless-stopped \
   -p 80:80 -p 443:443 -p 443:443/udp -e AUTOHUB_HOST="$HOST" \
@@ -83,6 +132,11 @@ docker run -d --name autohub-web --restart unless-stopped \
   -v autohub-caddy-data:/data -v autohub-caddy-config:/config caddy:2.8.4 >/dev/null
 
 KH=$( [ "$PORT" = 22 ] && echo "$IP" || echo "[$IP]:$PORT" )
+if [ "$SHOW_SECRETS" = no ]; then
+  echo; echo "Готово. Сайт обновлён: https://$HOST"
+  echo "Секреты для GitHub не менялись. Напечатать их снова: bash setup.sh --secrets"
+  exit 0
+fi
 cat <<OUT
 
 Готово. Адрес приложения (сертификат появится в течение минуты): https://$HOST

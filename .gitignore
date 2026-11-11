@@ -25,3 +25,6 @@ Thumbs.db
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# Веб-версия: зависимости движка распознавания (ставит tools/web_ocr.py)
+tools/web-ocr/node_modules/

@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-      - run: node --test tests/document-parser.test.cjs tests/web-logic.test.cjs tests/gov.test.cjs tests/vincod.test.cjs tests/pwa.test.cjs
+      - run: node --test tests/document-parser.test.cjs tests/web-logic.test.cjs tests/gov.test.cjs tests/vincod.test.cjs tests/pwa.test.cjs tests/ocr-web.test.cjs
       - name: Проверить синтаксис веб-модулей
         run: for f in web/*.js; do node --check "$f"; done
       - name: Проверить предобработку OCR (тот же Java-код, что в APK)

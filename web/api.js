@@ -28,6 +28,17 @@
   function fail(code, msg) { return wait().then(function () { throw apiError(code, msg); }); }
 
   /* ---------- Сеть (режим live): в Android через нативный мост без CORS, в браузере через fetch ---------- */
+  /* Веб-версия на своём сервере (HTTPS): внешние API не принимают запросы из браузера (CORS), поэтому они идут
+   * через посредника на том же сервере — /x/<имя>/… (deploy/server/Caddyfile). Ключи по-прежнему хранятся только
+   * на устройстве и передаются в самом запросе; сервер их не хранит. Локальный просмотр (http, file) — напрямую. */
+  var PROXY = { "api.avtovincod.ru": "avc", "service.api-assist.com": "gov", "vpic.nhtsa.dot.gov": "vpic" };
+  function viaProxy(url, loc) {
+    loc = loc || (typeof location !== "undefined" ? location : null);
+    if (!loc || loc.protocol !== "https:") return url;
+    var m = /^https:\/\/([^\/?#]+)(\/[^#]*)?$/.exec(url);
+    if (!m || !PROXY[m[1].toLowerCase()]) return url;
+    return "/x/" + PROXY[m[1].toLowerCase()] + (m[2] || "/");
+  }
   var cbSeq = 0, cbs = {};
   window.__nativeHttpCb = function (id, okFlag, body, status) { var cb = cbs[id]; delete cbs[id]; if (cb) cb(okFlag, body, status); };
   /** GET с кодом ответа и телом (в том числе для 4xx: у API Assist в нём описание ошибки). Отказ — только при сбое сети. */
@@ -49,7 +60,8 @@
           window.NativeHttp.getAuth(url, opts.bearer, id);
         } else window.NativeHttp.get(url, id);
       } else {
-        fetch(url, opts.bearer ? { headers: { Authorization: "Bearer " + opts.bearer } } : undefined)
+        fetch(viaProxy(url), Object.assign({ credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer" },
+          opts.bearer ? { headers: { Authorization: "Bearer " + opts.bearer } } : {}))
           .then(function (r) { return r.text().then(function (t) { finish(r.ok, t, r.status); }); },
             function (e) { finish(false, String(e), 0); });
       }
@@ -68,7 +80,7 @@
       if (window.NativeHttp && window.NativeHttp.get) {
         var id = "c" + (++cbSeq); cbs[id] = finish; window.NativeHttp.get(url, id);
       } else {
-        fetch(url).then(function (r) { return r.text().then(function (t) { finish(r.ok, r.ok ? t : "HTTP " + r.status); }); },
+        fetch(viaProxy(url), { credentials: "omit", referrerPolicy: "no-referrer" }).then(function (r) { return r.text().then(function (t) { finish(r.ok, r.ok ? t : "HTTP " + r.status); }); },
           function (e) { finish(false, String(e)); });
       }
     });
@@ -367,7 +379,7 @@
     config: cfg,
     /** Текст ошибки для пользователя по коду (синхронно). */
     errorText: errorText,
-    http: { get: httpGet },
+    http: { get: httpGet, viaProxy: viaProxy },
     userPosition: function () { return MOCK ? ok(USER_POS) : backend("GET", "/v1/me/position"); },
 
     vehicle: {
