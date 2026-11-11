@@ -1,10 +1,12 @@
 name: Web app (PWA)
 
-# Веб-версия приложения на GitHub Pages: https://pazzia.github.io/Auto/
-# Открывается в любом браузере и ставится на главный экран как приложение (PWA), после первого открытия работает офлайн.
+# Веб-версия приложения (PWA) на своём сервере: открывается в любом браузере и ставится на главный экран,
+# после первого открытия работает офлайн. Выпускается отдельно от main — пушем в ветку pwa.
 #
-# Публикуется отдельно от main: каждый пуш в ветку pwa собирает сайт и кладёт его в служебную ветку gh-pages,
-# откуда его раздаёт GitHub Pages. Один раз включить: Settings → Pages → Source: Deploy from a branch → gh-pages / (root).
+# Сервер настраивается один раз скриптом deploy/server/setup.sh (Docker + Caddy, HTTPS Let's Encrypt).
+# Он печатает секреты, которые нужно добавить в Settings → Secrets and variables → Actions:
+#   AUTOHUB_SERVER_HOST, AUTOHUB_SERVER_PORT, AUTOHUB_SERVER_KNOWN_HOSTS, AUTOHUB_SERVER_SSH_KEY, AUTOHUB_SERVER_URL.
+# Ключ на сервере ограничен rrsync: им можно только залить файлы в папку сайта.
 # Все actions закреплены по SHA коммита (в комментарии — тег).
 
 on:
@@ -16,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pages
+  group: web-app
   cancel-in-progress: true
 
 jobs:
@@ -39,23 +41,63 @@ jobs:
           retention-days: 7
           path: app/src/main/assets/www/
 
-  # Отдельная задача: право записи в репозиторий есть только у шага, который кладёт готовый сайт в gh-pages.
-  publish:
+  deploy:
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: web-app
           path: site
-      - name: Сайт — в служебную ветку gh-pages
+
+      - name: Секреты сервера
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOST: ${{ secrets.AUTOHUB_SERVER_HOST }}
+          KNOWN: ${{ secrets.AUTOHUB_SERVER_KNOWN_HOSTS }}
+          KEY: ${{ secrets.AUTOHUB_SERVER_SSH_KEY }}
         run: |
-          cd site && touch .nojekyll && echo "${GITHUB_SHA}" > COMMIT
-          [ -f index.html ] && [ -f sw.js ] && [ -f manifest.webmanifest ] || { echo "::error title=pages::Сборка неполная"; exit 1; }
-          git init -q -b gh-pages && git add -A \
-            && git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Web app ${GITHUB_SHA}" \
-            && git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+          missing=""
+          [ -n "$HOST" ] || missing="$missing AUTOHUB_SERVER_HOST"
+          [ -n "$KNOWN" ] || missing="$missing AUTOHUB_SERVER_KNOWN_HOSTS"
+          [ -n "$KEY" ] || missing="$missing AUTOHUB_SERVER_SSH_KEY"
+          if [ -n "$missing" ]; then
+            echo "::warning title=Веб-приложение::Нет секретов:$missing — сайт не выложен. Запустите deploy/server/setup.sh на сервере и добавьте секреты, которые он напечатает."
+            echo "DEPLOY=no" >> "$GITHUB_ENV"
+          else
+            echo "DEPLOY=yes" >> "$GITHUB_ENV"
+          fi
+
+      - name: Выложить на сервер
+        if: env.DEPLOY == 'yes'
+        env:
+          HOST: ${{ secrets.AUTOHUB_SERVER_HOST }}
+          PORT: ${{ secrets.AUTOHUB_SERVER_PORT }}
+          KNOWN: ${{ secrets.AUTOHUB_SERVER_KNOWN_HOSTS }}
+          KEY: ${{ secrets.AUTOHUB_SERVER_SSH_KEY }}
+        run: |
+          [ -f site/index.html ] && [ -f site/sw.js ] && [ -f site/manifest.webmanifest ] || { echo "::error title=Веб-приложение::Сборка неполная"; exit 1; }
+          echo "${GITHUB_SHA}" > site/COMMIT
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/autohub && chmod 600 ~/.ssh/autohub
+          printf '%s\n' "$KNOWN" > ~/.ssh/known_hosts
+          # Сначала всё, кроме sw.js, потом sw.js: телефоны не получат новый сервис-воркер раньше файлов, на которые он ссылается
+          SSH="ssh -i $HOME/.ssh/autohub -p ${PORT:-22} -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+          rsync -rlt --delete --exclude /sw.js --chmod=D755,F644 -e "$SSH" site/ "autohub-deploy@$HOST:./"
+          rsync -rlt --chmod=F644 -e "$SSH" site/sw.js "autohub-deploy@$HOST:./sw.js"
+
+      - name: Удалить ключ
+        if: always()
+        run: rm -f ~/.ssh/autohub
+
+      - name: Проверить сайт
+        if: env.DEPLOY == 'yes'
+        env:
+          URL: ${{ secrets.AUTOHUB_SERVER_URL }}
+        run: |
+          [ -n "$URL" ] || { echo "AUTOHUB_SERVER_URL не задан — проверка пропущена"; exit 0; }
+          for i in 1 2 3 4 5 6; do
+            got=$(curl -fsS --max-time 15 "$URL/COMMIT" || true)
+            [ "$got" = "$GITHUB_SHA" ] && { echo "Выложено: $URL"; echo "### Веб-приложение: $URL" >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            sleep 10
+          done
+          echo "::error title=Веб-приложение::Сайт $URL не отдаёт новую версию (получено: ${got:-ничего})"; exit 1

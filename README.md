@@ -8,7 +8,7 @@
 [Импорт наряд-заказов без LLM](docs/ocr.md): распознавание работает прямо на Android без сервера и интернета, модели rus и eng включены в APK. Проверка на телефоне владельца — AUTO-42.
 
 - APK: раздел **Releases** → «АвтоХаб <номер>» → `AutoHub-<номер>.apk` (или Actions → артефакт `AutoHub-<номер>`)
-- Веб-приложение (любое устройство, установка из браузера): https://pazzia.github.io/Auto/ — см. раздел «Веб-приложение (PWA)»
+- Веб-приложение (любое устройство, установка из браузера): на своём сервере — см. раздел «Веб-приложение (PWA)»
 - Контекст проекта и дорожная карта: [`docs/`](docs)
 
 ## Структура
@@ -22,7 +22,7 @@
 | `docs/` | Контекст, дорожная карта, инструкция проекта, описание API ([`docs/api.md`](docs/api.md)), бэклог задач AUTO-№ ([`docs/backlog.md`](docs/backlog.md)) |
 | `tests/` | Тесты разбора документов (`node --test`), проверка предобработки OCR на JVM, эталоны синтетических нарядов |
 | `tools/ocr_replay/` | Повтор OCR-конвейера APK на ПК и сверка с эталонами |
-| `.github/workflows/pages.yml` | Публикация веб-приложения (PWA) на GitHub Pages из ветки `pwa` |
+| `.github/workflows/pages.yml`, `deploy/server/` | Публикация веб-приложения (PWA) на своём сервере из ветки `pwa` |
 | `.github/workflows/build-apk.yml` | Тесты, сборка APK, проверка OCR на эмуляторе в авиарежиме, запуск release-сборки на Android 10 и 14, релиз |
 
 ## Как вносить изменения
@@ -43,7 +43,7 @@ git add -A && git commit -m "…" && git push
 
 ## Веб-приложение (PWA)
 
-С 0.21 (AUTO-48) та же сборка работает как устанавливаемое веб-приложение: **https://pazzia.github.io/Auto/**.
+С 0.21 (AUTO-48) та же сборка работает как устанавливаемое веб-приложение — на своём сервере, по HTTPS.
 Открывается в любом современном браузере — Android, iPhone и iPad, Windows, macOS, Linux — и ставится на главный экран:
 
 - **Android, компьютер (Chrome, Edge):** кнопка «Установить приложение на устройство» на экране входа или в Профиле, либо значок установки в адресной строке.
@@ -57,10 +57,26 @@ git add -A && git commit -m "…" && git push
 - AvtoVinCod и API Assist — эти сервисы не принимают запросы со страниц браузера; для веба нужен свой сервер-прокси (AUTO-22). VIN расшифровывается через открытую базу NHTSA vPIC;
 - напоминания приходят, только пока приложение открыто.
 
-Публикация идёт отдельно от `main`: веб-версия живёт в ветке **`pwa`**. Каждый пуш в неё (`.github/workflows/pages.yml`) прогоняет тесты,
-собирает прототип и кладёт папку `app/src/main/assets/www` в служебную ветку `gh-pages`, откуда сайт раздаёт GitHub Pages.
+### Публикация на своём сервере
+
+Веб-версия выпускается отдельно от `main` — из ветки **`pwa`**: `.github/workflows/pages.yml` на каждый пуш в неё прогоняет тесты,
+собирает прототип и заливает папку `app/src/main/assets/www` на сервер по SSH (rsync), затем проверяет, что сайт отдаёт новую версию.
 Выпустить новую веб-версию: `git push origin <ветка-с-изменениями>:pwa`.
-**Один раз включить:** Settings → Pages → Build and deployment → Source: **Deploy from a branch** → `gh-pages` / `(root)`.
+
+Настройка сервера — один раз (Ubuntu/Debian с Docker, порты 80 и 443 свободны):
+
+1. Скопировать `deploy/server/setup.sh` на сервер и запустить от root: `sudo bash setup.sh`.
+   Скрипт ставит контейнер Caddy (`autohub-web`), который раздаёт сайт из `/srv/autohub/site` и сам получает и продлевает
+   HTTPS-сертификат Let's Encrypt. Домен не нужен: адрес — `https://<IP-через-дефисы>.sslip.io`; свой домен — `AUTOHUB_HOST=app.example.ru sudo bash setup.sh`.
+   Ещё он создаёт пользователя `autohub-deploy` с SSH-ключом, ограниченным rrsync: этим ключом можно только залить файлы в папку сайта —
+   ни войти на сервер, ни прочитать что-то, ни выйти за пределы папки.
+2. Скрипт печатает пять секретов — добавить их в Settings → Secrets and variables → Actions:
+   `AUTOHUB_SERVER_HOST`, `AUTOHUB_SERVER_PORT`, `AUTOHUB_SERVER_URL`, `AUTOHUB_SERVER_KNOWN_HOSTS`, `AUTOHUB_SERVER_SSH_KEY`.
+3. Actions → «Web app (PWA)» → Run workflow на ветке `pwa` (или любой пуш в неё).
+
+Если 80 или 443 уже заняты другим сайтом, скрипт ничего не меняет и показывает, кто их занял, — тогда АвтоХаб подключается к уже
+работающему веб-серверу (конфигурация — `deploy/server/Caddyfile`: заголовки `no-cache` для `index.html`, `sw.js`, манифеста).
+
 Локально: `python3 tools/build_prototype.py && python3 -m http.server -d app/src/main/assets/www 8000` → http://localhost:8000 (установка работает и с localhost).
 Значки — `web/pwa/` (перерисовать: `node tools/make_pwa_icons.js`), манифест — `web/pwa/manifest.webmanifest`.
 
