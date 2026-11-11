@@ -129,6 +129,12 @@
       }).join("") : '<div class="pempty">Машин пока нет — в гараже показана демо-машина.</div>') +
       '<a href="#AddCar" class="padd"><span>+</span>Добавить автомобиль<small>госномер, VIN или марка</small></a></div>' +
 
+      // Подключения — сразу под машинами: от них зависит подбор запчастей и проверки (раньше прятались внизу «Настроек»)
+      '<div class="psec">ПОДКЛЮЧЕНИЯ</div><div class="pgroup">' +
+      '<button class="prow" data-action="vincod"><span class="prow-txt"><b>Спецификация по VIN</b><span>' + (window.AutoHubVinCod && window.AutoHubVinCod.ready() ? "AvtoVinCod подключён · " + window.AutoHubVinCod.spent().n + " платн. запр. в этом месяце" : "AvtoVinCod: двигатель, КПП и привод по VIN — для подбора запчастей") + '</span></span><span class="prow-go">›</span></button>' +
+      '<button class="prow" data-action="gov"><span class="prow-txt"><b>Госданные</b><span>' + (window.AutoHubGov && window.AutoHubGov.ready() ? "подключены · штрафы, ОСАГО, техосмотр · " + window.AutoHubGov.usage().n + " запр. в этом месяце" : "штрафы ГИБДД, ОСАГО и техосмотр по ключу API Assist") + '</span></span><span class="prow-go">›</span></button>' +
+      '</div>' +
+
       '<div class="psec">СЕРВИСЫ</div><div class="pgroup">' +
       row("#Subscription", window.AutoHubKit.icon("star"), "АвтоХаб Плюс", plus ? "активна до " + plus.until : "тариф «Базовый»", "") +
       row("#Wallet", window.AutoHubKit.icon("coin"), "Баллы и копилка", window.AutoHubKit.count(pts, "балл", "балла", "баллов") + " · 1 балл = 1 ₽", "") +
@@ -144,8 +150,7 @@
       '<button class="prow" data-action="city"><span class="prow-txt"><b>Мой адрес</b><span>' + esc(st.city + (st.address ? ", " + st.address : "") + " · для сервисов рядом") + '</span></span><span class="prow-go">›</span></button>' +
       '<div class="prow"><span class="prow-txt"><b>Данные</b><span>' + (window.AutoHubApi && window.AutoHubApi.mode === "mock" ? "Демонстрационные данные" : "Реальные источники") + "</span></span></div>" +
       (window.AutoHubPWA && window.AutoHubPWA.installMode() ? '<button class="prow" data-action="pwa-install"><span class="prow-txt"><b>Установить приложение</b><span>значок на главном экране, работает без интернета</span></span><span class="prow-go">›</span></button>' : "") +
-      '<button class="prow" data-action="vincod"><span class="prow-txt"><b>Спецификация по VIN</b><span>' + (window.AutoHubVinCod && window.AutoHubVinCod.ready() ? "AvtoVinCod подключён · " + window.AutoHubVinCod.spent().n + " платн. запр. в этом месяце" : "AvtoVinCod: двигатель, КПП и привод по VIN — для подбора запчастей") + '</span></span><span class="prow-go">›</span></button>' +
-      '<button class="prow" data-action="gov"><span class="prow-txt"><b>Госданные</b><span>' + (window.AutoHubGov && window.AutoHubGov.ready() ? "подключены · штрафы, ОСАГО, техосмотр · " + window.AutoHubGov.usage().n + " запр. в этом месяце" : "штрафы ГИБДД, ОСАГО и техосмотр по ключу API Assist") + '</span></span><span class="prow-go">›</span></button></div>' +
+      '</div>' +
 
       '<div class="pgroup">' +
       '<button class="prow" data-action="export"><span class="prow-txt"><b>Выгрузить мои данные</b><span>машины, история, настройки</span></span><span class="prow-go">›</span></button>' +

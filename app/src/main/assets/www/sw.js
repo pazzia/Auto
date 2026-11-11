@@ -6,7 +6,7 @@
  * Движок распознавания (OCR_DIR, ~10 МБ) не входит в установку: скачивается при первом распознавании и хранится
  * в отдельном кэше, который переживает обновления приложения (папка названа по версиям движка и моделей).
  */
-const CACHE = "autohub-0.22-024514b7b4";
+const CACHE = "autohub-0.22-0961030187";
 const FILES = ["./", "achievements.js", "api.js", "auth.js", "bodyphoto.js", "calc.js", "car.js", "cart.js", "checklists.js", "device.js", "diy.js", "docs.js", "document-parser.js", "documents.js", "fonts/OFL.txt", "fuel.js", "gov.js", "hub.js", "icons.js", "index.html", "kit.js", "manifest.webmanifest", "map/podmoskovye.svg", "mechanic.js", "ocr-prep.js", "ocr-web.js", "parking.js", "parts.js", "pwa.js", "pwa/apple-touch-icon.png", "pwa/icon-192.png", "pwa/icon-512.png", "pwa/icon-maskable-512.png", "pwa/icon.svg", "screens.js", "season.js", "services.js", "to.js", "ui.js", "vincod.js", "wallet.js"];
 const OCR_DIR = "ocr/t7.0.0-p5.4.394-m8741641/";
 const OCR_CACHE = "autohub-ocr-" + OCR_DIR.replace(/[^a-z0-9.-]+/gi, "-").replace(/^-|-$/g, "");
