@@ -20,10 +20,11 @@ systemctl enable --now docker >/dev/null 2>&1 || service docker start >/dev/null
 docker info >/dev/null 2>&1 || { echo "Docker не запустился: проверьте «systemctl status docker»"; exit 1; }
 IP=$(curl -fsS4 --max-time 10 https://api.ipify.org || hostname -I | awk '{print $1}')
 HOST="${AUTOHUB_HOST:-${IP//./-}.sslip.io}"
-PORT=$(sshd -T 2>/dev/null | awk '$1=="port"{print $2; exit}'); PORT=${PORT:-22}
+# без «exit» в awk и без «grep -q» в конвейерах: при pipefail оборванный конвейер молча останавливает скрипт
+PORT=$(sshd -T 2>/dev/null | awk '$1=="port" && !n++ {print $2}' || true); PORT=${PORT:-22}
 
 # 80 и 443 нужны Caddy для сертификата. Заняты другим контейнером или nginx — остановка, без изменений
-if ss -ltnH '( sport = :80 or sport = :443 )' | grep -q . && ! docker ps --format '{{.Names}}' | grep -qx autohub-web; then
+if [ -n "$(ss -ltnH '( sport = :80 or sport = :443 )')" ] && ! docker ps --format '{{.Names}}' | grep -x autohub-web >/dev/null; then
   echo "Порт 80 или 443 уже занят:"; ss -ltnp '( sport = :80 or sport = :443 )'; docker ps --format '{{.Names}}  {{.Image}}  {{.Ports}}'
   echo; echo "Ничего не изменено. Пришлите этот вывод — подключу АвтоХаб к уже работающему веб-серверу."; exit 1
 fi
@@ -70,7 +71,7 @@ install -d -o "$U" -g "$U" -m 700 "/home/$U/.ssh"
 echo "command=\"$RR $DIR/site\",restrict $(cat "$DIR/deploy_key.pub")" > "/home/$U/.ssh/authorized_keys"
 chown "$U:$U" "/home/$U/.ssh/authorized_keys"; chmod 600 "/home/$U/.ssh/authorized_keys"
 
-command -v ufw >/dev/null && ufw status | grep -q "Status: active" && { ufw allow 80/tcp; ufw allow 443/tcp; ufw allow 443/udp; } >/dev/null || true
+command -v ufw >/dev/null && ufw status | grep "Status: active" >/dev/null && { ufw allow 80/tcp; ufw allow 443/tcp; ufw allow 443/udp; } >/dev/null || true
 
 # Проверить конфигурацию до запуска: ошибка — остановка, работающий контейнер не трогаем
 docker run --rm -e AUTOHUB_HOST="$HOST" -v "$DIR/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2.8.4 \
